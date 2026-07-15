@@ -2,7 +2,7 @@
 
 > Long-term memory for this project. It records the vision, every meaningful decision (with dates and rationale), what's been built, the roadmap, and open questions. **Update this file whenever a decision is made, a milestone is hit, or something important is discovered — and append a dated entry to the Session log (§11) at the end of each working session.** New sessions should read this first.
 
-Last updated: 2026-07-10
+Last updated: 2026-07-13
 
 ---
 
@@ -129,6 +129,13 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | `English Circulum.md` | Curriculum reference. |
 
 ## 11. Session log
+
+### 2026-07-13 — Step 0.1: Repo scaffold + tooling
+- Created `backend/` (FastAPI, `GET /health`, `pyproject.toml`, `pytest`, `ruff`, `mypy`) and `frontend/` (Vite + React + TS).
+- Verified: `pytest` passes, `ruff`/`mypy` green, `uvicorn` serves `/health` → `{"status":"ok"}`, frontend `npm run build` succeeds.
+- Switched backend venv to `conda py3_12` (Python 3.12.13); restored `requires-python = ">=3.12"` and `mypy` target to 3.12.
+- Fixed `pytest-asyncio` deprecation warning by setting `asyncio_default_fixture_loop_scope = "function"`.
+- **Next pick-up:** step **0.2 Config layer** (`.env`, settings module, clear error on missing API key, tests).
 
 Append one entry per working session (newest at top). Keep each entry short: what was done, decided, discovered, and where the next session should pick up.
 

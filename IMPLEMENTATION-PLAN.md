@@ -36,7 +36,7 @@ S = <½ session · M = ~1 session · L = may spill to 2 sessions.
 
 ## Milestone 0 — Foundations (P0)  ·  unblocks everything
 
-- [ ] **0.1 Repo scaffold + tooling** (M)
+- [x] **0.1 Repo scaffold + tooling** (M)
   - Goal: `backend/` (FastAPI app with `GET /health`) and `frontend/` placeholders; Python deps pinned; run instructions in `backend/README.md`.
   - Touches: `backend/app/main.py`, `backend/pyproject.toml` (or `requirements.txt`), `backend/tests/test_health.py`.
   - Done when: `uvicorn app.main:app` serves and `GET /health` → 200 `{"status":"ok"}`; `pytest` runs green.
@@ -162,5 +162,5 @@ Slip is fine — the plan is resumable by design. Adjust as reality lands; updat
 
 ## Progress
 
-Milestones done: none yet · Next step: **0.1 Repo scaffold + tooling**.
+Milestones done: **0.1** · Next step: **0.2 Config layer**.
 (When all boxes above are ticked, the MVP is built: the 8 skills run behind a swappable model, drive the daily loop in a browser, and track A–E progress — locally and privately.)
