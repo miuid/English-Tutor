@@ -116,6 +116,8 @@ class Session(Base):
         sa.Text,
         nullable=True,
     )
+    # Interactive-loop stage: start -> I do -> we do -> you do -> ended.
+    stage: Mapped[str] = mapped_column(sa.String(20), default="start")
 
     student: Mapped["Student"] = relationship(back_populates="sessions")
     success_criteria: Mapped[list["SuccessCriterion"]] = relationship(

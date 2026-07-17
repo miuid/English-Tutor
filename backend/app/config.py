@@ -16,8 +16,8 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     database_url: str = "sqlite:///./english_tutor.db"
-    llm_provider: str = "anthropic"
-    llm_model: str = "claude-sonnet-4-6"
+    llm_provider: str = "deepseek"
+    llm_model: str = "deepseek-chat"
     llm_api_key: str | None = None
     skills_dir: str = str(Path(__file__).resolve().parent.parent.parent / "skills")
 
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
         value: str | None,
         info: ValidationInfo,
     ) -> str | None:
-        provider = info.data.get("llm_provider", "anthropic")
+        provider = info.data.get("llm_provider", "deepseek")
         if provider != "fake" and not value:
             msg = f"LLM_API_KEY is required when LLM_PROVIDER='{provider}'"
             raise ValueError(msg)
