@@ -136,6 +136,14 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 11. Session log
 
+### 2026-07-18 — Live DeepSeek validation + dev launcher fix (502)
+- Owner placed a DeepSeek key in `backend/.env` (`LLM_PROVIDER=deepseek`, `LLM_MODEL=deepseek-v4-pro`; key verified via `GET /models` — account exposes `deepseek-v4-pro` + `deepseek-v4-flash`).
+- Verified the full live chain: uvicorn boot + real `POST /api/sessions` returned a genuine set-success-criteria tutor turn from DeepSeek.
+- Owner hit a 502 clicking "Start today's session": the Vite proxy had no backend on :8000 (backend wasn't running). Root cause = two-process manual startup friction.
+- Fix: `frontend/scripts/dev.mjs` — `npm run dev` now spawns uvicorn (cwd `backend/`, venv python) AND Vite (forwards `--host/--port`), reuses an existing :8000 backend if present, prefixed logs, kills children on exit. `package.json` `dev` script points to it. Validated: frontend 200, backend health ok, real session through the proxy 201; oxlint clean; all test processes killed after.
+- Note for this machine: killing a server needs `taskkill //PID <listening-pid> //F` — Git Bash `kill` only hits the shell wrapper.
+- **Next pick-up:** owner tests the full loop in the browser; then live `python -m app.eval` against DeepSeek (closes P3); then P5.
+
 ### 2026-07-17 — Model switch to DeepSeek + P4 complete (API, chat UI, progress view)
 - **Decision:** default LLM switched to DeepSeek `deepseek-chat` (owner request). Added `app/llm/deepseek.py` (OpenAI-compatible, httpx, no new deps), factory branch, config defaults, `.env.example`. Adapter-only change — business logic untouched (validates the §6 design). Anthropic/Sonnet remains config-swappable.
 - P4.1: `app/sessions/interactive.py` stage machine (`start → I do → we do → you do → ended`, `Session.stage` column added — dev DB deleted/recreated); `app/api/` with `POST /api/sessions` (optional `task_prompt`/`context`), `GET /api/sessions/{id}`, `POST .../advance`, `POST .../submit` (runs diagnose→coach→feedback + writes rubric rows), `GET /api/students/{id}/progress`; CORS for Vite ports. Scripted orchestrator untouched.
