@@ -34,6 +34,8 @@ SUBMIT_STAGES = ("we do", "you do")
 ENDED = "ended"
 DEFAULT_TEXT_TYPE = "analytical"  # MVP scope: Year 8 analytical only
 DEFAULT_CURRICULUM = "QCAA"
+# Used when the student starts a session without pasting a school task.
+DEFAULT_TASK_PROMPT = "General analytical writing practice"
 
 
 class SessionNotFoundError(Exception):
@@ -62,8 +64,20 @@ class InteractiveLoop:
         self.skills = skills
         self.router = DiagnosisRouter(executor=executor, skills=list(skills.values()))
 
-    async def start(self, *, task_prompt: str, year_level: str, text_type: str) -> Session:
-        """Create/fetch the student, open a Session, and run set-success-criteria."""
+    async def start(
+        self,
+        *,
+        task_prompt: str | None,
+        year_level: str,
+        text_type: str,
+        context: str | None = None,
+    ) -> Session:
+        """Create/fetch the student, open a Session, and run set-success-criteria.
+
+        ``task_prompt`` is optional: when absent the loop falls back to
+        ``DEFAULT_TASK_PROMPT`` so the skills still get a usable prompt, while
+        ``Session.learning_intention`` stays ``None`` (no pasted school task).
+        """
         student = self._get_or_create_student(year_level)
         session = Session(
             student_id=student.id,
@@ -78,12 +92,18 @@ class InteractiveLoop:
             {
                 "year_level": year_level,
                 "text_type": text_type,
-                "task_prompt": task_prompt,
+                "task_prompt": task_prompt or DEFAULT_TASK_PROMPT,
+                "context": context or "",
                 "student_text": "",
             },
         )
         self._save_tutor_turn(
-            session, "set-success-criteria", "criteria", "start", task_prompt, criteria
+            session,
+            "set-success-criteria",
+            "criteria",
+            "start",
+            task_prompt or DEFAULT_TASK_PROMPT,
+            criteria,
         )
         self.db.commit()
         return session
@@ -241,7 +261,7 @@ class InteractiveLoop:
         }
 
     def _task_prompt(self, session: Session) -> str:
-        return session.learning_intention or ""
+        return session.learning_intention or DEFAULT_TASK_PROMPT
 
     def _latest_independent_task(self, session: Session) -> str:
         """The independent-task tutor output is the prompt the student answered."""

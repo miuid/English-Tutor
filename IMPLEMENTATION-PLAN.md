@@ -17,7 +17,7 @@ Aim for 1–2 steps per session. A comfortable cadence is ~2–3 steps/week → 
 ## Locked tech choices (don't re-litigate — see MEMORY §6/§7)
 
 - Backend: Python 3.12, FastAPI, Uvicorn, SQLAlchemy 2.0, Pydantic v2, SQLite. Tests: pytest.
-- LLM: Anthropic Claude Sonnet 4.6 default, behind an `LLMProvider` adapter (swappable by config).
+- LLM: DeepSeek `deepseek-chat` default (since 2026-07-17), behind an `LLMProvider` adapter (swappable by config; Anthropic Sonnet 4.6 remains available).
 - Skills: the Markdown packages in `skills/` are loaded at runtime — never reimplement teaching logic in code.
 - Frontend: React + Vite + TypeScript, minimal.
 - Keep it simple: no abstractions beyond what a step needs; add libraries only when a step requires them.
@@ -109,20 +109,23 @@ S = <½ session · M = ~1 session · L = may spill to 2 sessions.
 
 ## Milestone 4 — API + UI (P4)
 
-- [ ] **4.1 FastAPI endpoints for the loop** (L)
+- [x] **4.1 FastAPI endpoints for the loop** (L)
   - Goal: endpoints to start a session, submit a step / student text, get feedback, get progress; Pydantic schemas.
   - Done when: a full session can be driven over HTTP (httpie/curl); OpenAPI docs render; endpoint tests pass.
   - Depends on: 2.3
+  - **Done 2026-07-17:** `app/api/` (routes/schemas/deps) over `app/sessions/interactive.py` stage machine (`Session.stage` persisted); `POST /api/sessions` (optional `task_prompt`/`context`), `GET /api/sessions/{id}`, `POST .../advance`, `POST .../submit`, `GET /api/students/{id}/progress`; CORS for Vite ports; 9 endpoint tests drive a full loop over HTTP with FakeProvider.
 
-- [ ] **4.2 React app + chat loop UI** (L)
+- [x] **4.2 React app + chat loop UI** (L)
   - Goal: Vite React TS app, one screen: tutor turns, an input box, a "paste my school task" field; calls the endpoints.
   - Done when: `npm run dev` and a student can complete a session in the browser against the backend.
   - Depends on: 4.1
+  - **Done 2026-07-17:** `frontend/src/` rewritten — `api.ts` typed client, `ChatView` (welcome + school-task paste, stage chips, continue/submit composer, thinking indicator, inline retry, localStorage reload resilience), Vite `/api`→`:8000` dev proxy; zero new runtime deps; `tsc -b && vite build` green; smoke-tested end-to-end against uvicorn with `LLM_PROVIDER=fake`.
 
-- [ ] **4.3 Progress view (North Star)** (M)
+- [x] **4.3 Progress view (North Star)** (M)
   - Goal: a view plotting `rubric_score` A–E per criterion over time.
   - Done when: after ≥2 graded attempts, the per-criterion trend renders.
   - Depends on: 4.2, 3.2
+  - **Done 2026-07-17:** `ProgressView` — hand-rolled SVG per-criterion A–E trend (Okabe–Ito colors, letter Y-axis, dots for single-day data), latest-level chips, friendly empty state; fed by `GET /api/students/{id}/progress`.
 
 ## Milestone 5 — Logging, privacy, packaging (P5)
 
@@ -164,5 +167,5 @@ Slip is fine — the plan is resumable by design. Adjust as reality lands; updat
 
 ## Progress
 
-Milestones done: **0.1–2.3**; **3.1 + 3.2 code complete** (eval harness + rubric_score persistence, 75 tests green) · Next step: **live eval run against Sonnet to close 3.1/3.2** (needs `LLM_API_KEY` in `backend/.env`), then **4.1 FastAPI endpoints for the loop**.
+Milestones done: **0.1–2.3**; **3.1 + 3.2 code complete** (live eval pending API key); **4.1–4.3 complete** (API + React UI + progress view) · Next step: **live eval run against DeepSeek to close 3.1/3.2** (needs `LLM_API_KEY` in `backend/.env`), then **5.x logging/privacy/packaging**.
 (When all boxes above are ticked, the MVP is built: the 8 skills run behind a swappable model, drive the daily loop in a browser, and track A–E progress — locally and privately.)

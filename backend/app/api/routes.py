@@ -74,6 +74,7 @@ async def start_session(
     """Start a session: create it and return the set-success-criteria turn."""
     session = await loop.start(
         task_prompt=payload.task_prompt,
+        context=payload.context,
         year_level=payload.year_level,
         text_type=payload.text_type,
     )

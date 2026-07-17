@@ -59,7 +59,7 @@ Grounding sources: APST, HITS, VTLM, GRR, AERO SWIF (5-stage writing model), QCA
 ## 6. Architecture decisions
 
 - **Stack:** Python backend (FastAPI intended) + React frontend.
-- **LLM adapter layer:** unified `LLMProvider` interface + per-provider adapters (Anthropic / OpenAI / local Ollama), provider chosen by config. Swapping models must not touch business logic. (This is the "flexibility to change LLM" requirement.)
+- **LLM adapter layer:** unified `LLMProvider` interface + per-provider adapters (DeepSeek / Anthropic / Fake; local Ollama still possible), provider chosen by config. Swapping models must not touch business logic. (This is the "flexibility to change LLM" requirement — validated 2026-07-17 when the default switched Anthropic→DeepSeek with adapter-only changes.)
 - **Teaching logic = versioned files, not code:** skills, prompts, rubrics are Markdown/config the backend loads.
 - **Local-first MVP:** FastAPI + SQLite + React, target `docker compose up`.
 - **Prod-ready seams:** multi-user schema, auth, SQLite→Postgres via connection string, stateless backend for horizontal scaling.
@@ -81,6 +81,7 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | 2026-07-10 | **Privacy:** writing may go to a cloud LLM API, but all data is stored **local-only and deletable**; minor's data, minimal retention | Balance feedback quality vs privacy for a child's data; permits cloud API in the model decision. |
 | 2026-07-10 | Brainstorm closed; produced **lightweight PRD + simple ERD** rather than heavy docs | Fill the genuine gaps (UX, metric, privacy, schema) without over-engineering. |
 | 2026-07-10 | **MVP model = single cloud Claude Sonnet 4.6** for all stages; adapter keeps it swappable | Demanding coaching task rewards a strong model while skills are still being tuned; ~$4/mo for one student is negligible; privacy rule permits cloud. Local Ollama (Qwen 2.5 14B) and per-stage routing deferred to later/scale. Prices as of 2026-07: Sonnet 4.6 $3/$15, Opus 4.8 $5/$25, Haiku 4.5 $1/$5 per 1M tok. |
+| 2026-07-17 | **MVP default model switched to DeepSeek `deepseek-chat`**; Anthropic/Sonnet remains a config-only swap | Owner decision. The adapter layer paid off: the switch touched only `app/llm/deepseek.py` (new), factory, and config defaults — zero business-logic changes. Eval + live runs now need `LLM_API_KEY` (DeepSeek) in `backend/.env`. |
 
 ## 8. Milestones / roadmap
 
@@ -95,11 +96,14 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 - ✅ P2.2 — Coaching skills + diagnose-errors router.
 - ✅ P2.3 — Session orchestrator (daily loop).
 - ✅ P3 (code) — eval harness (`app/eval/`: fixtures + rule checks + LLM-as-judge + scorecard CLI) and `rubric_score` persistence (give-feedback contract now machine-parseable; orchestrator writes per-criterion A–E rows).
+- ✅ P4.1 — interactive daily-loop API (`app/sessions/interactive.py` stage machine + `app/api/` routes; `Session.stage` persisted; progress endpoint).
+- ✅ P4.2 — React chat loop UI (welcome + school-task paste, stage chips, reload resilience, Vite proxy; zero new deps).
+- ✅ P4.3 — progress view (per-criterion A–E SVG trend from `rubric_score`).
 
-**Next (model: Claude Sonnet 4.6)**
-- ⬜ Live eval run — `python -m app.eval` against Sonnet (needs `LLM_API_KEY` in `backend/.env`); tune skill wording until all 8 pass. This closes P3.
-- ⬜ P4 — FastAPI endpoints + React UI for the daily loop + progress view.
-- ⬜ P5 — interaction logging + eval regression set.
+**Next (model: DeepSeek `deepseek-chat`)**
+- ⬜ Live eval run — `python -m app.eval` against DeepSeek (needs `LLM_API_KEY` in `backend/.env`); tune skill wording until all 8 pass. This closes P3.
+- ⬜ First real student session end-to-end in the browser against DeepSeek.
+- ⬜ P5 — interaction logging + eval regression set + "delete my data" + docker compose.
 
 **Later**
 - ⬜ Extend skill depth to Years 9–12 and persuasive/imaginative.
@@ -108,7 +112,7 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 9. Open questions
 
-- ~~Which LLM for MVP?~~ **Resolved 2026-07-10: single cloud Claude Sonnet 4.6, adapter-swappable.** (see §7)
+- ~~Which LLM for MVP?~~ **Resolved 2026-07-10 (Sonnet); revised 2026-07-17: default now DeepSeek `deepseek-chat`, adapter-swappable.** (see §7)
 - User login for MVP? (Single-user can skip; schema still reserves it.)
 - Source for structured QCAA outcome data (research files already have a lot to extract).
 
@@ -131,6 +135,16 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | `English Circulum.md` | Curriculum reference. |
 
 ## 11. Session log
+
+### 2026-07-17 — Model switch to DeepSeek + P4 complete (API, chat UI, progress view)
+- **Decision:** default LLM switched to DeepSeek `deepseek-chat` (owner request). Added `app/llm/deepseek.py` (OpenAI-compatible, httpx, no new deps), factory branch, config defaults, `.env.example`. Adapter-only change — business logic untouched (validates the §6 design). Anthropic/Sonnet remains config-swappable.
+- P4.1: `app/sessions/interactive.py` stage machine (`start → I do → we do → you do → ended`, `Session.stage` column added — dev DB deleted/recreated); `app/api/` with `POST /api/sessions` (optional `task_prompt`/`context`), `GET /api/sessions/{id}`, `POST .../advance`, `POST .../submit` (runs diagnose→coach→feedback + writes rubric rows), `GET /api/students/{id}/progress`; CORS for Vite ports. Scripted orchestrator untouched.
+- P4.2: frontend rewritten — typed `api.ts`, `ChatView` (welcome + school-task paste, friendly stage chips, continue/submit composer, thinking indicator, inline retry, localStorage reload resilience), Vite `/api`→`:8000` proxy, zero new runtime deps.
+- P4.3: `ProgressView` — per-criterion A–E hand-rolled SVG trend (Okabe–Ito colors, letter axis, dots for single-day data), latest-level chips, empty state.
+- Verified: pytest 91 passed + 4 skipped; ruff green; mypy green; `tsc -b && vite build` green; smoke-tested full loop over HTTP via vite proxy (201 start, both servers killed after).
+- npm on this machine: not on PATH — use `C:\Users\miuid\AppData\Local\Programs\kimi-desktop\resources\resources\runtime\npm.cmd`.
+- Deferred: rubric badges after reload come from a localStorage cache (a `GET /sessions/{id}/feedback` endpoint would be cleaner); `Feedback.strength`/`next_steps` still placeholder text (needs live-model output to design the parser).
+- **Next pick-up:** put the DeepSeek key in `backend/.env` → run `python -m app.eval` (close P3) + first real browser session; then P5 (logging/privacy/packaging).
 
 ### 2026-07-17 — P3 code: eval harness + rubric_score persistence
 - Committed and pushed P1+P2 (`8d0d568`), then implemented Milestone 3 code.

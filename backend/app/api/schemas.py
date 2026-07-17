@@ -7,7 +7,8 @@ from pydantic import BaseModel, Field
 
 
 class StartSessionRequest(BaseModel):
-    task_prompt: str = Field(min_length=1)
+    task_prompt: str | None = Field(default=None, min_length=1)
+    context: str | None = Field(default=None, min_length=1)
     year_level: str = "8"
     text_type: str = "analytical"
 

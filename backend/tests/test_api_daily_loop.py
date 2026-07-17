@@ -280,3 +280,32 @@ def test_cors_allows_dev_origins(api_client: ApiClient) -> None:
     )
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+
+
+def test_start_session_without_task_prompt(api_client: ApiClient) -> None:
+    """The school-task field is optional: an empty body still starts the loop."""
+    client, fake = api_client
+    response = client.post("/api/sessions", json={})
+    assert response.status_code == 201
+    data = response.json()
+    assert data["stage"] == "start"
+    assert data["ended"] is False
+    assert data["learning_intention"] is None
+    assert len(data["turns"]) == 1
+    assert data["turns"][0]["skill"] == "set-success-criteria"
+    # The skill still received a usable fallback prompt.
+    user_message = fake.calls[0][1][0]["content"]
+    assert "task_prompt: General analytical writing practice" in user_message
+
+
+def test_start_session_with_context(api_client: ApiClient) -> None:
+    """Optional context is threaded into the set-success-criteria skill inputs."""
+    client, fake = api_client
+    response = client.post(
+        "/api/sessions",
+        json={"task_prompt": "Analyse a poem", "context": "Due Friday, one paragraph"},
+    )
+    assert response.status_code == 201
+    user_message = fake.calls[0][1][0]["content"]
+    assert "task_prompt: Analyse a poem" in user_message
+    assert "context: Due Friday, one paragraph" in user_message
