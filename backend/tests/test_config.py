@@ -8,12 +8,17 @@ from app.config import Settings
 
 def test_settings_defaults() -> None:
     with patch.dict(os.environ, {}, clear=True):
-        settings = Settings()
+        settings = Settings(llm_provider="fake")
     assert settings.app_env == "development"
-    assert settings.llm_provider == "anthropic"
     assert settings.llm_model == "claude-sonnet-4-6"
     assert settings.database_url == "sqlite:///./english_tutor.db"
     assert settings.llm_api_key is None
+
+
+def test_default_provider_is_anthropic() -> None:
+    with patch.dict(os.environ, {}, clear=True):
+        settings = Settings(llm_api_key="dummy")
+    assert settings.llm_provider == "anthropic"
 
 
 def test_settings_load_from_env(monkeypatch: pytest.MonkeyPatch) -> None:

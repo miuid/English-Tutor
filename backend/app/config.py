@@ -1,6 +1,7 @@
 """Application settings loaded from environment / .env file."""
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -18,6 +19,7 @@ class Settings(BaseSettings):
     llm_provider: str = "anthropic"
     llm_model: str = "claude-sonnet-4-6"
     llm_api_key: str | None = None
+    skills_dir: str = str(Path(__file__).resolve().parent.parent.parent / "skills")
 
     @field_validator("llm_api_key")
     @classmethod

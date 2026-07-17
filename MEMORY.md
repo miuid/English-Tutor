@@ -2,7 +2,7 @@
 
 > Long-term memory for this project. It records the vision, every meaningful decision (with dates and rationale), what's been built, the roadmap, and open questions. **Update this file whenever a decision is made, a milestone is hit, or something important is discovered — and append a dated entry to the Session log (§11) at the end of each working session.** New sessions should read this first.
 
-Last updated: 2026-07-13
+Last updated: 2026-07-17
 
 ---
 
@@ -89,12 +89,14 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 - ✅ MVP scope + architecture plan (`MVP-Plan.md`).
 - ✅ 8 v1 agent skills authored with golden examples (`skills/`).
 - ✅ Static design dry-run of all skills against samples.
+- ✅ P1 — curriculum + rubric data model (Year 8 first).
+- ✅ P0 — project scaffolding + LLM adapter layer (default provider: Anthropic/Sonnet) + skill loader.
+- ✅ P2.1 — Skill execution service (single skill: check-structure).
+- ✅ P2.2 — Coaching skills + diagnose-errors router.
+- ✅ P2.3 — Session orchestrator (daily loop).
 
-**Next (model chosen: Claude Sonnet 4.6 — P0 unblocked)**
-- ⬜ P0 — project scaffolding + LLM adapter layer (default provider: Anthropic/Sonnet) + skill loader.
+**Next (model: Claude Sonnet 4.6)**
 - ⬜ Eval harness — run each SKILL.md through the model against `examples/`, score vs expected (turns dry-run into automated verification).
-- ⬜ P1 — curriculum + rubric data model (Year 8 first).
-- ⬜ P2 — daily loop orchestration (compose the skills end to end).
 - ⬜ P3 — feedback engine tuned to structure + vocabulary.
 - ⬜ P4 — React UI for the daily loop.
 - ⬜ P5 — interaction logging + eval regression set.
@@ -129,6 +131,31 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | `English Circulum.md` | Curriculum reference. |
 
 ## 11. Session log
+
+### 2026-07-17 — P2.2 + P2.3: Coaching skills, diagnosis router, and daily loop orchestrator
+- Implemented DiagnosisRouter in app/skills/router.py: runs diagnose-errors, parses Route to:, and dispatches to the recommended coaching skill (defaulting to give-feedback if invalid).
+- Implemented SessionOrchestrator in app/sessions/orchestrator.py: runs the full daily loop (set-criteria -> model -> guided -> independent -> diagnose -> coach -> feedback), persisting a Session with 7 Attempts and one Feedback row.
+- Added tests/test_diagnosis_router.py and tests/test_session_orchestrator.py; both use FakeProvider so the loop runs without an API key.
+- Verified: pytest 27 passed + 2 skipped; ruff green; mypy green.
+- Next pick-up: step 3.1 Eval runner over golden examples.
+
+### 2026-07-16 — P1: Data layer (DB models, Year 8 curriculum seed, skill registry sync)
+- Implemented P1 data layer: 9 SQLAlchemy models (`app/models.py`), `create_all` on startup (`app/database.py`), cascade tests.
+- Seeded Year 8 QCAA analytical curriculum and A–E rubric criteria via `app/seed.py` + standalone `backend/seed.py`; both idempotent.
+- Added skill registry sync (`app/skills/sync.py`) called in the FastAPI lifespan, upserting 8 skill rows from the loader.
+- Added `curriculum` column to `curriculum_outcome` (not in the original ERD) to keep the multi-curriculum seam (QCAA/NESA) open.
+- Verified: `pytest` 20 passed + 1 skipped; `ruff` green; `mypy` green.
+- Also cleaned up a few lingering ruff/mypy issues: renamed the `Session` variable in `backend/seed.py` and added type annotations to the `db_session` fixture plus test functions in `tests/conftest.py`, `tests/test_models.py`, `tests/test_seed.py`, and `tests/test_skill_sync.py`.
+- **Next pick-up:** step **2.1 Skill execution service** (first skill runs for real with `FakeProvider`).
+
+### 2026-07-15 — Step 0.2–0.4: Config layer, LLM adapter, Skill loader
+- Implemented P0 foundations: config layer (.env, Pydantic Settings, startup validation), LLM adapter layer (LLMProvider Protocol, AnthropicProvider, FakeProvider, factory), and skill loader (loads all 8 skills, parses sections/references/examples, exposes loop_stage).
+- Added missing pp/__init__.py and 	ests/__init__.py to fix mypy package mapping.
+- Fixed 	est_anthropic_provider_calls_sdk to use a real nthropic.types.TextBlock instance.
+- Fixed pp/main.py lifespan return type for mypy (AsyncIterator[None]).
+- Verified: pytest 14 passed + 1 skipped; 
+uff green; mypy green.
+- **Next pick-up:** step **1.1 DB models + init** (SQLAlchemy models for 9 entities, create_all on startup, cascade tests).
 
 ### 2026-07-13 — Step 0.1: Repo scaffold + tooling
 - Created `backend/` (FastAPI, `GET /health`, `pyproject.toml`, `pytest`, `ruff`, `mypy`) and `frontend/` (Vite + React + TS).

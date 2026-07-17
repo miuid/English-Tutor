@@ -2,7 +2,7 @@
 
 > A resumable, multi-session build plan. The project spans weeks; no single session finishes it. Each **step** is sized to fit roughly one working session and has a concrete "Done when" check, so any session can pick up the next unchecked box. Read `CLAUDE.md` → `MEMORY.md` → this file to resume.
 
-Last updated: 2026-07-10
+Last updated: 2026-07-17
 
 ## How to work a session (resume protocol)
 
@@ -42,18 +42,18 @@ S = <½ session · M = ~1 session · L = may spill to 2 sessions.
   - Done when: `uvicorn app.main:app` serves and `GET /health` → 200 `{"status":"ok"}`; `pytest` runs green.
   - Depends on: —
 
-- [ ] **0.2 Config layer** (S)
+- [x] **0.2 Config layer** (S)
   - Goal: settings module loads from `.env` (LLM provider, model, API key, `DATABASE_URL`); `.env.example` committed; real `.env` gitignored.
   - Done when: app boots from config; missing API key raises a clear error; a test asserts settings load and defaults are correct.
   - Depends on: 0.1
 
-- [ ] **0.3 LLM adapter layer** (M)
+- [x] **0.3 LLM adapter layer** (M)
   - Goal: `LLMProvider` protocol (`async generate(system, messages) -> str`); `AnthropicProvider` (Sonnet); `FakeProvider` (returns canned text) for tests; a factory that picks provider from config.
   - Touches: `backend/app/llm/`.
   - Done when: unit test with `FakeProvider` passes; a real-LLM test (marked, skipped without key) returns a completion; switching provider is config-only (no code change).
   - Depends on: 0.2
 
-- [ ] **0.4 Skill loader** (M)
+- [x] **0.4 Skill loader** (M)
   - Goal: read `skills/`; for each skill load `SKILL.md` + reference files + `examples/`; expose `Skill` objects (name, instructions, references, examples, loop_stage).
   - Touches: `backend/app/skills/loader.py`, tests.
   - Done when: loader returns all 8 skills; test asserts count == 8 and that `check-structure` includes its `rubric.md`; a malformed skill dir raises a clear error.
@@ -61,34 +61,34 @@ S = <½ session · M = ~1 session · L = may spill to 2 sessions.
 
 ## Milestone 1 — Data layer (P1)
 
-- [ ] **1.1 DB models + init** (L)
+- [x] **1.1 DB models + init** (L)
   - Goal: SQLAlchemy models for the 9 `ERD.md` entities; `create_all` on startup (no Alembic yet — MVP simplicity).
   - Done when: a test creates student→session→attempt→feedback→rubric_score and reads them back; deleting the student cascades (nothing orphaned).
   - Depends on: 0.1
 
-- [ ] **1.2 Seed Year 8 curriculum + rubric** (M)
+- [x] **1.2 Seed Year 8 curriculum + rubric** (M)
   - Goal: a seed script populating `curriculum_outcome` (Year 8 analytical) and the A–E rubric criteria from `reaserch.md` / `skills/give-feedback/rubric.md`.
   - Done when: running the seed twice is idempotent; a test asserts the expected outcome + criterion rows exist.
   - Depends on: 1.1
 
-- [ ] **1.3 Skill registry sync** (S)
+- [x] **1.3 Skill registry sync** (S)
   - Goal: on startup, upsert `skill` rows (name, version, loop_stage) from the loader.
   - Done when: 8 skill rows after sync; re-running changes nothing (idempotent); test covers it.
   - Depends on: 0.4, 1.1
 
 ## Milestone 2 — Teaching engine (P2)
 
-- [ ] **2.1 Skill execution service (single skill)** (L)
+- [x] **2.1 Skill execution service (single skill)** (L)
   - Goal: given a skill + inputs, compose the prompt (system = skill instructions + references; user = inputs), call the LLM, return output. Start with `check-structure`.
   - Done when: running `check-structure` on its `examples/sample-01` returns a response; a `FakeProvider` unit test asserts the prompt is composed correctly (includes rubric + student text).
   - Depends on: 0.3, 0.4
 
-- [ ] **2.2 Coaching skills + diagnose-errors router** (M)
+- [x] **2.2 Coaching skills + diagnose-errors router** (M)
   - Goal: run `elevate-vocabulary` and `give-feedback` through the same service; `diagnose-errors` returns a structured route and the service dispatches to the named skill.
   - Done when: `diagnose-errors` on the sample routes to `check-structure`; a `FakeProvider` test verifies the dispatch table.
   - Depends on: 2.1
 
-- [ ] **2.3 Session orchestrator (daily loop)** (L)
+- [x] **2.3 Session orchestrator (daily loop)** (L)
   - Goal: a state machine running the 6 stages (set-criteria → model → guided → independent → diagnose→coach → feedback), persisting a `session` with its `attempt`s.
   - Done when: a scripted end-to-end run advances all stages and stores a session with attempts + feedback; test uses `FakeProvider`.
   - Depends on: 2.1, 2.2, 1.1
@@ -162,5 +162,5 @@ Slip is fine — the plan is resumable by design. Adjust as reality lands; updat
 
 ## Progress
 
-Milestones done: **0.1** · Next step: **0.2 Config layer**.
+Milestones done: **0.1–2.3** · Next step: **3.1 Eval runner over golden examples**.
 (When all boxes above are ticked, the MVP is built: the 8 skills run behind a swappable model, drive the daily loop in a browser, and track A–E progress — locally and privately.)
