@@ -99,11 +99,13 @@ S = <½ session · M = ~1 session · L = may spill to 2 sessions.
   - Goal: for each skill, feed `examples/sample-01` to the model and judge the output against `expected-01` (LLM-as-judge + simple rule checks, e.g. "focuses on exactly one gap"). Print a pass/fail scorecard.
   - Done when: `python -m app.eval` runs all fixtures and prints results; the 2 weakness skills pass.
   - Depends on: 2.1
+  - **Status 2026-07-17:** harness built (`app/eval/`: fixtures, rule registry, strict LLM-as-judge, scorecard CLI with `--skill/--no-judge/--verbose`, non-zero exit on failure). Verified end-to-end with `LLM_PROVIDER=fake` (8 cases run, scorecard prints, exit code reflects failures). Remaining: live run against Sonnet (`LLM_API_KEY` in `backend/.env`) to confirm the 2 weakness skills pass.
 
 - [ ] **3.2 Tune skills to green + persist rubric_score** (M)
   - Goal: adjust skill wording where eval fails; ensure `give-feedback` emits per-criterion A–E that persists to `rubric_score` (the North Star table).
   - Done when: eval green for all 8; a graded attempt writes `rubric_score` rows (criterion + A–E + timestamp).
   - Depends on: 3.1, 1.1
+  - **Status 2026-07-17:** rubric_score persistence done — `give-feedback` output contract now mandates a machine-parseable `## Per-criterion levels` section; `app/skills/rubric_parser.py` parses it; the orchestrator writes `RubricScore` rows (criterion + level + note + timestamp) with each persisted Feedback; tested with FakeProvider. Remaining: tune skill wording where the live eval fails (needs API key).
 
 ## Milestone 4 — API + UI (P4)
 
@@ -162,5 +164,5 @@ Slip is fine — the plan is resumable by design. Adjust as reality lands; updat
 
 ## Progress
 
-Milestones done: **0.1–2.3** · Next step: **3.1 Eval runner over golden examples**.
+Milestones done: **0.1–2.3**; **3.1 + 3.2 code complete** (eval harness + rubric_score persistence, 75 tests green) · Next step: **live eval run against Sonnet to close 3.1/3.2** (needs `LLM_API_KEY` in `backend/.env`), then **4.1 FastAPI endpoints for the loop**.
 (When all boxes above are ticked, the MVP is built: the 8 skills run behind a swappable model, drive the daily loop in a browser, and track A–E progress — locally and privately.)

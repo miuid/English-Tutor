@@ -94,11 +94,11 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 - ✅ P2.1 — Skill execution service (single skill: check-structure).
 - ✅ P2.2 — Coaching skills + diagnose-errors router.
 - ✅ P2.3 — Session orchestrator (daily loop).
+- ✅ P3 (code) — eval harness (`app/eval/`: fixtures + rule checks + LLM-as-judge + scorecard CLI) and `rubric_score` persistence (give-feedback contract now machine-parseable; orchestrator writes per-criterion A–E rows).
 
 **Next (model: Claude Sonnet 4.6)**
-- ⬜ Eval harness — run each SKILL.md through the model against `examples/`, score vs expected (turns dry-run into automated verification).
-- ⬜ P3 — feedback engine tuned to structure + vocabulary.
-- ⬜ P4 — React UI for the daily loop.
+- ⬜ Live eval run — `python -m app.eval` against Sonnet (needs `LLM_API_KEY` in `backend/.env`); tune skill wording until all 8 pass. This closes P3.
+- ⬜ P4 — FastAPI endpoints + React UI for the daily loop + progress view.
 - ⬜ P5 — interaction logging + eval regression set.
 
 **Later**
@@ -131,6 +131,15 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | `English Circulum.md` | Curriculum reference. |
 
 ## 11. Session log
+
+### 2026-07-17 — P3 code: eval harness + rubric_score persistence
+- Committed and pushed P1+P2 (`8d0d568`), then implemented Milestone 3 code.
+- Built `app/eval/`: fixture discovery over all 8 skills' `examples/`, sample→inputs parser, deterministic rule-check registry (generic + per-skill: give-feedback ≤2 next steps & metacognitive prompt, diagnose-errors `Route to:` line), strict LLM-as-judge (`✓/✗` per criterion + `VERDICT: PASS|FAIL`, malformed = ERROR never pass), scorecard CLI `python -m app.eval` (`--skill/--no-judge/--verbose`, exit 1 on any failure).
+- 3.2 persistence: `give-feedback` SKILL.md output contract now mandates a `## Per-criterion levels` section (`- <criterion>: **<A–E>** — <note>`); new `app/skills/rubric_parser.py`; orchestrator appends `RubricScore` rows to the persisted Feedback (outcome_id=None — seeded outcomes don't map 1:1 to rubric criteria).
+- Verified: pytest 75 passed + 3 skipped; ruff green; mypy green. `LLM_PROVIDER=fake python -m app.eval` runs all 8 cases and prints the scorecard (canned fake output fails some checks by design — plumbing + exit codes verified).
+- Env note: pytest needs `TMP/TEMP` pointed at `backend/.tmp` on this machine (Windows temp-dir permission quirk); `.tmp` gitignored.
+- **Blocked (needs owner's Anthropic key):** live eval run to close 3.1/3.2 — put `LLM_API_KEY=...` in `backend/.env`, then `python -m app.eval`; tune skill wording until all 8 pass. Then step 4.1 (FastAPI endpoints).
+- **Next pick-up:** live `python -m app.eval` against Sonnet; then P4.1.
 
 ### 2026-07-17 — P2.2 + P2.3: Coaching skills, diagnosis router, and daily loop orchestrator
 - Implemented DiagnosisRouter in app/skills/router.py: runs diagnose-errors, parses Route to:, and dispatches to the recommended coaching skill (defaulting to give-feedback if invalid).

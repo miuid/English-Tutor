@@ -6,11 +6,12 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DBSession
 
-from app.models import Attempt, Feedback, Session, Student
+from app.models import Attempt, Feedback, RubricScore, Session, Student
 from app.models import Skill as SkillRow
 from app.skills.executor import SkillExecutionService
 from app.skills.loader import Skill
 from app.skills.router import DiagnosisRouter
+from app.skills.rubric_parser import parse_rubric_levels
 
 
 class SessionOrchestrator:
@@ -120,6 +121,14 @@ class SessionOrchestrator:
             strength="see feedback output",
             next_steps="see feedback output",
         )
+        for parsed in parse_rubric_levels(feedback_output):
+            feedback.rubric_scores.append(
+                RubricScore(
+                    criterion_name=parsed.criterion_name,
+                    level=parsed.level,
+                    note=parsed.note,
+                )
+            )
         self.db.add(feedback)
         db_session.ended_at = datetime.now(UTC)
         self.db.commit()

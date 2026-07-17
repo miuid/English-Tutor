@@ -28,7 +28,7 @@ Give criterion-referenced feedback on a completed response: a QCAA-style A–E j
 
 ## Method
 
-1. Score `student_text` against each criterion in `rubric.md` and assign an A–E per criterion (and an overall level in `summative` mode).
+1. Score `student_text` against each criterion in `rubric.md` and assign an A–E per criterion, naming each criterion exactly as in `rubric.md` (and an overall level in `summative` mode).
 2. Name **one specific strength** — a real move the student made, not empty praise.
 3. Identify the **1–2 highest-leverage next steps** (never a long list). Prefer the step that would move the most criteria up a level.
 4. For each next step, say *what* to do and *why it lifts the grade* — tie to the standard descriptor ("to reach a B here, explain the effect, don't just quote").
@@ -38,16 +38,18 @@ Give criterion-referenced feedback on a completed response: a QCAA-style A–E j
 ## Output contract
 
 ```
-Against your criteria:
-  <criterion 1>: <A–E>  — <one line>
-  <criterion 2>: <A–E>  — <one line>
-  (Overall: <A–E>)          ← summative mode only
+## Per-criterion levels
+- <criterion name from rubric.md, exactly>: **<A–E level>** — <short note>
+- … (one line per rubric criterion; level is a single letter A–E, optionally + or -)
+(Overall: **<A–E>**)        ← summative mode only
 Strength: <one specific thing you did well>
 Your 1–2 next steps to level up:
   1. <what> — <why it raises the grade, tied to the standard>
   2. <what> — <why>   (optional)
 Self-check: how would you rate yourself against these criteria? Let's compare.
 ```
+
+The `## Per-criterion levels` heading and the `- <name>: **<level>** — <note>` line shape are required exactly as shown — the backend parses them to record per-criterion progress over time.
 
 ## Success criteria (drives eval)
 
