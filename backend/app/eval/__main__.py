@@ -51,7 +51,14 @@ def main(argv: list[str] | None = None) -> int:
 
     provider = create_llm_provider(settings)
     executor = SkillExecutionService(provider=provider)
-    results = asyncio.run(run_cases(cases, executor, provider, judge=not args.no_judge))
+    all_names = tuple(skill.name for skill in skills)
+    results = asyncio.run(
+        run_cases(
+            cases, executor, provider,
+            judge=not args.no_judge,
+            all_skill_names=all_names,
+        )
+    )
 
     print(render_scorecard(results, verbose=args.verbose))
     return 0 if all(result.status == PASS for result in results) else 1

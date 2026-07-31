@@ -17,7 +17,14 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DBSession
 
-from app.models import Attempt, Feedback, RubricScore, Session, Student
+from app.models import (
+    Attempt,
+    Feedback,
+    InteractionLog,
+    RubricScore,
+    Session,
+    Student,
+)
 from app.models import Skill as SkillRow
 from app.skills.executor import SkillExecutionService
 from app.skills.loader import Skill
@@ -87,7 +94,8 @@ class InteractiveLoop:
         self.db.add(session)
         self.db.flush()
 
-        criteria = await self.executor.execute(
+        criteria = await self._execute_and_log(
+            session,
             self.skills["set-success-criteria"],
             {
                 "year_level": year_level,
@@ -142,7 +150,8 @@ class InteractiveLoop:
             raise StageConflictError(msg)
         skill_name, task_type, next_stage = transition
 
-        output = await self.executor.execute(
+        output = await self._execute_and_log(
+            session,
             self.skills[skill_name],
             self._base_inputs(session),
         )
@@ -173,7 +182,8 @@ class InteractiveLoop:
         self.db.flush()
 
         if session.stage == "we do":
-            follow_up = await self.executor.execute(
+            follow_up = await self._execute_and_log(
+                session,
                 self.skills["guided-practice"],
                 self._base_inputs(session, student_text=text),
             )
@@ -188,14 +198,22 @@ class InteractiveLoop:
         coach_inputs = self._base_inputs(
             session, task_prompt=task_for_student, student_text=text
         )
-        diagnosis, coaching, route = await self.router.coach(coach_inputs)
+        diagnosis = await self._execute_and_log(
+            session, self.skills["diagnose-errors"], coach_inputs
+        )
+        route = self.router.parse_route(diagnosis)
+        coaching = await self._execute_and_log(
+            session, self.skills[route], coach_inputs
+        )
         diagnosis_turn = self._save_tutor_turn(
             session, "diagnose-errors", "diagnosis", "triage", task_for_student, diagnosis
         )
         coach_turn = self._save_tutor_turn(
             session, route, "coach", "coach", task_for_student, coaching
         )
-        feedback_output = await self.executor.execute(self.skills["give-feedback"], coach_inputs)
+        feedback_output = await self._execute_and_log(
+            session, self.skills["give-feedback"], coach_inputs
+        )
         feedback_turn = self._save_tutor_turn(
             session, "give-feedback", "feedback", "end", task_for_student, feedback_output
         )
@@ -222,6 +240,41 @@ class InteractiveLoop:
             tutor_turns=[diagnosis_turn, coach_turn, feedback_turn],
             feedback=feedback,
         )
+
+    async def _execute_and_log(
+        self,
+        session: Session,
+        skill: Skill,
+        inputs: dict[str, str],
+    ) -> str:
+        "Run a skill and persist an InteractionLog row."
+        output = await self.executor.execute(skill, inputs)
+        self._log_interaction(session, skill, inputs, output)
+        return output
+
+    def _log_interaction(
+        self,
+        session: Session,
+        skill: Skill,
+        inputs: dict[str, str],
+        output: str,
+    ) -> None:
+        "Write one InteractionLog row (best-effort; never blocks the turn)."
+        try:
+            skill_row = self.db.execute(
+                select(SkillRow).where(SkillRow.name == skill.name)
+            ).scalar_one_or_none()
+            self.db.add(
+                InteractionLog(
+                    session_id=session.id,
+                    skill_id=skill_row.id if skill_row is not None else None,
+                    model=self.executor.model_name,
+                    input=inputs.get("student_text", ""),
+                    output=output,
+                )
+            )
+        except Exception:
+            pass
 
     def _get_or_create_student(self, year_level: str) -> Student:
         """Single-user MVP: reuse the first student, else create a default one."""

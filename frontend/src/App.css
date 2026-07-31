@@ -464,6 +464,46 @@
   font-size: 2.2rem;
 }
 
+/* Markdown-rendered elements inside tutor bubbles -------------------------- */
+
+.bubble-text {
+  line-height: 1.55;
+}
+
+.bubble-text .tutor-para {
+  margin: 0 0 0.6rem;
+}
+
+.bubble-text .tutor-para:last-child {
+  margin-bottom: 0;
+}
+
+.bubble-text .tutor-list {
+  margin: 0 0 0.6rem;
+  padding-left: 1.2rem;
+}
+
+.bubble-text .tutor-list li {
+  margin-bottom: 0.35rem;
+}
+
+.bubble-text .tutor-quote {
+  margin: 0 0 0.6rem;
+  padding: 0.5rem 0.8rem;
+  border-left: 3px solid var(--accent);
+  background: rgba(180, 83, 9, 0.05);
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+}
+
+.bubble-text em {
+  font-style: italic;
+}
+
+.bubble-text strong {
+  font-weight: 700;
+}
+
 /* Small screens ------------------------------------------------------------- */
 
 @media (max-width: 560px) {

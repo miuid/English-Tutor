@@ -19,7 +19,7 @@ from app.api.schemas import (
     SubmitRequest,
     TurnOut,
 )
-from app.models import Attempt, Feedback, RubricScore, Session, Student
+from app.models import Attempt, Feedback, InteractionLog, RubricScore, Session, Student
 from app.sessions.interactive import InteractiveLoop, SessionNotFoundError, StageConflictError
 
 router = APIRouter(prefix="/api")
@@ -133,6 +133,23 @@ async def submit_student_text(
         turns=[_turn_out(turn) for turn in turns],
         feedback=_feedback_out(result.feedback) if result.feedback is not None else None,
     )
+
+
+@router.delete("/students/{student_id}", status_code=204)
+async def delete_student(
+    student_id: uuid.UUID,
+    db: DBSession = Depends(get_db),
+) -> None:
+    """Delete a student and all their data (privacy requirement).
+
+    Cascades through sessions, attempts, feedback, rubric scores,
+    success criteria, and interaction logs.
+    """
+    student = db.get(Student, student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    db.delete(student)
+    db.commit()
 
 
 @router.get("/students/{student_id}/progress")

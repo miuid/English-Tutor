@@ -93,9 +93,11 @@ async def run_cases(
     provider: LLMProvider,
     *,
     judge: bool = True,
+    all_skill_names: tuple[str, ...] | None = None,
 ) -> list[CaseResult]:
     """Run cases sequentially (few fixtures; keeps provider logs ordered)."""
-    context = RuleContext(skill_names=tuple(case.skill.name for case in cases))
+    names = all_skill_names if all_skill_names else tuple(case.skill.name for case in cases)
+    context = RuleContext(skill_names=names)
     results: list[CaseResult] = []
     for case in cases:
         results.append(await run_case(case, executor, provider, context, judge=judge))

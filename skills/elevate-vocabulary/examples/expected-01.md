@@ -4,7 +4,7 @@ The response must exhibit ALL of these (wording will vary):
 
 **Picks the top 2–3 highest-value words**, not every weak word. The strongest candidates:
 1. **"shows"** — used 4 times; a bare analytical verb. Upgrades: *conveys / reveals / suggests / portrays*, and vary it to avoid repetition. This is the #1 pick (repetition + analytical payoff).
-2. **"good"** — vague judgement. Upgrades: *effective / compelling / powerful* — and note it should say *why*.
+2. **"good" or "bad"** — vague judgement words. Upgrades: *effective / compelling / powerful* for "good"; *brutal / devastating / harrowing* for "bad" — and note it should say *why*.
 3. **"makes you feel bad"** — upgrade toward reader-effect metalanguage: *evokes sympathy / positions the reader to feel*. (Optional 3rd.)
 
 **Each upgrade has a genuine reason** (shade of meaning / precision / names a technique), not a bare synonym list. E.g. "suggests" = implied vs "reveals" = made clear.

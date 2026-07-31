@@ -42,6 +42,7 @@ Conversational, one step at a time:
 Guiding question: <question about their text>
 Scaffold (level: <full|partial|minimal>): <stem / hint, sized to level>
 Your turn: <what to write/answer now>
+Next step hint: <brief fading signal — e.g. "If you get this, next time try it without the stem">
 ```
 After the student responds, next turn affirms + fades or re-prompts.
 

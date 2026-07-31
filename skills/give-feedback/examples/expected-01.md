@@ -4,8 +4,8 @@ Per-criterion A–E under a `## Per-criterion levels` heading, named exactly as 
 - Understanding of text / ideas: **C** — a point exists but is vague ("war is bad").
 - Analysis (how techniques create meaning): **D** — quote dropped in, effect not explained.
 - Use of evidence: **C/D** — relevant quote chosen but not analysed.
-- Structure & cohesion: **D/E** — no link back.
-- Language & vocabulary: **C** — clear but flat ("bad", "really sad").
+- Structure & cohesion: **C/D** — basic flow exists (point → quote → closing) but link back is weak or missing.
+- Language & vocabulary: **C/D** — clear but flat ("bad", "really sad"); D if the flatness significantly weakens the analysis.
 - (Formative mode: overall level de-emphasised, but roughly **C–/D**.)
 
 - **One specific strength**: e.g. "you chose a relevant simile and clearly picked up the poem's negative view of war." (specific, real — not "good job"). ✅

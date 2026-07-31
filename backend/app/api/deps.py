@@ -30,8 +30,11 @@ def get_provider(settings: Settings = Depends(get_settings)) -> LLMProvider:
     return create_llm_provider(settings)
 
 
-def get_executor(provider: LLMProvider = Depends(get_provider)) -> SkillExecutionService:
-    return SkillExecutionService(provider=provider)
+def get_executor(
+    provider: LLMProvider = Depends(get_provider),
+    settings: Settings = Depends(get_settings),
+) -> SkillExecutionService:
+    return SkillExecutionService(provider=provider, model_name=settings.llm_model)
 
 
 @lru_cache

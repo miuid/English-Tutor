@@ -3,7 +3,7 @@
 - Leads with a guiding QUESTION about the student's own line, e.g. "What happens to leaves in autumn — and what does comparing dying soldiers to them make you picture?" ✅ (question before scaffold)
 - Offers a PARTIAL scaffold (stem only, no word bank), e.g. "The poet compares ___ to ___, which suggests ___." matching `scaffold_level: partial`. ✅
 - Asks the student to fill it in themselves — does NOT complete the sentence. ✅
-- Signals fading for the next step ("if you nail this, next quote you'll do without the stem").
+- Signals fading for the next step, either now ("if you nail this, next quote you'll do without the stem") or after the student responds.
 - Works on the student's actual war-poem line, one step only.
 
 ## Fail conditions

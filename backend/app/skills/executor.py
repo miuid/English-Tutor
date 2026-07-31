@@ -11,6 +11,7 @@ class SkillExecutionService:
     """Run a skill's instructions against the configured LLM provider."""
 
     provider: LLMProvider
+    model_name: str = "unknown"
 
     async def execute(self, skill: Skill, inputs: dict[str, str]) -> str:
         """Compose and send the skill prompt, returning the LLM response."""

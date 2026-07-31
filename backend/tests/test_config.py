@@ -8,7 +8,7 @@ from app.config import Settings
 
 def test_settings_defaults() -> None:
     with patch.dict(os.environ, {}, clear=True):
-        settings = Settings(llm_provider="fake")
+        settings = Settings(llm_provider="fake", _env_file=None)
     assert settings.app_env == "development"
     assert settings.llm_model == "deepseek-chat"
     assert settings.database_url == "sqlite:///./english_tutor.db"
@@ -17,7 +17,7 @@ def test_settings_defaults() -> None:
 
 def test_default_provider_is_deepseek() -> None:
     with patch.dict(os.environ, {}, clear=True):
-        settings = Settings(llm_api_key="dummy")
+        settings = Settings(llm_api_key="dummy", _env_file=None)
     assert settings.llm_provider == "deepseek"
 
 
@@ -40,7 +40,7 @@ def test_missing_api_key_raises_clear_error(monkeypatch: pytest.MonkeyPatch) -> 
         ValueError,
         match="LLM_API_KEY is required when LLM_PROVIDER='anthropic'",
     ):
-        Settings()
+        Settings(_env_file=None)
 
 
 def test_default_deepseek_provider_requires_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -50,12 +50,12 @@ def test_default_deepseek_provider_requires_api_key(monkeypatch: pytest.MonkeyPa
         ValueError,
         match="LLM_API_KEY is required when LLM_PROVIDER='deepseek'",
     ):
-        Settings()
+        Settings(_env_file=None)
 
 
 def test_fake_provider_does_not_require_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM_PROVIDER", "fake")
     monkeypatch.delenv("LLM_API_KEY", raising=False)
-    settings = Settings()
+    settings = Settings(_env_file=None)
     assert settings.llm_provider == "fake"
     assert settings.llm_api_key is None

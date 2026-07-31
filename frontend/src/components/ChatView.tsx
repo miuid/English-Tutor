@@ -15,7 +15,7 @@ import {
   saveFeedback,
   saveStoredSessionId,
 } from '../storage'
-import type { FeedbackOut, TurnOut } from '../types'
+import Markdown from './Markdown'
 
 type Phase = 'loading' | 'start' | 'active'
 
@@ -264,14 +264,14 @@ export default function ChatView({ onStudent }: ChatViewProps) {
           turn.kind === 'student' ? (
             <div key={turn.id} className="msg-row student">
               <div className="bubble student-bubble">
-                <p className="bubble-text">{turn.text}</p>
+                <Markdown text={turn.text} className="bubble-text" />
               </div>
             </div>
           ) : (
             <div key={turn.id} className={`msg-row tutor${turn.mode === 'end' ? ' feedback-row' : ''}`}>
               <div className={`bubble tutor-bubble${turn.mode === 'end' ? ' feedback-bubble' : ''}`}>
                 <span className="turn-chip">{stageLabel(turn.mode)}</span>
-                <p className="bubble-text">{turn.text}</p>
+                <Markdown text={turn.text} className="bubble-text" />
                 {turn.mode === 'end' && feedback ? (
                   <div className="level-badges" aria-label="Your levels for this piece">
                     {feedback.rubric_scores.map((score) => (
