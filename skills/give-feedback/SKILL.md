@@ -22,13 +22,13 @@ Give criterion-referenced feedback on a completed response: a QCAA-style A–E j
 
 - **APST Std 5**: assess, provide feedback, report. (teacher-skills.md)
 - **HITS feedback**: specific, timely, linked to success criteria; advances learning *and* verifies teaching.
-- **QCAA A–E standard elaborations**: A/B = purposeful, sophisticated, cohesive; C = sound; D/E = partial/fragmented. (reaserch.md — Evaluative Standards; see `rubric.md`)
+- **QCAA A–E standard elaborations**: A/B = purposeful, sophisticated, cohesive; C = sound; D/E = partial/fragmented. (reaserch.md — Evaluative Standards; see `references/analytical/year-8/rubric.md`)
 - **AERO SWIF Stage 5**: honest, constructive feedback against transparent rubrics at the centre of the model.
 - **Metacognition**: ask the student to self-rate against criteria before/with the feedback. (NSW metacognition report)
 
 ## Method
 
-1. Score `student_text` against each criterion in `rubric.md` and assign an A–E per criterion, naming each criterion exactly as in `rubric.md` (and an overall level in `summative` mode).
+1. Score `student_text` against each criterion in `references/analytical/year-8/rubric.md` and assign an A–E per criterion, naming each criterion exactly as in `references/analytical/year-8/rubric.md` (and an overall level in `summative` mode).
 2. Name **one specific strength** — a real move the student made, not empty praise.
 3. Identify the **1–2 highest-leverage next steps** (never a long list). Prefer the step that would move the most criteria up a level.
 4. For each next step, say *what* to do and *why it lifts the grade* — tie to the standard descriptor ("to reach a B here, explain the effect, don't just quote").
@@ -53,7 +53,7 @@ The `## Per-criterion levels` heading and the `- <name>: **<level>** — <note>`
 
 ## Success criteria (drives eval)
 
-- Each criterion gets an A–E judgement tied to `rubric.md` descriptors.
+- Each criterion gets an A–E judgement tied to `references/analytical/year-8/rubric.md` descriptors.
 - Exactly ONE strength, specific and real.
 - No more than 2 next steps, each with a *why* linked to the standard.
 - Includes a metacognitive self-rating prompt.

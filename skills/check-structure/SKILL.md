@@ -31,7 +31,7 @@ Not for: pure grammar/spelling (use `diagnose-errors`), or word-choice quality (
 Follow these steps in order. Think through 1–3 silently; show only what steps 4–6 produce.
 
 1. **Segment.** Break `student_text` into its functional moves and label each as Point (P), Explanation (E1), Evidence (E2), Link (L), or "unclassified". Note order.
-2. **Score each PEEL element** using `rubric.md` (Present & strong / Present but weak / Missing). Also check paragraph-to-paragraph and thesis-level structure if it's an essay.
+2. **Score each PEEL element** using `references/analytical/year-8/rubric.md` (Present & strong / Present but weak / Missing). Also check paragraph-to-paragraph and thesis-level structure if it's an essay.
 3. **Pick ONE highest-leverage gap.** Priority order when several are weak: missing/unclear Point → Evidence not analysed (E2 without E1) → no Link → wrong order. Only one is the focus of this turn.
 4. **Name what's working** in one specific sentence (not empty praise — point to an actual move the student made).
 5. **Explain the one gap** in plain Year 8 language, and **model it on a *different* topic** (never rewrite the student's own sentence — that's ghostwriting). Show a 1–2 sentence "I do" example of that move done well.

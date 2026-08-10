@@ -3,8 +3,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
     env_file:
       - ./backend/.env
     environment:
@@ -13,6 +11,20 @@ services:
     volumes:
       - tutor-data:/data
       - ./skills:/skills:ro
+    # Internal only — LAN traffic reaches the API through the frontend nginx proxy.
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      # The single entry point for the whole app (UI + /api proxy).
+      - "${WEB_PORT:-80}:80"
+    depends_on:
+      - backend
     restart: unless-stopped
 
 volumes:

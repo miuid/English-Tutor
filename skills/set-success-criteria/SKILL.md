@@ -27,7 +27,7 @@ Turn a curriculum outcome (or the day's task) into a single clear learning inten
 
 1. Read the `outcome`/task. Identify the ONE core capability it targets.
 2. Write a **learning intention** in plain language: "We are learning to …".
-3. Derive **2–4 success criteria** as "I can…" statements — concrete, observable, checkable by the student. Pull phrasing patterns from `criteria-bank.md`; adapt to the specific text/topic.
+3. Derive **2–4 success criteria** as "I can…" statements — concrete, observable, checkable by the student. Pull phrasing patterns from `references/analytical/year-8/criteria-bank.md`; adapt to the specific text/topic.
 4. If `focus_skill` is set, make one criterion explicitly about it.
 5. Keep the count small (Year 8: 2–3). More criteria = less focus.
 6. Present the intention + criteria, and tell the student they'll rate themselves against these at the end.

@@ -25,7 +25,7 @@ Read a student's response and classify what's holding it back by *error type* â€
 
 ## Method
 
-1. Read `student_text` against the taxonomy in `taxonomy.md`.
+1. Read `student_text` against the taxonomy in `references/analytical/year-8/taxonomy.md`.
 2. Tag each category present as: not an issue / minor / major.
 3. Choose the **primary** issue by leverage (see taxonomy priority): argument/point > analysis/evidence > structure/cohesion > language/vocabulary > mechanics.
 4. Output the diagnosis + the recommended route (which skill should act next).

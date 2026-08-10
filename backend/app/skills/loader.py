@@ -24,7 +24,7 @@ class Skill:
     success_criteria: str
     guardrails: str
     loop_stage: str
-    references: dict[str, str]
+    packs: dict[str, dict[str, str]]
     examples: list[SkillExample]
 
 
@@ -84,7 +84,7 @@ def load_skill(skill_dir: Path) -> Skill:
         msg = f"Skill {skill_dir.name} is missing required sections: {', '.join(missing)}"
         raise ValueError(msg)
 
-    references = _load_references(skill_dir)
+    packs = _load_packs(skill_dir)
     examples = _load_examples(skill_dir / "examples")
 
     return Skill(
@@ -100,7 +100,7 @@ def load_skill(skill_dir: Path) -> Skill:
         success_criteria=sections["success criteria"],
         guardrails=sections["guardrails"],
         loop_stage=LOOP_STAGES.get(skill_dir.name, "unknown"),
-        references=references,
+        packs=packs,
         examples=examples,
     )
 
@@ -123,14 +123,21 @@ def _parse_sections(raw: str) -> dict[str, str]:
     return sections
 
 
-def _load_references(skill_dir: Path) -> dict[str, str]:
-    """Load all .md files in the skill directory except SKILL.md."""
-    references: dict[str, str] = {}
-    for ref_file in skill_dir.glob("*.md"):
-        if ref_file.name == "SKILL.md":
-            continue
-        references[ref_file.name] = ref_file.read_text(encoding="utf-8")
-    return references
+def _load_packs(skill_dir: Path) -> dict[str, dict[str, str]]:
+    """Load references/**/*.md into packs keyed by "shared" or "<text_type>/<year_band>".
+
+    A file at ``references/shared/<name>.md`` lands in the ``shared`` pack; a file
+    at ``references/<text_type>/<year_band>/<name>.md`` lands in the
+    ``"<text_type>/<year_band>"`` pack. Each pack maps filename → content.
+    """
+    packs: dict[str, dict[str, str]] = {}
+    references_dir = skill_dir / "references"
+    if not references_dir.is_dir():
+        return packs
+    for ref_file in sorted(references_dir.rglob("*.md")):
+        pack_key = "/".join(ref_file.relative_to(references_dir).parent.parts) or "shared"
+        packs.setdefault(pack_key, {})[ref_file.name] = ref_file.read_text(encoding="utf-8")
+    return packs
 
 
 def _load_examples(examples_dir: Path) -> list[SkillExample]:

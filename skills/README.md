@@ -8,11 +8,17 @@ These are the teaching skills that make the tutor act like a top Year 8–12 Eng
 skills/
   <skill-name>/
     SKILL.md            # the skill itself (required)
-    <reference>.md      # optional supporting reference (rubric, word tiers, etc.)
+    references/
+      shared/           # optional cross-type reference content
+      <text-type>/      # e.g. analytical (later: persuasive, imaginative)
+        <year-band>/    # year-8 | year-9-10 | year-11-12
+          <reference>.md  # supporting reference for that pack (rubric, word tiers, etc.)
     examples/
       sample-NN.md      # a real-ish student input (eval fixture)
       expected-NN.md    # the behaviour a good response must exhibit
 ```
+
+Reference content is organised into **packs** keyed by `(text-type, year-band)`. The backend loads `shared` plus the pack matching the session's `text_type` and `year_level` (≤8 → `year-8`, 9–10 → `year-9-10`, ≥11 → `year-11-12`; unparseable → `year-8`); if no exact pack exists it falls back to the same text type's nearest band and flags the degradation in the response. Skill instructions stay generic — depth lives in the packs.
 
 ## SKILL.md required sections
 

@@ -16,6 +16,7 @@ import {
   saveStoredSessionId,
 } from '../storage'
 import Markdown from './Markdown'
+import type { FeedbackOut, TurnOut } from '../types'
 
 type Phase = 'loading' | 'start' | 'active'
 

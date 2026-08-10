@@ -82,6 +82,7 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | 2026-07-10 | Brainstorm closed; produced **lightweight PRD + simple ERD** rather than heavy docs | Fill the genuine gaps (UX, metric, privacy, schema) without over-engineering. |
 | 2026-07-10 | **MVP model = single cloud Claude Sonnet 4.6** for all stages; adapter keeps it swappable | Demanding coaching task rewards a strong model while skills are still being tuned; ~$4/mo for one student is negligible; privacy rule permits cloud. Local Ollama (Qwen 2.5 14B) and per-stage routing deferred to later/scale. Prices as of 2026-07: Sonnet 4.6 $3/$15, Opus 4.8 $5/$25, Haiku 4.5 $1/$5 per 1M tok. |
 | 2026-07-17 | **MVP default model switched to DeepSeek `deepseek-chat`**; Anthropic/Sonnet remains a config-only swap | Owner decision. The adapter layer paid off: the switch touched only `app/llm/deepseek.py` (new), factory, and config defaults — zero business-logic changes. Eval + live runs now need `LLM_API_KEY` (DeepSeek) in `backend/.env`. |
+| 2026-07-31 | **Phase 2 decisions D1–D4 confirmed** (see `PHASE-2-PLAN.md` §1): D1 per-family local install for Beta (hosted multi-tenant stays GA); D2 senior = framework + IA1 depth only; D3 parents see trends, not full essays; D4 order P6→P9→P7→P8→B1–B6 | Owner confirmed all four recommendations unchanged. Unblocks the Phase 2 checklist (`IMPLEMENTATION-PLAN-2.md`). |
 
 ## 8. Milestones / roadmap
 
@@ -100,14 +101,13 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 - ✅ P4.2 — React chat loop UI (welcome + school-task paste, stage chips, reload resilience, Vite proxy; zero new deps).
 - ✅ P4.3 — progress view (per-criterion A–E SVG trend from `rubric_score`).
 
-**Next**
-- ⬜ First real student session end-to-end in the browser against DeepSeek (owner to test).
-- ⬜ Extend skill depth to Years 9–12 and persuasive/imaginative.
+**Next (Phase 2 — planned 2026-07-31, see `PHASE-2-PLAN.md`; 4 decision points D1–D4 await owner confirmation)**
+- ⬜ Track A — skill depth: P6 framework generalisation (reference packs) → P9 Year 9–10 analytical (hard deadline: Feb 2027 school year) → P7 persuasive → P8 imaginative → P10 senior framework (timing by beta family mix).
+- ⬜ Track B — Beta (5–10 QLD families, per-family local install): B1 distribution + student profiles → B2 baseline assessment → B3 loop completion (`fix-mechanics`, `spaced-review`, weekly mock) → B4 motivation → B5 parent layer → B6 ops → recruit.
+- ⬜ 5 new skills planned: `strengthen-argument`, `craft-voice`, `fix-mechanics`, `spaced-review`, `baseline-assessment` (→ 13 total).
 
-**Later**
-- ⬜ Extend skill depth to Years 9–12 and persuasive/imaginative.
-- ⬜ Fill remaining skills: `fix-mechanics`; spaced-review / retrieval; metacognition coaching.
-- ⬜ Beta: motivation layer, parent layer. GA: multi-tenant, Postgres, deploy.
+**Later (GA)**
+- ⬜ Hosted multi-tenant, real auth, Postgres, deployment; NESA/other states; black-swan experiments (voice, teach-the-AI, character interrogation).
 
 ## 9. Open questions
 
@@ -122,7 +122,9 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | `CLAUDE.md` | Entry point for any session — read first. |
 | `MEMORY.md` | This file — decisions, history, roadmap. |
 | `MVP-Plan.md` | MVP scope, architecture, data model, phased build plan. |
-| `IMPLEMENTATION-PLAN.md` | Resumable multi-session build checklist (~20 steps, 6 milestones). The working to-do when building. |
+| `IMPLEMENTATION-PLAN.md` | Resumable multi-session build checklist (MVP P0–P5, complete). |
+| `PHASE-2-PLAN.md` | Phase 2 plan: skill-depth extension (Y9–12, persuasive/imaginative) + Beta features. D1–D4 confirmed 2026-07-31. |
+| `IMPLEMENTATION-PLAN-2.md` | Phase 2 resumable build checklist (P6–P10 + B1–B6). The working to-do while building Phase 2. |
 | `PRD.md` | User stories, daily-loop UX, North Star metric, non-functional (privacy) requirements. |
 | `ERD.md` | Data model: entities, fields, relationships (Mermaid), key queries, privacy/retention. |
 | `skills/README.md` | Skill authoring convention + skill index + loop composition. |
@@ -134,6 +136,31 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | `English Circulum.md` | Curriculum reference. |
 
 ## 11. Session log
+
+### 2026-08-05 — Full-stack Docker deployment for LAN server
+- Owner asked how the app deploys. Answer before this change: **backend-only** — P5.3 containerised the backend, but the frontend was dev-only (Vite dev server), so there was no complete deployment path.
+- **Shipped a complete Docker deployment**: `frontend/Dockerfile` (multi-stage: node:22-alpine build → nginx:1.27-alpine runtime), `frontend/nginx.conf` (serves `dist/`, reverse-proxies `/api/*` + `/health` to `backend:8000`, SPA fallback, 180s proxy timeouts for slow LLM calls, 30d cache for hashed assets), `frontend/.dockerignore`; `docker-compose.yml` now runs `frontend` (single public port, `WEB_PORT`, default 80) + `backend` (internal only, `expose` instead of `ports`).
+- Frontend already used relative `/api` paths, so same-origin nginx proxy means **no CORS concerns in production** (the dev-only CORS origins in `main.py` stay for local dev).
+- Verified: `npm run build` (tsc + vite) passes locally. Docker end-to-end build NOT verified — no Docker on this machine; backend image was already proven in P5.3.
+- Wrote `DEPLOYMENT.md` (Chinese): architecture diagram, copy-to-server steps, `backend/.env` setup, `docker compose up -d --build`, LAN access, ops table (logs/update/restart), SQLite volume backup/restore, env-var reference, troubleshooting, and the security boundary (no auth — LAN-trusted, do not expose to public internet).
+- README Docker quickstart updated to the two-service flow.
+- **Next pick-up:** unchanged — step **6.2 Student profile + session context** (`IMPLEMENTATION-PLAN-2.md`).
+
+### 2026-07-31 — P6.1 done: reference-pack architecture live, regression-proven
+- Owner confirmed Phase 2 decisions D1–D4 (logged in §7); wrote `IMPLEMENTATION-PLAN-2.md` (tickable checklist for P6–P10 + B1–B6).
+- **P6.1 shipped:** skills moved to reference packs — `skills/<skill>/references/<text_type>/<year_band>/` (bands: year-8 / year-9-10 / year-11-12; plus `shared/`). All 6 legacy flat reference files migrated to `references/analytical/year-8/`; `Skill.packs` replaces `Skill.references`; executor picks `shared` + exact pack, falls back to same-text-type nearest band and appends a deterministic degradation note when no exact pack exists (packless skills — guided-practice, model-response — never get the note). Legacy flat layout dropped, no dual paths.
+- Regression guard: byte-exact test proves the Year-8 analytical system prompt is unchanged for all 8 skills.
+- Verified: pytest **115 passed + 4 skipped** (+20 new tests); ruff/mypy clean on changed files (3 ruff errors in `app/api/routes.py`/`test_interaction_log.py` pre-exist at HEAD); **live eval 8/8 PASS**.
+- Eval tuning (pre-existing model drift, proven by reconstructing the pre-P6.1 prompt): `give-feedback/expected-01.md` — Understanding C→C/D with explicit acceptance notes; Structure/Language C/D notes made explicit. Indefensible E-grading stays a FAIL — noted as residual model instability on a borderline fixture.
+- `skills/README.md` package-layout section updated to the new convention.
+- **Next pick-up:** step **6.2 Student profile + session context** (student.year_level/focus_text_types → auto-injected into sessions; frontend profile edit).
+
+### 2026-07-31 — Phase 2 planned (skills depth + Beta); no code written
+- Owner confirmed MVP verified end-to-end in the browser; requested planning for Phase 2 (no building yet).
+- Produced `PHASE-2-PLAN.md`: Track A (P6–P10 skill depth via a **reference-pack architecture** — content depth lives in `(text_type × year_band)` reference files, skills stay generic; bands = year-8 / year-9-10 / year-11-12) and Track B (B1–B6 Beta: per-family local install, student profiles, `baseline-assessment`, loop completion (`fix-mechanics`, `spaced-review`, weekly mock), motivation layer, parent layer with a view-trends-not-full-text privacy default, ops/cost routing).
+- 5 new skills scoped (→ 13 total): `strengthen-argument`, `craft-voice`, `fix-mechanics`, `spaced-review`, `baseline-assessment`.
+- Recommended order: P6 → P9 (hard deadline Feb 2027, first student enters Year 9) → P7 → P8 → B1–B6; P10 (senior) timed by beta family mix.
+- **Next pick-up:** owner confirms the 4 decision points in `PHASE-2-PLAN.md` §1 (D1 distribution, D2 senior timing, D3 parent visibility, D4 ordering) + 3 open questions (§7); then convert the confirmed plan into a tickable implementation checklist and start P6.1.
 
 ### 2026-07-31 — P5 complete: interaction logging, privacy delete, docker compose, one-command check
 - **P5.1 interaction_log**: `InteractiveLoop` now wraps every `executor.execute()` via `_execute_and_log()`, writing `InteractionLog` rows (skill, model, input, output, timestamp). Logging is best-effort — exceptions are swallowed so the tutoring loop never breaks. Added `test_interaction_log.py` (2 tests; both pass).

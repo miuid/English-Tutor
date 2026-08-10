@@ -1,11 +1,11 @@
 # Expected behaviour for sample-01
 
 Per-criterion A–E under a `## Per-criterion levels` heading, named exactly as in `rubric.md`, in the `- <criterion>: **<level>** — <note>` shape (direction must match):
-- Understanding of text / ideas: **C** — a point exists but is vague ("war is bad").
+- Understanding of text / ideas: **C/D** — a point exists but is vague ("war is bad"); C if credited as sound literal understanding, D if judged superficial. Either is acceptable.
 - Analysis (how techniques create meaning): **D** — quote dropped in, effect not explained.
 - Use of evidence: **C/D** — relevant quote chosen but not analysed.
-- Structure & cohesion: **C/D** — basic flow exists (point → quote → closing) but link back is weak or missing.
-- Language & vocabulary: **C/D** — clear but flat ("bad", "really sad"); D if the flatness significantly weakens the analysis.
+- Structure & cohesion: **C/D** — basic flow exists (point → quote → closing) but link back is weak or missing; C if that flow is credited, D if the missing PEEL/link dominates. Either level is acceptable, but the note must still acknowledge that a point and basic flow exist.
+- Language & vocabulary: **C/D** — clear but flat ("bad", "really sad"); D is acceptable here — the flatness and absence of analytical metalanguage weaken the analysis.
 - (Formative mode: overall level de-emphasised, but roughly **C–/D**.)
 
 - **One specific strength**: e.g. "you chose a relevant simile and clearly picked up the poem's negative view of war." (specific, real — not "good job"). ✅

@@ -14,12 +14,17 @@ cd english-tutor
 cp backend/.env.example backend/.env
 # Edit backend/.env and set LLM_API_KEY (DeepSeek key; defaults to deepseek/deepseek-chat)
 
-# 3. Start the backend
-docker compose up --build
+# 3. Build and start frontend + backend
+docker compose up -d --build
 
-# 4. Health check
-open http://localhost:8000/health
+# 4. Open the app (UI + API served from one port)
+open http://localhost/          # health check: http://localhost/health
 ```
+
+The frontend container (nginx) serves the production React build and proxies `/api`
+to the backend container, so the whole app runs behind a single port (default 80,
+override with `WEB_PORT=8080 docker compose up -d`). For deploying to a LAN server,
+see `DEPLOYMENT.md`.
 
 ### Option B: Local development
 

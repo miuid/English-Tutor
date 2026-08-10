@@ -31,9 +31,9 @@ Not for: structure (use `check-structure`) or grammar (use `diagnose-errors`).
 
 Think through 1–3 silently; show what steps 4–5 produce.
 
-1. **Scan** `student_text` for flat/vague/repeated words and for missing analytical metalanguage. Cross-check against `tiers.md`.
+1. **Scan** `student_text` for flat/vague/repeated words and for missing analytical metalanguage. Cross-check against `references/analytical/year-8/tiers.md`.
 2. **Rank** candidates by payoff: a vague word doing important analytical work (e.g. "shows") beats a minor adjective. Pick the **top 2–3 only** (Year 8), max 4 for Years 11–12.
-3. **For each, generate 2–3 stronger options** that fit the sentence's *actual meaning and register* (not just "fancier"). Pull from the right tier in `tiers.md`. Never suggest a word whose connotation changes the student's intended meaning.
+3. **For each, generate 2–3 stronger options** that fit the sentence's *actual meaning and register* (not just "fancier"). Pull from the right tier in `references/analytical/year-8/tiers.md`. Never suggest a word whose connotation changes the student's intended meaning.
 4. **Teach the shade of meaning.** For each upgrade, give a one-line reason: what nuance/precision it adds, or what technique it lets the student name. This is the part that builds durable vocabulary.
 5. **Hand it back.** Present as choices, and ask the student to reread the sentence and pick the word that best fits *their* meaning, then rewrite the sentence themselves. Do not rewrite it for them.
 
