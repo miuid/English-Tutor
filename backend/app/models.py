@@ -118,6 +118,20 @@ class Session(Base):
     )
     # Interactive-loop stage: start -> I do -> we do -> you do -> ended.
     stage: Mapped[str] = mapped_column(sa.String(20), default="start")
+    # Soft daily time budget (default 15 min). Counts active seconds for the
+    # current day only; resets when the activity date rolls over. Gaps longer
+    # than the idle cap count as the cap, so an unattended session does not
+    # burn the budget. ``paused_at`` marks a student-paused (or auto-paused at
+    # time-up) session; paused time is never counted.
+    time_spent_seconds: Mapped[int] = mapped_column(sa.Integer, default=0)
+    last_activity_at: Mapped[datetime | None] = mapped_column(
+        sa.DateTime(timezone=True),
+        nullable=True,
+    )
+    paused_at: Mapped[datetime | None] = mapped_column(
+        sa.DateTime(timezone=True),
+        nullable=True,
+    )
 
     student: Mapped["Student"] = relationship(back_populates="sessions")
     success_criteria: Mapped[list["SuccessCriterion"]] = relationship(

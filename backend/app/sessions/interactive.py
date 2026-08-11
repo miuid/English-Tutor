@@ -11,8 +11,9 @@ Attempt row. Tutor turns carry the skill output in ``Attempt.student_text``
 """
 
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DBSession
@@ -44,6 +45,22 @@ DEFAULT_CURRICULUM = "QCAA"
 # Used when the student starts a session without pasting a school task.
 DEFAULT_TASK_PROMPT = "General analytical writing practice"
 
+# Soft daily time budget: gaps between interactions longer than this count as
+# the cap (a student who walks away without pausing is not punished, while
+# ordinary reading/writing gaps still count), and the counter resets when the
+# activity date rolls over, so an unfinished session simply continues the next
+# day with a fresh budget.
+IDLE_CAP_SECONDS = 10 * 60
+DEFAULT_TIME_LIMIT_SECONDS = 15 * 60
+
+# What tomorrow holds, per stage where the session wrapped up.
+WRAP_UP_NEXT_STEP = {
+    "start": "tomorrow we'll watch how a strong response is put together",
+    "I do": "tomorrow we'll practise together, side by side",
+    "we do": "tomorrow it'll be your turn to write your own piece",
+}
+WRAP_UP_FALLBACK = "tomorrow we'll pick up right where we left off"
+
 
 class SessionNotFoundError(Exception):
     """Raised when a session id does not exist."""
@@ -54,22 +71,45 @@ class StageConflictError(Exception):
 
 
 @dataclass(frozen=True)
+class AdvanceResult:
+    """What an advance() call produced: the tutor turn and the time-up flag."""
+
+    turn: Attempt
+    time_up: bool = False
+
+
+@dataclass(frozen=True)
 class SubmitResult:
     """What a submit() call persisted, in creation order."""
 
     submission: Attempt
     tutor_turns: list[Attempt]
     feedback: Feedback | None
+    time_up: bool = False
 
 
 class InteractiveLoop:
-    """Drive one Session through the daily loop one interactive step at a time."""
+    """Drive one Session through the daily loop one interactive step at a time.
 
-    def __init__(self, db: DBSession, executor: SkillExecutionService, skills: dict[str, Skill]):
+    ``now`` is injectable so tests can control the clock; the time limit is a
+    soft daily budget (see module constants).
+    """
+
+    def __init__(
+        self,
+        db: DBSession,
+        executor: SkillExecutionService,
+        skills: dict[str, Skill],
+        *,
+        time_limit_seconds: int = DEFAULT_TIME_LIMIT_SECONDS,
+        now: Callable[[], datetime] | None = None,
+    ):
         self.db = db
         self.executor = executor
         self.skills = skills
         self.router = DiagnosisRouter(executor=executor, skills=list(skills.values()))
+        self.time_limit_seconds = time_limit_seconds
+        self._now = now or (lambda: datetime.now(UTC))
 
     async def start(
         self,
@@ -90,6 +130,7 @@ class InteractiveLoop:
             student_id=student.id,
             learning_intention=task_prompt,
             stage="start",
+            last_activity_at=self._now(),
         )
         self.db.add(session)
         self.db.flush()
@@ -138,17 +179,25 @@ class InteractiveLoop:
         )
         return session, list(attempts)
 
-    async def advance(self, session_id: uuid.UUID) -> Attempt:
-        """Run the next tutor stage (model -> guided -> independent)."""
+    async def advance(self, session_id: uuid.UUID) -> AdvanceResult:
+        """Run the next tutor stage (model -> guided -> independent).
+
+        If the daily time budget is spent, no new stage is started: the loop
+        persists a wrap-up turn and auto-pauses the session instead.
+        """
         session = self.get_session(session_id)
-        if session.stage == ENDED:
-            msg = "Session has already ended"
-            raise StageConflictError(msg)
+        self._ensure_running(session)
         transition = ADVANCE_TRANSITIONS.get(session.stage)
         if transition is None:
             msg = f"Stage '{session.stage}' expects a student submission, not advance"
             raise StageConflictError(msg)
         skill_name, task_type, next_stage = transition
+
+        self._touch(session)
+        if self._time_up(session):
+            turn = self._wrap_up(session)
+            self.db.commit()
+            return AdvanceResult(turn=turn, time_up=True)
 
         output = await self._execute_and_log(
             session,
@@ -160,14 +209,21 @@ class InteractiveLoop:
         )
         session.stage = next_stage
         self.db.commit()
-        return turn
+        return AdvanceResult(turn=turn, time_up=False)
 
     async def submit(self, session_id: uuid.UUID, text: str) -> SubmitResult:
-        """Persist a student submission; at 'you do' also run the feedback pipeline."""
+        """Persist a student submission; at 'you do' also run the feedback pipeline.
+
+        The current unit of work always finishes even when time is up: a
+        'we do' exchange completes and then wraps up; a 'you do' submission
+        always receives the full feedback pipeline and ends the session.
+        """
         session = self.get_session(session_id)
+        self._ensure_running(session)
         if session.stage not in SUBMIT_STAGES:
             msg = f"Stage '{session.stage}' does not accept a student submission"
             raise StageConflictError(msg)
+        self._touch(session)
 
         submission = Attempt(
             session_id=session.id,
@@ -190,8 +246,17 @@ class InteractiveLoop:
             turn = self._save_tutor_turn(
                 session, "guided-practice", "guided", "we do", self._task_prompt(session), follow_up
             )
+            if not self._time_up(session):
+                self.db.commit()
+                return SubmitResult(submission=submission, tutor_turns=[turn], feedback=None)
+            wrap_turn = self._wrap_up(session)
             self.db.commit()
-            return SubmitResult(submission=submission, tutor_turns=[turn], feedback=None)
+            return SubmitResult(
+                submission=submission,
+                tutor_turns=[turn, wrap_turn],
+                feedback=None,
+                time_up=True,
+            )
 
         # "you do": diagnose -> route -> coach -> give-feedback, then end the session.
         task_for_student = self._latest_independent_task(session)
@@ -233,13 +298,125 @@ class InteractiveLoop:
             )
         self.db.add(feedback)
         session.stage = ENDED
-        session.ended_at = datetime.now(UTC)
+        session.ended_at = self._now()
         self.db.commit()
         return SubmitResult(
             submission=submission,
             tutor_turns=[diagnosis_turn, coach_turn, feedback_turn],
             feedback=feedback,
+            time_up=self._time_up(session),
         )
+
+    def pause(self, session_id: uuid.UUID) -> Session:
+        """Pause a running session; paused time is never counted."""
+        session = self.get_session(session_id)
+        if session.stage == ENDED or session.ended_at is not None:
+            msg = "Session has already ended"
+            raise StageConflictError(msg)
+        if session.paused_at is None:
+            session.paused_at = self._now()
+            self.db.commit()
+        return session
+
+    def resume(self, session_id: uuid.UUID) -> Session:
+        """Resume a paused session; a new day restores the full time budget."""
+        session = self.get_session(session_id)
+        if session.stage == ENDED or session.ended_at is not None:
+            msg = "Session has already ended"
+            raise StageConflictError(msg)
+        now = self._now()
+        last = self._as_aware(session.last_activity_at)
+        if last is not None and self._local_date(last) != self._local_date(now):
+            session.time_spent_seconds = 0
+        session.paused_at = None
+        session.last_activity_at = now
+        self.db.commit()
+        return session
+
+    def time_state(self, session: Session) -> tuple[int, bool]:
+        """Effective (seconds spent today, time-up flag) for display purposes."""
+        spent = session.time_spent_seconds
+        last = self._as_aware(session.last_activity_at)
+        if last is not None and self._local_date(last) != self._local_date(self._now()):
+            spent = 0  # new day, not yet persisted — the next _touch() resets it
+        return spent, spent >= self.time_limit_seconds
+
+    def _ensure_running(self, session: Session) -> None:
+        if session.stage == ENDED or session.ended_at is not None:
+            msg = "Session has already ended"
+            raise StageConflictError(msg)
+        if session.paused_at is not None:
+            msg = "Session is paused — resume it to continue"
+            raise StageConflictError(msg)
+
+    def _touch(self, session: Session) -> None:
+        """Accumulate active time since the last interaction onto today's budget."""
+        now = self._now()
+        last = self._as_aware(session.last_activity_at)
+        if last is None:
+            session.last_activity_at = now
+            return
+        if self._local_date(last) != self._local_date(now):
+            session.time_spent_seconds = 0  # day rolled over: fresh budget
+        else:
+            gap = max((now - last).total_seconds(), 0.0)
+            session.time_spent_seconds += int(min(gap, IDLE_CAP_SECONDS))
+        session.last_activity_at = now
+
+    def _time_up(self, session: Session) -> bool:
+        return session.time_spent_seconds >= self.time_limit_seconds
+
+    def _wrap_up(self, session: Session) -> Attempt:
+        """Persist a time-up wrap-up tutor turn and auto-pause the session.
+
+        Idempotent per pause: if the latest turn is already a wrap-up it is
+        returned as-is rather than duplicated.
+        """
+        latest = self.db.execute(
+            select(Attempt)
+            .where(Attempt.session_id == session.id)
+            .order_by(Attempt.created_at.desc())
+            .limit(1)
+        ).scalar_one_or_none()
+        if latest is not None and latest.task_type == "wrap-up":
+            turn = latest
+        else:
+            turn = Attempt(
+                session_id=session.id,
+                student_id=session.student_id,
+                skill_id=None,
+                task_type="wrap-up",
+                mode="wrap-up",
+                task_prompt=self._task_prompt(session),
+                student_text=self._wrap_up_message(session),
+            )
+            self.db.add(turn)
+            self.db.flush()
+        session.paused_at = self._now()
+        return turn
+
+    def _wrap_up_message(self, session: Session) -> str:
+        minutes = max(self.time_limit_seconds // 60, 1)
+        plural = "s" if minutes != 1 else ""
+        next_step = WRAP_UP_NEXT_STEP.get(session.stage, WRAP_UP_FALLBACK)
+        return (
+            f"⏰ **That's our {minutes} minute{plural} for today — nice work!**\n\n"
+            f"Don't worry about finishing now: {next_step}. "
+            "Your place is saved, so come back tomorrow and we'll pick up "
+            "right where we left off."
+        )
+
+    @staticmethod
+    def _as_aware(value: datetime | None) -> datetime | None:
+        """SQLite returns naive datetimes; treat them as UTC."""
+        if value is not None and value.tzinfo is None:
+            return value.replace(tzinfo=UTC)
+        return value
+
+    @staticmethod
+    def _local_date(value: datetime) -> date:
+        """The server's local calendar date — 'tomorrow' for the student."""
+        return value.astimezone().date()
 
     async def _execute_and_log(
         self,

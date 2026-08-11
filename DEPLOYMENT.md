@@ -142,6 +142,7 @@ docker compose up -d
 | `APP_ENV` | `backend/.env` | 运行环境标记 | `development` |
 | `DATABASE_URL` | compose 覆盖 | 容器内固定指向 `/data` 卷 | `sqlite:////data/english_tutor.db` |
 | `SKILLS_DIR` | compose 覆盖 | 容器内 skills 路径 | `/skills` |
+| `SESSION_TIME_LIMIT_MINUTES` | `backend/.env` | 每节课每日软性时长（分钟）。到时自动收尾并暂停，没上完的环节第二天继续 | `15` |
 | `WEB_PORT` | compose 环境 | 对外 Web 端口 | `80` |
 
 ## 故障排查

@@ -19,7 +19,7 @@ from app.api.schemas import (
     SubmitRequest,
     TurnOut,
 )
-from app.models import Attempt, Feedback, InteractionLog, RubricScore, Session, Student
+from app.models import Attempt, Feedback, RubricScore, Session, Student
 from app.sessions.interactive import InteractiveLoop, SessionNotFoundError, StageConflictError
 
 router = APIRouter(prefix="/api")
@@ -28,7 +28,7 @@ router = APIRouter(prefix="/api")
 def _turn_out(attempt: Attempt) -> TurnOut:
     return TurnOut(
         id=attempt.id,
-        kind="tutor" if attempt.skill_id is not None else "student",
+        kind="student" if attempt.task_type == "submission" else "tutor",
         skill=attempt.skill.name if attempt.skill is not None else None,
         task_type=attempt.task_type,
         mode=attempt.mode,
@@ -38,13 +38,18 @@ def _turn_out(attempt: Attempt) -> TurnOut:
     )
 
 
-def _session_out(session: Session, attempts: list[Attempt]) -> SessionOut:
+def _session_out(session: Session, attempts: list[Attempt], loop: InteractiveLoop) -> SessionOut:
+    spent, time_up = loop.time_state(session)
     return SessionOut(
         id=session.id,
         student_id=session.student_id,
         stage=session.stage,
         ended=session.ended_at is not None,
+        paused=session.paused_at is not None,
         learning_intention=session.learning_intention,
+        time_limit_seconds=loop.time_limit_seconds,
+        time_spent_seconds=spent,
+        time_up=time_up,
         turns=[_turn_out(attempt) for attempt in attempts],
     )
 
@@ -79,7 +84,7 @@ async def start_session(
         text_type=payload.text_type,
     )
     session, attempts = loop.get_state(session.id)
-    return _session_out(session, attempts)
+    return _session_out(session, attempts, loop)
 
 
 @router.get("/sessions/{session_id}")
@@ -92,7 +97,7 @@ async def get_session_state(
         session, attempts = loop.get_state(session_id)
     except SessionNotFoundError:
         raise HTTPException(status_code=404, detail="Session not found") from None
-    return _session_out(session, attempts)
+    return _session_out(session, attempts, loop)
 
 
 @router.post("/sessions/{session_id}/advance")
@@ -100,15 +105,25 @@ async def advance_session(
     session_id: uuid.UUID,
     loop: InteractiveLoop = Depends(get_loop),
 ) -> AdvanceOut:
-    """Run the next tutor stage and return its turn."""
+    """Run the next tutor stage and return its turn.
+
+    When the daily time budget is spent this returns a wrap-up turn with
+    ``time_up=True`` and the session auto-pauses until tomorrow.
+    """
     try:
-        turn = await loop.advance(session_id)
+        result = await loop.advance(session_id)
     except SessionNotFoundError:
         raise HTTPException(status_code=404, detail="Session not found") from None
     except StageConflictError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from None
     session = loop.get_session(session_id)
-    return AdvanceOut(session_id=session_id, stage=session.stage, turn=_turn_out(turn))
+    return AdvanceOut(
+        session_id=session_id,
+        stage=session.stage,
+        turn=_turn_out(result.turn),
+        time_up=result.time_up,
+        paused=session.paused_at is not None,
+    )
 
 
 @router.post("/sessions/{session_id}/submit")
@@ -132,7 +147,41 @@ async def submit_student_text(
         ended=session.ended_at is not None,
         turns=[_turn_out(turn) for turn in turns],
         feedback=_feedback_out(result.feedback) if result.feedback is not None else None,
+        time_up=result.time_up,
+        paused=session.paused_at is not None,
     )
+
+
+@router.post("/sessions/{session_id}/pause")
+async def pause_session(
+    session_id: uuid.UUID,
+    loop: InteractiveLoop = Depends(get_loop),
+) -> SessionOut:
+    """Pause a running session so the student can continue tomorrow."""
+    try:
+        loop.pause(session_id)
+        session, attempts = loop.get_state(session_id)
+    except SessionNotFoundError:
+        raise HTTPException(status_code=404, detail="Session not found") from None
+    except StageConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from None
+    return _session_out(session, attempts, loop)
+
+
+@router.post("/sessions/{session_id}/resume")
+async def resume_session(
+    session_id: uuid.UUID,
+    loop: InteractiveLoop = Depends(get_loop),
+) -> SessionOut:
+    """Resume a paused session; a new day restores the full time budget."""
+    try:
+        loop.resume(session_id)
+        session, attempts = loop.get_state(session_id)
+    except SessionNotFoundError:
+        raise HTTPException(status_code=404, detail="Session not found") from None
+    except StageConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from None
+    return _session_out(session, attempts, loop)
 
 
 @router.delete("/students/{student_id}", status_code=204)

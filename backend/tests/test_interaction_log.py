@@ -4,15 +4,16 @@ import pytest
 from sqlalchemy import select
 
 from app.models import InteractionLog
+from app.sessions.interactive import InteractiveLoop
 from app.skills.executor import SkillExecutionService
 from app.skills.loader import load_skills
 from app.skills.sync import sync_skills
-from app.sessions.interactive import InteractiveLoop
 from tests.test_llm import FakeProvider
 
 
 def _load_skills():
     from pathlib import Path
+
     from app.config import get_settings
     return {skill.name: skill for skill in load_skills(Path(get_settings().skills_dir))}
 

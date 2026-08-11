@@ -2,6 +2,8 @@
 
 .app {
   min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -12,7 +14,7 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.9rem 1.25rem;
-  max-width: 760px;
+  max-width: 880px;
   width: 100%;
   margin: 0 auto;
 }
@@ -59,7 +61,8 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  max-width: 760px;
+  min-height: 0;
+  max-width: 880px;
   width: 100%;
   margin: 0 auto;
   padding: 0 1.25rem 1.5rem;
@@ -230,8 +233,7 @@
   flex-direction: column;
   gap: 0.85rem;
   padding: 0.5rem 0 1rem;
-  min-height: 240px;
-  max-height: calc(100vh - 300px);
+  min-height: 160px;
 }
 
 .msg-row {
@@ -347,7 +349,11 @@
 }
 
 .composer-input {
-  min-height: 76px;
+  min-height: 96px;
+  max-height: 40vh;
+  resize: none;
+  overflow-y: auto;
+  line-height: 1.55;
 }
 
 .composer-actions {
@@ -504,6 +510,71 @@
   font-weight: 700;
 }
 
+/* Header actions + time chip ----------------------------------------------- */
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.time-chip {
+  display: inline-block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.25rem 0.7rem;
+  white-space: nowrap;
+}
+
+.time-chip.low {
+  background: #fdf3e7;
+  border-color: #ecd9b8;
+  color: #9a6700;
+}
+
+/* Paused / time-up card ------------------------------------------------------ */
+
+.paused-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.paused-title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.paused-sub {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+}
+
+.paused-card .composer-actions {
+  margin-top: 0.5rem;
+}
+
+/* Word count ------------------------------------------------------------------ */
+
+.word-count {
+  margin-right: auto;
+  align-self: center;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+
 /* Small screens ------------------------------------------------------------- */
 
 @media (max-width: 560px) {
@@ -521,10 +592,6 @@
 
   .bubble {
     max-width: 92%;
-  }
-
-  .messages {
-    max-height: calc(100vh - 320px);
   }
 
   .brand-name {

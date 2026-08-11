@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     llm_model: str = "deepseek-chat"
     llm_api_key: str | None = None
     skills_dir: str = str(Path(__file__).resolve().parent.parent.parent / "skills")
+    # Soft per-day session time budget. Not a hard cutoff: the current unit of
+    # work always finishes, then the session wraps up and pauses until the
+    # next day (unfinished stages carry over).
+    session_time_limit_minutes: int = 15
 
     @field_validator("llm_api_key")
     @classmethod

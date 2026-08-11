@@ -70,6 +70,14 @@ export function submitText(sessionId: string, text: string): Promise<SubmitOut> 
   })
 }
 
+export function pauseSession(sessionId: string): Promise<SessionOut> {
+  return request<SessionOut>(`/api/sessions/${sessionId}/pause`, { method: 'POST' })
+}
+
+export function resumeSession(sessionId: string): Promise<SessionOut> {
+  return request<SessionOut>(`/api/sessions/${sessionId}/resume`, { method: 'POST' })
+}
+
 export function getProgress(studentId: string): Promise<ProgressOut> {
   return request<ProgressOut>(`/api/students/${studentId}/progress`)
 }

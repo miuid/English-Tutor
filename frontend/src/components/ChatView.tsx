@@ -4,6 +4,8 @@ import {
   advanceSession,
   ApiError,
   getSession,
+  pauseSession,
+  resumeSession,
   startSession,
   submitText,
 } from '../api'
@@ -16,7 +18,7 @@ import {
   saveStoredSessionId,
 } from '../storage'
 import Markdown from './Markdown'
-import type { FeedbackOut, TurnOut } from '../types'
+import type { FeedbackOut, SessionOut, TurnOut } from '../types'
 
 type Phase = 'loading' | 'start' | 'active'
 
@@ -24,6 +26,10 @@ interface ActiveSession {
   id: string
   stage: string
   ended: boolean
+  paused: boolean
+  timeUp: boolean
+  timeLimitSeconds: number
+  timeSpentSeconds: number
 }
 
 // Student-friendly labels for the loop stages / turn modes.
@@ -36,6 +42,7 @@ const STAGE_LABELS: Record<string, string> = {
   coach: 'Coaching tip',
   end: 'Feedback',
   ended: 'Feedback',
+  'wrap-up': "⏰ Time's up for today",
 }
 
 function stageLabel(stage: string): string {
@@ -54,6 +61,18 @@ function levelClass(level: string): string {
   return LEVEL_CLASS[level.trim().toUpperCase().charAt(0)] ?? 'level-c'
 }
 
+function sessionFromState(state: SessionOut): ActiveSession {
+  return {
+    id: state.id,
+    stage: state.stage,
+    ended: state.ended,
+    paused: state.paused,
+    timeUp: state.time_up,
+    timeLimitSeconds: state.time_limit_seconds,
+    timeSpentSeconds: state.time_spent_seconds,
+  }
+}
+
 interface ChatViewProps {
   onStudent: (studentId: string) => void
 }
@@ -68,10 +87,14 @@ export default function ChatView({ onStudent }: ChatViewProps) {
   const [taskPrompt, setTaskPrompt] = useState('')
   const [context, setContext] = useState('')
   const [draft, setDraft] = useState('')
+  // Ticks so the time chip can count down between server interactions. The
+  // server is the source of truth; this is only a friendly approximation.
+  const [nowTick, setNowTick] = useState(Date.now())
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const draftRef = useRef<HTMLTextAreaElement>(null)
   const lastActionRef = useRef<(() => Promise<void>) | null>(null)
+  const timeSyncedAtRef = useRef(Date.now())
 
   // Rebuild state from a stored session id on first load.
   useEffect(() => {
@@ -85,7 +108,8 @@ export default function ChatView({ onStudent }: ChatViewProps) {
       .then((state) => {
         if (cancelled) return
         onStudent(state.student_id)
-        setSession({ id: state.id, stage: state.stage, ended: state.ended })
+        timeSyncedAtRef.current = Date.now()
+        setSession(sessionFromState(state))
         setTurns(state.turns)
         setFeedback(state.ended ? loadFeedback(state.id) : null)
         setPhase('active')
@@ -113,10 +137,25 @@ export default function ChatView({ onStudent }: ChatViewProps) {
 
   // Focus the input when it becomes the student's turn.
   useEffect(() => {
-    if (session && (session.stage === 'we do' || session.stage === 'you do') && !session.ended) {
+    if (session && !session.paused && (session.stage === 'we do' || session.stage === 'you do') && !session.ended) {
       draftRef.current?.focus()
     }
   }, [session])
+
+  // Tick the time chip while an unpaused session is running.
+  useEffect(() => {
+    if (!session || session.ended || session.paused) return
+    const timer = setInterval(() => setNowTick(Date.now()), 10000)
+    return () => clearInterval(timer)
+  }, [session])
+
+  // Auto-grow the composer as the draft gets longer (capped by CSS max-height).
+  useEffect(() => {
+    const el = draftRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [draft, phase, session?.stage, session?.paused])
 
   async function run(action: () => Promise<void>) {
     setBusy(true)
@@ -131,13 +170,18 @@ export default function ChatView({ onStudent }: ChatViewProps) {
     }
   }
 
+  function applyState(state: SessionOut) {
+    timeSyncedAtRef.current = Date.now()
+    setSession(sessionFromState(state))
+  }
+
   function handleStart(e: FormEvent) {
     e.preventDefault()
     void run(async () => {
       const state = await startSession(taskPrompt, context)
       onStudent(state.student_id)
       saveStoredSessionId(state.id)
-      setSession({ id: state.id, stage: state.stage, ended: state.ended })
+      applyState(state)
       setTurns(state.turns)
       setFeedback(null)
       setDraft('')
@@ -151,7 +195,9 @@ export default function ChatView({ onStudent }: ChatViewProps) {
     void run(async () => {
       const out = await advanceSession(id)
       setTurns((prev) => [...prev, out.turn])
-      setSession({ id, stage: out.stage, ended: false })
+      setSession((prev) =>
+        prev ? { ...prev, stage: out.stage, paused: out.paused, timeUp: out.time_up } : prev,
+      )
     })
   }
 
@@ -162,12 +208,32 @@ export default function ChatView({ onStudent }: ChatViewProps) {
     void run(async () => {
       const out = await submitText(id, text)
       setTurns((prev) => [...prev, ...out.turns])
-      setSession({ id, stage: out.stage, ended: out.ended })
+      setSession((prev) =>
+        prev
+          ? { ...prev, stage: out.stage, ended: out.ended, paused: out.paused, timeUp: out.time_up }
+          : prev,
+      )
       setDraft('')
       if (out.feedback) {
         setFeedback(out.feedback)
         saveFeedback(id, out.feedback)
       }
+    })
+  }
+
+  function handlePause() {
+    if (!session) return
+    const id = session.id
+    void run(async () => {
+      applyState(await pauseSession(id))
+    })
+  }
+
+  function handleResume() {
+    if (!session) return
+    const id = session.id
+    void run(async () => {
+      applyState(await resumeSession(id))
     })
   }
 
@@ -193,6 +259,32 @@ export default function ChatView({ onStudent }: ChatViewProps) {
     }
   }
 
+  function remainingSeconds(): number | null {
+    if (!session) return null
+    const synced = session.timeLimitSeconds - session.timeSpentSeconds
+    if (session.paused || session.ended) return Math.max(synced, 0)
+    const elapsed = (nowTick - timeSyncedAtRef.current) / 1000
+    const remaining = synced - elapsed
+    // Clamp: never show more than the budget (sync jitter) or below zero.
+    return Math.min(Math.max(remaining, 0), session.timeLimitSeconds)
+  }
+
+  function timeChip() {
+    if (!session || session.ended) return null
+    if (session.paused) {
+      return <span className="time-chip">⏸ Paused</span>
+    }
+    const remaining = remainingSeconds()
+    if (remaining === null) return null
+    if (remaining <= 0 || session.timeUp) {
+      return <span className="time-chip low">⏰ Time's up</span>
+    }
+    const minutes = Math.ceil(remaining / 60)
+    return (
+      <span className={`time-chip${minutes <= 3 ? ' low' : ''}`}>⏱ about {minutes} min left</span>
+    )
+  }
+
   if (phase === 'loading') {
     return (
       <div className="chat-shell centered" aria-live="polite">
@@ -209,6 +301,7 @@ export default function ChatView({ onStudent }: ChatViewProps) {
           <p className="start-sub">
             We'll set a goal together, watch how it's done, practise side by side, and
             finish with a piece of your own — with kind, honest feedback at the end.
+            Anything you don't finish simply waits for you tomorrow.
           </p>
           {error ? (
             <p className="error-banner" role="alert">
@@ -248,16 +341,31 @@ export default function ChatView({ onStudent }: ChatViewProps) {
     )
   }
 
-  const studentTurn = session !== null && !session.ended && (session.stage === 'we do' || session.stage === 'you do')
-  const tutorLeading = session !== null && !session.ended && !studentTurn
+  const studentTurn =
+    session !== null &&
+    !session.ended &&
+    !session.paused &&
+    (session.stage === 'we do' || session.stage === 'you do')
+  const tutorLeading = session !== null && !session.ended && !session.paused && !studentTurn
+  const wordCount = draft.trim() ? draft.trim().split(/\s+/).length : 0
 
   return (
     <div className="chat-shell">
       <div className="chat-header">
-        <span className="stage-chip">{session ? stageLabel(session.ended ? 'ended' : session.stage) : ''}</span>
-        <button type="button" className="btn ghost small" onClick={handleNewSession}>
-          Start over
-        </button>
+        <span className="stage-chip">
+          {session ? stageLabel(session.ended ? 'ended' : session.stage) : ''}
+        </span>
+        <div className="header-actions">
+          {timeChip()}
+          {session && !session.ended && !session.paused ? (
+            <button type="button" className="btn ghost small" onClick={handlePause} disabled={busy}>
+              ⏸ Pause for today
+            </button>
+          ) : null}
+          <button type="button" className="btn ghost small" onClick={handleNewSession}>
+            Start over
+          </button>
+        </div>
       </div>
 
       <div className="messages" aria-live="polite" aria-label="Conversation with your tutor">
@@ -324,6 +432,39 @@ export default function ChatView({ onStudent }: ChatViewProps) {
           <button type="button" className="btn primary wide" onClick={handleNewSession}>
             Start a new session
           </button>
+        ) : session?.paused ? (
+          <div className="paused-card" role="status">
+            {session.timeUp ? (
+              <>
+                <p className="paused-title">
+                  ⏰ That's today's {Math.max(Math.round(session.timeLimitSeconds / 60), 1)}{' '}
+                  {Math.max(Math.round(session.timeLimitSeconds / 60), 1) === 1
+                    ? 'minute'
+                    : 'minutes'}{' '}
+                  — nice work!
+                </p>
+                <p className="paused-sub">
+                  Your place is saved at “{stageLabel(session.stage)}”. Come back tomorrow and
+                  we'll pick up right where we left off.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="paused-title">⏸ Paused — see you soon!</p>
+                <p className="paused-sub">
+                  Your place is saved at “{stageLabel(session.stage)}”. Come back whenever you're
+                  ready — tomorrow works too.
+                </p>
+              </>
+            )}
+            <div className="composer-actions">
+              {!session.timeUp ? (
+                <button type="button" className="btn primary" onClick={handleResume} disabled={busy}>
+                  {busy ? 'One moment…' : 'Continue now'}
+                </button>
+              ) : null}
+            </div>
+          </div>
         ) : tutorLeading ? (
           <button type="button" className="btn primary wide" onClick={handleAdvance} disabled={busy}>
             {busy ? 'One moment…' : 'Continue →'}
@@ -343,7 +484,7 @@ export default function ChatView({ onStudent }: ChatViewProps) {
               id="student-draft"
               ref={draftRef}
               className="text-input composer-input"
-              rows={3}
+              rows={4}
               placeholder={
                 session?.stage === 'you do'
                   ? 'Write your own piece here… (Ctrl+Enter to hand in)'
@@ -355,6 +496,11 @@ export default function ChatView({ onStudent }: ChatViewProps) {
               disabled={busy}
             />
             <div className="composer-actions">
+              {wordCount > 0 ? (
+                <span className="word-count">
+                  {wordCount} {wordCount === 1 ? 'word' : 'words'}
+                </span>
+              ) : null}
               {session?.stage === 'we do' ? (
                 <button type="button" className="btn ghost" onClick={handleAdvance} disabled={busy}>
                   Move on to my own piece →

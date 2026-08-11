@@ -35,7 +35,11 @@ class SessionOut(BaseModel):
     student_id: uuid.UUID
     stage: str
     ended: bool
+    paused: bool
     learning_intention: str | None
+    time_limit_seconds: int
+    time_spent_seconds: int
+    time_up: bool
     turns: list[TurnOut]
 
 
@@ -43,6 +47,8 @@ class AdvanceOut(BaseModel):
     session_id: uuid.UUID
     stage: str
     turn: TurnOut
+    time_up: bool = False
+    paused: bool = False
 
 
 class RubricScoreOut(BaseModel):
@@ -65,6 +71,8 @@ class SubmitOut(BaseModel):
     ended: bool
     turns: list[TurnOut]
     feedback: FeedbackOut | None
+    time_up: bool = False
+    paused: bool = False
 
 
 class ProgressScoreOut(BaseModel):

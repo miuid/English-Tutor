@@ -16,7 +16,11 @@ export interface SessionOut {
   student_id: string
   stage: string
   ended: boolean
+  paused: boolean
   learning_intention: string | null
+  time_limit_seconds: number
+  time_spent_seconds: number
+  time_up: boolean
   turns: TurnOut[]
 }
 
@@ -24,6 +28,8 @@ export interface AdvanceOut {
   session_id: string
   stage: string
   turn: TurnOut
+  time_up: boolean
+  paused: boolean
 }
 
 export interface RubricScoreOut {
@@ -46,6 +52,8 @@ export interface SubmitOut {
   ended: boolean
   turns: TurnOut[]
   feedback: FeedbackOut | null
+  time_up: boolean
+  paused: boolean
 }
 
 export interface ProgressScoreOut {

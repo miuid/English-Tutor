@@ -2,7 +2,7 @@
 
 > Long-term memory for this project. It records the vision, every meaningful decision (with dates and rationale), what's been built, the roadmap, and open questions. **Update this file whenever a decision is made, a milestone is hit, or something important is discovered — and append a dated entry to the Session log (§11) at the end of each working session.** New sessions should read this first.
 
-Last updated: 2026-07-31
+Last updated: 2026-08-11
 
 ---
 
@@ -136,6 +136,16 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | `English Circulum.md` | Curriculum reference. |
 
 ## 11. Session log
+
+### 2026-08-11 — 15-minute session budget, pause/resume, humane composer layout
+- Owner reported three problems: the "15 minutes per session" promise was never enforced (loop ran forever), the student input box was too cramped for long answers, and there was no way to pause and continue the next day.
+- **Soft daily time budget (backend):** `Session` gains `time_spent_seconds` / `last_activity_at` / `paused_at` (lightweight idempotent `ALTER TABLE` in `init_db()` — existing dev/LAN SQLite DBs keep their data, verified on a copy of the real dev DB). `SESSION_TIME_LIMIT_MINUTES` env var (default 15). `InteractiveLoop` accumulates active time per interaction with an injectable clock: gaps > 10 min count as 10 min (walking away isn't punished, reading/writing gaps still count), and the counter resets when the local calendar date rolls over — an unfinished session simply continues tomorrow with a fresh budget.
+- **Soft wrap-up, never a hard cut:** when time is up, `advance()` starts no new stage — it persists a fixed wrap-up tutor turn (task_type `wrap-up`, no LLM call, names what's next per stage) and auto-pauses; `we do` submissions finish the current exchange first, then wrap up; `you do` submissions always run the full feedback pipeline (the payoff is never blocked). Wrap-up is idempotent per pause.
+- **Pause/resume:** `POST /api/sessions/{id}/pause` and `/resume`; paused sessions reject advance/submit (409), paused time never counts, resume on a new day restores the full budget. `SessionOut` now carries `paused` / `time_limit_seconds` / `time_spent_seconds` / `time_up`; `AdvanceOut`/`SubmitOut` carry `time_up`/`paused`. Turn `kind` is now decided by `task_type == "submission"` (lets wrap-up turns render as tutor bubbles without a skill row).
+- **Frontend:** header shows a live time chip (`⏱ about N min left`, amber ≤ 3 min, `⏸ Paused`) and a "Pause for today" button; paused state swaps the composer for a friendly card (time-up variant: "come back tomorrow", no continue button; manual-pause variant: "Continue now"); reload resumes paused state from the server. Composer textarea auto-grows up to 40vh (base 4 rows), layout widened 760→880px, `.messages` switched from brittle `max-height: calc()` to a proper flex column, live word count while drafting.
+- Verified: pytest **129 passed + 4 skipped** (14 new tests in `tests/test_session_time.py` with a fake clock + HTTP-level pause/resume/time-up), ruff green (also fixed 3 pre-existing lint errors), mypy green, `tsc -b && vite build` green, oxlint 0 errors (1 pre-existing warning in Markdown.tsx).
+- **Browser E2E (WebBridge, real browser, fake provider, temp DBs):** Run A — start → advances → time chip ticks (`⏱ about N min left`) → Pause → manual paused card with "Continue now" → reload keeps paused state (server-driven) → resume restores composer. Run B (`SESSION_TIME_LIMIT_MINUTES=0`) — first advance returns wrap-up tutor turn + time-up paused card ("come back tomorrow", no continue), reload persists. Run C — 768-char draft grew the composer 122→221px with live "129 words" counter. Two cosmetic fixes found by E2E and applied: time chip clamped to the budget (was showing "16 min left"), minute/minutes plural in wrap-up copy. All test servers killed after; workspace temp files cleaned.
+- **Next pick-up:** unchanged — step **6.2 Student profile + session context** (`IMPLEMENTATION-PLAN-2.md`).
 
 ### 2026-08-05 — Full-stack Docker deployment for LAN server
 - Owner asked how the app deploys. Answer before this change: **backend-only** — P5.3 containerised the backend, but the frontend was dev-only (Vite dev server), so there was no complete deployment path.

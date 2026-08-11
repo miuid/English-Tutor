@@ -212,6 +212,8 @@ def test_openapi_schema_renders(api_client: ApiClient) -> None:
         "/api/sessions/{session_id}",
         "/api/sessions/{session_id}/advance",
         "/api/sessions/{session_id}/submit",
+        "/api/sessions/{session_id}/pause",
+        "/api/sessions/{session_id}/resume",
         "/api/students/{student_id}/progress",
     ):
         assert expected in paths

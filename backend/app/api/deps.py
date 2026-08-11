@@ -51,5 +51,11 @@ def get_loop(
     db: DBSession = Depends(get_db),
     executor: SkillExecutionService = Depends(get_executor),
     skills: dict[str, Skill] = Depends(get_skills),
+    settings: Settings = Depends(get_settings),
 ) -> InteractiveLoop:
-    return InteractiveLoop(db=db, executor=executor, skills=skills)
+    return InteractiveLoop(
+        db=db,
+        executor=executor,
+        skills=skills,
+        time_limit_seconds=settings.session_time_limit_minutes * 60,
+    )
