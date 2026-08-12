@@ -16,9 +16,10 @@ import {
   loadStoredSessionId,
   saveFeedback,
   saveStoredSessionId,
+  saveStudentId,
 } from '../storage'
 import Markdown from './Markdown'
-import type { FeedbackOut, SessionOut, TurnOut } from '../types'
+import type { FeedbackOut, SessionOut, StudentOut, TurnOut } from '../types'
 
 type Phase = 'loading' | 'start' | 'active'
 
@@ -74,10 +75,10 @@ function sessionFromState(state: SessionOut): ActiveSession {
 }
 
 interface ChatViewProps {
-  onStudent: (studentId: string) => void
+  student: StudentOut | null
 }
 
-export default function ChatView({ onStudent }: ChatViewProps) {
+export default function ChatView({ student }: ChatViewProps) {
   const [phase, setPhase] = useState<Phase>('loading')
   const [session, setSession] = useState<ActiveSession | null>(null)
   const [turns, setTurns] = useState<TurnOut[]>([])
@@ -107,7 +108,7 @@ export default function ChatView({ onStudent }: ChatViewProps) {
     getSession(storedId)
       .then((state) => {
         if (cancelled) return
-        onStudent(state.student_id)
+        saveStudentId(state.student_id)
         timeSyncedAtRef.current = Date.now()
         setSession(sessionFromState(state))
         setTurns(state.turns)
@@ -178,8 +179,8 @@ export default function ChatView({ onStudent }: ChatViewProps) {
   function handleStart(e: FormEvent) {
     e.preventDefault()
     void run(async () => {
-      const state = await startSession(taskPrompt, context)
-      onStudent(state.student_id)
+      const state = await startSession(taskPrompt, context, student?.id)
+      saveStudentId(state.student_id)
       saveStoredSessionId(state.id)
       applyState(state)
       setTurns(state.turns)
@@ -303,6 +304,19 @@ export default function ChatView({ onStudent }: ChatViewProps) {
             finish with a piece of your own — with kind, honest feedback at the end.
             Anything you don't finish simply waits for you tomorrow.
           </p>
+          {student ? (
+            <p className="profile-hint">
+              Signed in as <strong>{student.name}</strong> — Year {student.year_level}
+              {student.focus_text_types.length > 0
+                ? ` · ${student.focus_text_types.join(', ')}`
+                : ''}
+              . Sessions will use your profile.
+            </p>
+          ) : (
+            <p className="profile-hint muted">
+              Tip: set up your profile in the Profile tab so sessions match your year level.
+            </p>
+          )}
           {error ? (
             <p className="error-banner" role="alert">
               {error}

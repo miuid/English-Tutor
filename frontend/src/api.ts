@@ -2,6 +2,10 @@ import type {
   AdvanceOut,
   ProgressOut,
   SessionOut,
+  StartSessionRequest,
+  StudentCreate,
+  StudentOut,
+  StudentUpdate,
   SubmitOut,
 } from './types'
 
@@ -45,13 +49,43 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T
 }
 
-export function startSession(taskPrompt: string, context: string): Promise<SessionOut> {
-  const body: Record<string, string> = {}
+export function startSession(
+  taskPrompt: string,
+  context: string,
+  studentId?: string,
+): Promise<SessionOut> {
+  const body: StartSessionRequest = {}
   if (taskPrompt.trim()) body.task_prompt = taskPrompt.trim()
   if (context.trim()) body.context = context.trim()
+  if (studentId) body.student_id = studentId
   return request<SessionOut>('/api/sessions', {
     method: 'POST',
     body: JSON.stringify(body),
+  })
+}
+
+export function createStudent(payload: StudentCreate): Promise<StudentOut> {
+  return request<StudentOut>('/api/students', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function listStudents(): Promise<StudentOut[]> {
+  return request<StudentOut[]>('/api/students')
+}
+
+export function getStudent(studentId: string): Promise<StudentOut> {
+  return request<StudentOut>(`/api/students/${studentId}`)
+}
+
+export function updateStudent(
+  studentId: string,
+  payload: StudentUpdate,
+): Promise<StudentOut> {
+  return request<StudentOut>(`/api/students/${studentId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
   })
 }
 

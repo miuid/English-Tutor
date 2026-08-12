@@ -1,10 +1,34 @@
 """SQLAlchemy models for the English Tutor data layer."""
 
+import json
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 import sqlalchemy as sa
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.types import TypeDecorator
+
+
+class StringList(TypeDecorator[list[str]]):
+    """Store a list of strings as a JSON-encoded TEXT column."""
+
+    impl = sa.Text
+    cache_ok = True
+
+    def process_bind_param(self, value: list[str] | None, dialect: Any) -> str | None:
+        if value is None:
+            return None
+        return json.dumps(list(value), ensure_ascii=False)
+
+    def process_result_value(self, value: str | None, dialect: Any) -> list[str]:
+        if value is None or value == "":
+            return []
+        try:
+            parsed = json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            return []
+        return list(parsed)
 
 
 class Base(DeclarativeBase):
@@ -28,6 +52,13 @@ class Student(Base):
     name: Mapped[str] = mapped_column(sa.String(255))
     year_level: Mapped[int]
     curriculum: Mapped[str] = mapped_column(sa.String(50))
+    # Optional: restrict sessions to specific text types (e.g. ["analytical"]).
+    # Empty/missing means all text types are in scope.
+    focus_text_types: Mapped[list[str]] = mapped_column(
+        StringList(),
+        default=list,
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         default=_now,

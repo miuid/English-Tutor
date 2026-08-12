@@ -15,6 +15,9 @@ from app.api.schemas import (
     RubricScoreOut,
     SessionOut,
     StartSessionRequest,
+    StudentCreate,
+    StudentOut,
+    StudentUpdate,
     SubmitOut,
     SubmitRequest,
     TurnOut,
@@ -71,18 +74,98 @@ def _feedback_out(feedback: Feedback) -> FeedbackOut:
     )
 
 
+def _student_out(student: Student) -> StudentOut:
+    return StudentOut(
+        id=student.id,
+        name=student.name,
+        year_level=student.year_level,
+        curriculum=student.curriculum,
+        focus_text_types=student.focus_text_types or [],
+        created_at=student.created_at,
+    )
+
+
+@router.post("/students", status_code=201)
+async def create_student(
+    payload: StudentCreate,
+    db: DBSession = Depends(get_db),
+) -> StudentOut:
+    """Create a student profile (year, curriculum, focus text types)."""
+    student = Student(
+        name=payload.name,
+        year_level=payload.year_level,
+        curriculum=payload.curriculum,
+        focus_text_types=payload.focus_text_types,
+    )
+    db.add(student)
+    db.commit()
+    db.refresh(student)
+    return _student_out(student)
+
+
+@router.get("/students")
+async def list_students(db: DBSession = Depends(get_db)) -> list[StudentOut]:
+    """List all students (Beta: per-family install has few profiles)."""
+    rows = db.execute(select(Student).order_by(Student.created_at)).scalars().all()
+    return [_student_out(s) for s in rows]
+
+
+@router.get("/students/{student_id}")
+async def get_student(
+    student_id: uuid.UUID,
+    db: DBSession = Depends(get_db),
+) -> StudentOut:
+    student = db.get(Student, student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return _student_out(student)
+
+
+@router.patch("/students/{student_id}")
+async def update_student(
+    student_id: uuid.UUID,
+    payload: StudentUpdate,
+    db: DBSession = Depends(get_db),
+) -> StudentOut:
+    """Update a student profile (name / year / curriculum / focus text types)."""
+    student = db.get(Student, student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    if payload.name is not None:
+        student.name = payload.name
+    if payload.year_level is not None:
+        student.year_level = payload.year_level
+    if payload.curriculum is not None:
+        student.curriculum = payload.curriculum
+    if payload.focus_text_types is not None:
+        student.focus_text_types = payload.focus_text_types
+    db.commit()
+    db.refresh(student)
+    return _student_out(student)
+
+
 @router.post("/sessions", status_code=201)
 async def start_session(
     payload: StartSessionRequest,
     loop: InteractiveLoop = Depends(get_loop),
 ) -> SessionOut:
-    """Start a session: create it and return the set-success-criteria turn."""
-    session = await loop.start(
-        task_prompt=payload.task_prompt,
-        context=payload.context,
-        year_level=payload.year_level,
-        text_type=payload.text_type,
-    )
+    """Start a session: create it and return the set-success-criteria turn.
+
+    If ``student_id`` is provided, the session attaches to that profile and
+    the skill inputs inherit the student's ``year_level`` / ``focus_text_types``.
+    Otherwise the loop falls back to the legacy single-user student (the first
+    or a newly created one) with the request's ``year_level`` / ``text_type``.
+    """
+    try:
+        session = await loop.start(
+            task_prompt=payload.task_prompt,
+            context=payload.context,
+            student_id=payload.student_id,
+            year_level=payload.year_level,
+            text_type=payload.text_type,
+        )
+    except SessionNotFoundError:
+        raise HTTPException(status_code=404, detail="Student not found") from None
     session, attempts = loop.get_state(session.id)
     return _session_out(session, attempts, loop)
 

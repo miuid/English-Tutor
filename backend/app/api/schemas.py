@@ -6,9 +6,37 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 
+class StudentCreate(BaseModel):
+    """Create or register a student profile."""
+
+    name: str = Field(min_length=1, max_length=255)
+    year_level: int = Field(ge=8, le=12)
+    curriculum: str = Field(default="QCAA", min_length=1)
+    focus_text_types: list[str] = Field(default_factory=list)
+
+
+class StudentUpdate(BaseModel):
+    """Partial update of a student profile."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    year_level: int | None = Field(default=None, ge=8, le=12)
+    curriculum: str | None = Field(default=None, min_length=1)
+    focus_text_types: list[str] | None = None
+
+
+class StudentOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    year_level: int
+    curriculum: str
+    focus_text_types: list[str]
+    created_at: datetime
+
+
 class StartSessionRequest(BaseModel):
     task_prompt: str | None = Field(default=None, min_length=1)
     context: str | None = Field(default=None, min_length=1)
+    student_id: uuid.UUID | None = None
     year_level: str = "8"
     text_type: str = "analytical"
 

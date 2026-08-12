@@ -1,5 +1,28 @@
 // API types mirroring backend/app/api/schemas.py
 
+export interface StudentOut {
+  id: string
+  name: string
+  year_level: number
+  curriculum: string
+  focus_text_types: string[]
+  created_at: string
+}
+
+export interface StudentCreate {
+  name: string
+  year_level: number
+  curriculum?: string
+  focus_text_types?: string[]
+}
+
+export interface StudentUpdate {
+  name?: string
+  year_level?: number
+  curriculum?: string
+  focus_text_types?: string[]
+}
+
 export interface TurnOut {
   id: string
   kind: string // "tutor" | "student"
@@ -22,6 +45,14 @@ export interface SessionOut {
   time_spent_seconds: number
   time_up: boolean
   turns: TurnOut[]
+}
+
+export interface StartSessionRequest {
+  task_prompt?: string
+  context?: string
+  student_id?: string
+  year_level?: string
+  text_type?: string
 }
 
 export interface AdvanceOut {

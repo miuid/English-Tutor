@@ -118,14 +118,23 @@ class InteractiveLoop:
         year_level: str,
         text_type: str,
         context: str | None = None,
+        student_id: uuid.UUID | None = None,
     ) -> Session:
         """Create/fetch the student, open a Session, and run set-success-criteria.
 
         ``task_prompt`` is optional: when absent the loop falls back to
         ``DEFAULT_TASK_PROMPT`` so the skills still get a usable prompt, while
         ``Session.learning_intention`` stays ``None`` (no pasted school task).
+
+        When ``student_id`` is provided, the session attaches to that profile
+        and ``year_level`` / ``text_type`` inherit from the student's profile
+        (the request's values are ignored). Otherwise the legacy single-user
+        student is used (created on first call).
         """
-        student = self._get_or_create_student(year_level)
+        student = self._resolve_student(
+            student_id=student_id,
+            year_level=year_level,
+        )
         session = Session(
             student_id=student.id,
             learning_intention=task_prompt,
@@ -135,12 +144,15 @@ class InteractiveLoop:
         self.db.add(session)
         self.db.flush()
 
+        resolved_text_type = self._resolve_text_type(student, text_type)
+        resolved_year_level = str(student.year_level)
+
         criteria = await self._execute_and_log(
             session,
             self.skills["set-success-criteria"],
             {
-                "year_level": year_level,
-                "text_type": text_type,
+                "year_level": resolved_year_level,
+                "text_type": resolved_text_type,
                 "task_prompt": task_prompt or DEFAULT_TASK_PROMPT,
                 "context": context or "",
                 "student_text": "",
@@ -453,6 +465,39 @@ class InteractiveLoop:
         except Exception:
             pass
 
+    def _resolve_student(
+        self,
+        *,
+        student_id: uuid.UUID | None,
+        year_level: str,
+    ) -> Student:
+        """Resolve the session's student.
+
+        - ``student_id`` provided: use that profile (raises if missing).
+        - Otherwise: single-user MVP — reuse the first student, else create a
+          default one with ``year_level`` and the default curriculum.
+        """
+        if student_id is not None:
+            student = self.db.get(Student, student_id)
+            if student is None:
+                msg = f"Student not found: {student_id}"
+                raise SessionNotFoundError(msg)
+            return student
+        return self._get_or_create_student(year_level)
+
+    @staticmethod
+    def _resolve_text_type(student: Student, requested: str) -> str:
+        """Pick the text type for the session from the student profile or request.
+
+        If the student's ``focus_text_types`` is non-empty, the first entry is
+        used (the request's ``text_type`` is ignored — the profile wins).
+        Otherwise the request's ``text_type`` is used (MVP default).
+        """
+        focus = student.focus_text_types or []
+        if focus:
+            return focus[0]
+        return requested
+
     def _get_or_create_student(self, year_level: str) -> Student:
         """Single-user MVP: reuse the first student, else create a default one."""
         student = self.db.execute(
@@ -478,14 +523,20 @@ class InteractiveLoop:
     ) -> dict[str, str]:
         """Rebuild skill inputs for an existing session.
 
-        year_level comes from the student row; text_type is fixed to the MVP
-        analytical scope (Session does not store it).
+        year_level and text_type come from the student row when the student has
+        a profile (year_level always; focus_text_types[0] when non-empty), so
+        sessions stay consistent with the student's profile across reloads.
         """
         student = self.db.get(Student, session.student_id)
-        year_level = str(student.year_level) if student is not None else "8"
+        if student is not None:
+            year_level = str(student.year_level)
+            text_type = self._resolve_text_type(student, DEFAULT_TEXT_TYPE)
+        else:
+            year_level = "8"
+            text_type = DEFAULT_TEXT_TYPE
         return {
             "year_level": year_level,
-            "text_type": DEFAULT_TEXT_TYPE,
+            "text_type": text_type,
             "task_prompt": task_prompt if task_prompt is not None else self._task_prompt(session),
             "student_text": student_text,
         }

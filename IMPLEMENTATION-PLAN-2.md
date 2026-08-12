@@ -26,10 +26,11 @@ Skills stay generic; content depth lives in `skills/<skill>/references/<text_typ
   - Depends on: —
   - **Done 2026-07-31:** `Skill.packs` (key `"shared"` / `"<text_type>/<band>"`) replaces flat references; all 6 existing reference files migrated to `references/analytical/year-8/`; `year_band_for()` + `select_packs()` with nearest-band fallback + code-appended degradation note; byte-exact prompt regression test proves Year-8 analytical prompts unchanged. pytest 115 passed + 4 skipped (+20 new); ruff/mypy clean (3 ruff errors elsewhere pre-exist at HEAD); live eval 8/8 PASS after tuning give-feedback expected-01 (Understanding C→C/D, explicit C/D acceptance notes — model drift, not regression; E-grading stays a FAIL). Packless skills (guided-practice, model-response) get no degradation note by design.
 
-- [ ] **6.2 Student profile + session context** (M)
+- [x] **6.2 Student profile + session context** (M)
   - Goal: `student` gains `year_level` + `focus_text_types`; `POST /api/sessions` injects them into skill inputs (overridable); frontend profile create/edit.
   - Done when: two students with different profiles start sessions whose prompts carry different `year_level`; tests cover it.
   - Depends on: 6.1
+  - **Done 2026-08-12:** `Student.focus_text_types` (JSON-encoded via `StringList` TypeDecorator) added with idempotent SQLite migration in `init_db()`. New routes: `POST /api/students`, `GET /api/students`, `GET/PATCH /api/students/{id}`. `StartSessionRequest.student_id` optional; when set, `InteractiveLoop._resolve_student()` loads the profile and `_resolve_text_type()` picks `focus_text_types[0]` over the request's `text_type` (profile wins). `_base_inputs()` now pulls `year_level` and `text_type` from the student row on every subsequent stage, so reloads stay consistent. Frontend: new `ProfileView` (create/edit/saved), `Profile` tab in `App.tsx`, `ChatView` start-card shows the signed-in profile and passes `student.id` to `startSession()`. 9 new tests in `tests/test_student_profile.py`. pytest 131 passed + 4 skipped; ruff/mypy green; tsc + vite build green; oxlint 0 errors.
 
 - [ ] **6.3 Eval fixture matrix** (M)
   - Goal: a skill can ship multiple fixtures (frontmatter tags band/text_type); scorecard groups by combo.
@@ -177,4 +178,4 @@ Skills stay generic; content depth lives in `skills/<skill>/references/<text_typ
 
 ## Progress
 
-Phase 2 milestones done: **6.1** (reference packs). Next: 6.2 student profile + session context.
+Phase 2 milestones done: **6.1, 6.2**. Next: 6.3 eval fixture matrix.

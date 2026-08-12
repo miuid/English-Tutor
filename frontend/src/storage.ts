@@ -1,7 +1,8 @@
-import type { FeedbackOut } from './types'
+import type { FeedbackOut, StudentOut } from './types'
 
 const SESSION_KEY = 'et.sessionId'
 const STUDENT_KEY = 'et.studentId'
+const STUDENT_PROFILE_KEY = 'et.studentProfile'
 const FEEDBACK_PREFIX = 'et.feedback.'
 
 export function loadStoredSessionId(): string | null {
@@ -22,6 +23,23 @@ export function loadStudentId(): string | null {
 
 export function saveStudentId(id: string): void {
   localStorage.setItem(STUDENT_KEY, id)
+}
+
+export function loadStudentProfile(): StudentOut | null {
+  try {
+    const raw = localStorage.getItem(STUDENT_PROFILE_KEY)
+    return raw ? (JSON.parse(raw) as StudentOut) : null
+  } catch {
+    return null
+  }
+}
+
+export function saveStudentProfile(student: StudentOut): void {
+  localStorage.setItem(STUDENT_PROFILE_KEY, JSON.stringify(student))
+}
+
+export function clearStudentProfile(): void {
+  localStorage.removeItem(STUDENT_PROFILE_KEY)
 }
 
 // Final feedback is only returned by the submit call, not by GET /sessions,

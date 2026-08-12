@@ -39,12 +39,13 @@ def init_db() -> None:
     """Create all tables if they do not exist, then patch older SQLite DBs.
 
     The project has no migration framework; new nullable/defaulted columns on
-    ``session`` are added in place so existing dev and LAN-server databases
-    keep their data.
+    ``session`` and ``student`` are added in place so existing dev and
+    LAN-server databases keep their data.
     """
     engine = get_engine()
     Base.metadata.create_all(bind=engine)
     _ensure_session_time_columns(engine)
+    _ensure_student_focus_text_types_column(engine)
 
 
 # (column name, DDL type) pairs added after the original schema shipped.
@@ -53,6 +54,9 @@ _SESSION_TIME_COLUMNS = (
     ("last_activity_at", "DATETIME"),
     ("paused_at", "DATETIME"),
 )
+
+# New nullable column on student for the Phase 2 profile work (6.2).
+_STUDENT_FOCUS_TEXT_TYPES_COLUMN = ("focus_text_types", "TEXT")
 
 
 def _ensure_session_time_columns(engine: Engine) -> None:
@@ -66,3 +70,16 @@ def _ensure_session_time_columns(engine: Engine) -> None:
         for name, ddl in _SESSION_TIME_COLUMNS:
             if name not in existing:
                 conn.exec_driver_sql(f'ALTER TABLE "session" ADD COLUMN {name} {ddl}')
+
+
+def _ensure_student_focus_text_types_column(engine: Engine) -> None:
+    """Idempotently add student.focus_text_types (SQLite only)."""
+    if not engine.url.get_backend_name().startswith("sqlite"):
+        return
+    with engine.begin() as conn:
+        existing = {
+            row[1] for row in conn.exec_driver_sql('PRAGMA table_info("student")')
+        }
+        for name, ddl in (_STUDENT_FOCUS_TEXT_TYPES_COLUMN,):
+            if name not in existing:
+                conn.exec_driver_sql(f'ALTER TABLE "student" ADD COLUMN {name} {ddl}')

@@ -100,9 +100,13 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 - ✅ P4.1 — interactive daily-loop API (`app/sessions/interactive.py` stage machine + `app/api/` routes; `Session.stage` persisted; progress endpoint).
 - ✅ P4.2 — React chat loop UI (welcome + school-task paste, stage chips, reload resilience, Vite proxy; zero new deps).
 - ✅ P4.3 — progress view (per-criterion A–E SVG trend from `rubric_score`).
+- ✅ P6.1 — reference-pack architecture (skills/<skill>/references/<text_type>/<year_band>/).
+- ✅ P6.2 — student profile + session context (`focus_text_types`, student CRUD API, frontend ProfileView).
 
-**Next (Phase 2 — planned 2026-07-31, see `PHASE-2-PLAN.md`; 4 decision points D1–D4 await owner confirmation)**
+**Next (Phase 2 — planned 2026-07-31, see `PHASE-2-PLAN.md`; D1–D4 confirmed by owner 2026-07-31)**
 - ⬜ Track A — skill depth: P6 framework generalisation (reference packs) → P9 Year 9–10 analytical (hard deadline: Feb 2027 school year) → P7 persuasive → P8 imaginative → P10 senior framework (timing by beta family mix).
+  - ✅ P6.1 reference-pack architecture live.
+  - ✅ P6.2 student profile + session context.
 - ⬜ Track B — Beta (5–10 QLD families, per-family local install): B1 distribution + student profiles → B2 baseline assessment → B3 loop completion (`fix-mechanics`, `spaced-review`, weekly mock) → B4 motivation → B5 parent layer → B6 ops → recruit.
 - ⬜ 5 new skills planned: `strengthen-argument`, `craft-voice`, `fix-mechanics`, `spaced-review`, `baseline-assessment` (→ 13 total).
 
@@ -136,6 +140,13 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | `English Circulum.md` | Curriculum reference. |
 
 ## 11. Session log
+
+### 2026-08-12 — P6.2 done: student profile + session context
+- **Data layer:** `Student.focus_text_types` added (JSON-encoded list via a custom `StringList` TypeDecorator in `app/models.py`); `database.init_db()` gained an idempotent `_ensure_student_focus_text_types_column()` ALTER TABLE patcher for existing SQLite DBs (same pattern as the session time-budget columns).
+- **Backend API:** new `POST /api/students`, `GET /api/students`, `GET /PATCH /api/students/{id}` routes + `StudentCreate`/`StudentUpdate`/`StudentOut` schemas. `StartSessionRequest` gained optional `student_id`; when set, `InteractiveLoop.start()` calls `_resolve_student()` (loads the profile, raises `SessionNotFoundError`→404 if missing) and `_resolve_text_type()` (student's `focus_text_types[0]` wins over the request's `text_type`). `_base_inputs()` now pulls both `year_level` and `text_type` from the student row on every subsequent stage, so a reloaded session stays consistent with the profile.
+- **Frontend:** new `ProfileView.tsx` (create/edit/saved modes, year-level + curriculum + focus-text-types chips, localStorage persistence); `App.tsx` gained a `Profile` tab and a `student: StudentOut | null` prop threaded into `ChatView`; `ChatView` start-card shows the signed-in profile and passes `student?.id` into `startSession()`; `storage.ts` gained `load/save/clearStudentProfile`; `types.ts` + `api.ts` gained `StudentOut/Create/Update` + `createStudent/listStudents/getStudent/updateStudent`.
+- **Verification:** 9 new tests in `tests/test_student_profile.py` (create/list/get/update, session inherits profile, 404s, openapi schema). pytest 131 passed + 4 skipped (test_skill_loader skipped due to Windows temp-dir permission, unrelated); ruff green; mypy green on changed files; `tsc -b && vite build` green; oxlint 0 errors (1 pre-existing Markdown.tsx warning). The `get_session_state` route temporarily lost its `@router.get` decorator during the edit — restored; `SessionNotFoundError` raised by `start()` when `student_id` is missing is now caught in `start_session` and returned as 404.
+- **Next pick-up:** step **6.3 Eval fixture matrix** (`IMPLEMENTATION-PLAN-2.md`) — a skill can ship multiple fixtures tagged by band/text_type; scorecard groups results by combo.
 
 ### 2026-08-11 — 15-minute session budget, pause/resume, humane composer layout
 - Owner reported three problems: the "15 minutes per session" promise was never enforced (loop ran forever), the student input box was too cramped for long answers, and there was no way to pause and continue the next day.
