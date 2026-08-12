@@ -16,8 +16,8 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     database_url: str = "sqlite:///./english_tutor.db"
-    llm_provider: str = "deepseek"
-    llm_model: str = "deepseek-chat"
+    llm_provider: str = "kimi"
+    llm_model: str = "kimi-k3"
     llm_api_key: str | None = None
     skills_dir: str = str(Path(__file__).resolve().parent.parent.parent / "skills")
     # Soft per-day session time budget. Not a hard cutoff: the current unit of
