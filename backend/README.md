@@ -11,7 +11,7 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-cp .env.example .env  # then set LLM_API_KEY (DeepSeek key; provider defaults to deepseek/deepseek-chat)
+cp .env.example .env  # then set LLM_API_KEY (Kimi/Moonshot key; provider defaults to kimi/kimi-k3)
 uvicorn app.main:app --reload
 ```
 

@@ -9,6 +9,8 @@ import pytest
 from app.config import Settings
 from app.llm import FakeProvider, create_llm_provider
 from app.llm.deepseek import API_URL, DeepSeekProvider
+from app.llm.kimi import API_URL as KIMI_API_URL
+from app.llm.kimi import KimiProvider
 
 
 @pytest.mark.asyncio
@@ -101,6 +103,68 @@ async def test_deepseek_provider_raises_clear_error_on_http_failure() -> None:
 
     client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
     provider = DeepSeekProvider(_deepseek_settings(), client=client)
+
+    with pytest.raises(RuntimeError, match="status 429: rate limit exceeded"):
+        await provider.generate("system", [{"role": "user", "content": "hi"}])
+
+
+def _kimi_settings() -> Settings:
+    return Settings(
+        llm_provider="kimi",
+        llm_model="kimi-k3",
+        llm_api_key="test-key",
+    )
+
+
+def test_factory_returns_kimi_provider() -> None:
+    provider = create_llm_provider(_kimi_settings())
+    assert isinstance(provider, KimiProvider)
+
+
+def test_kimi_provider_requires_api_key() -> None:
+    settings = Settings(llm_provider="fake", llm_model="kimi-k3", llm_api_key="")
+    with pytest.raises(ValueError, match="LLM_API_KEY is required for KimiProvider"):
+        KimiProvider(settings)
+
+
+@pytest.mark.asyncio
+async def test_kimi_provider_request_shape_and_content() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["url"] = str(request.url)
+        captured["authorization"] = request.headers["authorization"]
+        captured["json"] = json.loads(request.content)
+        return httpx.Response(200, json={"choices": [{"message": {"content": "mocked reply"}}]})
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    provider = KimiProvider(_kimi_settings(), client=client)
+
+    result = await provider.generate(
+        "system prompt",
+        [{"role": "user", "content": "hello"}],
+    )
+
+    assert result == "mocked reply"
+    assert captured["url"] == KIMI_API_URL
+    assert captured["authorization"] == "Bearer test-key"
+    body = captured["json"]
+    assert isinstance(body, dict)
+    assert body["model"] == "kimi-k3"
+    assert body["stream"] is False
+    assert body["messages"] == [
+        {"role": "system", "content": "system prompt"},
+        {"role": "user", "content": "hello"},
+    ]
+
+
+@pytest.mark.asyncio
+async def test_kimi_provider_raises_clear_error_on_http_failure() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(429, text="rate limit exceeded")
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    provider = KimiProvider(_kimi_settings(), client=client)
 
     with pytest.raises(RuntimeError, match="status 429: rate limit exceeded"):
         await provider.generate("system", [{"role": "user", "content": "hi"}])
