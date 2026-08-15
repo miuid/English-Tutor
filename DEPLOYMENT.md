@@ -57,16 +57,16 @@ cp backend/.env.example backend/.env
 nano backend/.env
 ```
 
-最小配置（DeepSeek，默认）：
+最小配置（Kimi/Moonshot，默认）：
 
 ```ini
 APP_ENV=production
-LLM_PROVIDER=deepseek
-LLM_MODEL=deepseek-chat
+LLM_PROVIDER=kimi
+LLM_MODEL=kimi-k3
 LLM_API_KEY=sk-你的真实key
 ```
 
-换 Anthropic 只需改三行：`LLM_PROVIDER=anthropic`、`LLM_MODEL=claude-sonnet-4-6`、`LLM_API_KEY=...`。业务代码零改动（adapter 层设计）。
+换 DeepSeek / Anthropic 只需改三行：`LLM_PROVIDER=deepseek|anthropic`、`LLM_MODEL=deepseek-chat|claude-sonnet-4-6`、`LLM_API_KEY=...`。业务代码零改动（adapter 层设计）。
 
 > ⚠️ `docker compose` 启动时要求 `backend/.env` 必须存在，缺少会直接报错。
 
@@ -137,8 +137,8 @@ docker compose up -d
 | 变量 | 位置 | 说明 | 默认值 |
 |---|---|---|---|
 | `LLM_API_KEY` | `backend/.env` | LLM 密钥（必填） | 无 |
-| `LLM_PROVIDER` | `backend/.env` | `deepseek` / `anthropic` / `fake` | `deepseek` |
-| `LLM_MODEL` | `backend/.env` | 模型名 | `deepseek-chat` |
+| `LLM_PROVIDER` | `backend/.env` | `kimi` / `deepseek` / `anthropic` / `fake` | `kimi` |
+| `LLM_MODEL` | `backend/.env` | 模型名 | `kimi-k3` |
 | `APP_ENV` | `backend/.env` | 运行环境标记 | `development` |
 | `DATABASE_URL` | compose 覆盖 | 容器内固定指向 `/data` 卷 | `sqlite:////data/english_tutor.db` |
 | `SKILLS_DIR` | compose 覆盖 | 容器内 skills 路径 | `/skills` |

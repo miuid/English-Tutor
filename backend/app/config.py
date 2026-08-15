@@ -32,7 +32,7 @@ class Settings(BaseSettings):
         value: str | None,
         info: ValidationInfo,
     ) -> str | None:
-        provider = info.data.get("llm_provider", "deepseek")
+        provider = info.data.get("llm_provider", "kimi")
         if provider != "fake" and not value:
             msg = f"LLM_API_KEY is required when LLM_PROVIDER='{provider}'"
             raise ValueError(msg)

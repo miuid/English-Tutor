@@ -12,7 +12,7 @@ cd english-tutor
 
 # 2. Put your LLM API key in backend/.env
 cp backend/.env.example backend/.env
-# Edit backend/.env and set LLM_API_KEY (DeepSeek key; defaults to deepseek/deepseek-chat)
+# Edit backend/.env and set LLM_API_KEY (Kimi/Moonshot key; defaults to kimi/kimi-k3)
 
 # 3. Build and start frontend + backend
 docker compose up -d --build
@@ -48,7 +48,7 @@ npm run dev   # starts Vite dev server + backend (via scripts/dev.mjs)
 ## Architecture
 
 - **Backend:** Python 3.12, FastAPI, SQLAlchemy 2.0, SQLite
-- **LLM:** DeepSeek `deepseek-chat` default (adapter-swappable; Anthropic Sonnet available)
+- **LLM:** Kimi K3 `kimi-k3` default (adapter-swappable; DeepSeek `deepseek-chat` and Anthropic Sonnet available)
 - **Frontend:** React + Vite + TypeScript
 - **Skills:** 8 portable Markdown coaching packages loaded at runtime
 

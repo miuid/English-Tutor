@@ -2,7 +2,7 @@
 
 > Long-term memory for this project. It records the vision, every meaningful decision (with dates and rationale), what's been built, the roadmap, and open questions. **Update this file whenever a decision is made, a milestone is hit, or something important is discovered — and append a dated entry to the Session log (§11) at the end of each working session.** New sessions should read this first.
 
-Last updated: 2026-08-11
+Last updated: 2026-08-15
 
 ---
 
@@ -83,6 +83,7 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | 2026-07-10 | **MVP model = single cloud Claude Sonnet 4.6** for all stages; adapter keeps it swappable | Demanding coaching task rewards a strong model while skills are still being tuned; ~$4/mo for one student is negligible; privacy rule permits cloud. Local Ollama (Qwen 2.5 14B) and per-stage routing deferred to later/scale. Prices as of 2026-07: Sonnet 4.6 $3/$15, Opus 4.8 $5/$25, Haiku 4.5 $1/$5 per 1M tok. |
 | 2026-07-17 | **MVP default model switched to DeepSeek `deepseek-chat`**; Anthropic/Sonnet remains a config-only swap | Owner decision. The adapter layer paid off: the switch touched only `app/llm/deepseek.py` (new), factory, and config defaults — zero business-logic changes. Eval + live runs now need `LLM_API_KEY` (DeepSeek) in `backend/.env`. |
 | 2026-07-31 | **Phase 2 decisions D1–D4 confirmed** (see `PHASE-2-PLAN.md` §1): D1 per-family local install for Beta (hosted multi-tenant stays GA); D2 senior = framework + IA1 depth only; D3 parents see trends, not full essays; D4 order P6→P9→P7→P8→B1–B6 | Owner confirmed all four recommendations unchanged. Unblocks the Phase 2 checklist (`IMPLEMENTATION-PLAN-2.md`). |
+| 2026-08-12 | **MVP default model switched to Kimi K3 (Moonshot AI) `kimi-k3`**; DeepSeek/Anthropic stay config-only swaps | Owner decision. Adapter layer paid off again: new `app/llm/kimi.py` (OpenAI-compatible, `api.moonshot.ai`), one factory branch, config defaults — zero business-logic changes. `LLM_API_KEY` in `backend/.env` is now a Moonshot key. (Live eval not rerun on Kimi yet; last live eval = DeepSeek 8/8 PASS, 2026-07-31.) |
 
 ## 8. Milestones / roadmap
 
@@ -92,7 +93,7 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 - ✅ 8 v1 agent skills authored with golden examples (`skills/`).
 - ✅ Static design dry-run of all skills against samples.
 - ✅ P1 — curriculum + rubric data model (Year 8 first).
-- ✅ P0 — project scaffolding + LLM adapter layer (default provider: Anthropic/Sonnet) + skill loader.
+- ✅ P0 — project scaffolding + LLM adapter layer (default provider: Kimi K3; Anthropic/Sonnet and DeepSeek remain config swaps) + skill loader.
 - ✅ P2.1 — Skill execution service (single skill: check-structure).
 - ✅ P2.2 — Coaching skills + diagnose-errors router.
 - ✅ P2.3 — Session orchestrator (daily loop).
@@ -102,6 +103,7 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 - ✅ P4.3 — progress view (per-criterion A–E SVG trend from `rubric_score`).
 - ✅ P6.1 — reference-pack architecture (skills/<skill>/references/<text_type>/<year_band>/).
 - ✅ P6.2 — student profile + session context (`focus_text_types`, student CRUD API, frontend ProfileView).
+- ✅ Kimi K3 (Moonshot AI) provider — default LLM switched 2026-08-12 (adapter-only change; DeepSeek/Anthropic remain config swaps).
 
 **Next (Phase 2 — planned 2026-07-31, see `PHASE-2-PLAN.md`; D1–D4 confirmed by owner 2026-07-31)**
 - ⬜ Track A — skill depth: P6 framework generalisation (reference packs) → P9 Year 9–10 analytical (hard deadline: Feb 2027 school year) → P7 persuasive → P8 imaginative → P10 senior framework (timing by beta family mix).
@@ -115,7 +117,7 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 9. Open questions
 
-- ~~Which LLM for MVP?~~ **Resolved 2026-07-10 (Sonnet); revised 2026-07-17: default now DeepSeek `deepseek-chat`, adapter-swappable.** (see §7)
+- ~~Which LLM for MVP?~~ **Resolved 2026-07-10 (Sonnet); revised 2026-07-17 (DeepSeek `deepseek-chat`); revised again 2026-08-12: default now Kimi K3 `kimi-k3` (Moonshot), adapter-swappable.** (see §7)
 - User login for MVP? (Single-user can skip; schema still reserves it.)
 - Source for structured QCAA outcome data (research files already have a lot to extract).
 
@@ -140,6 +142,12 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | `English Circulum.md` | Curriculum reference. |
 
 ## 11. Session log
+
+### 2026-08-12 — Kimi K3 (Moonshot AI) provider added; default LLM switched
+- **New provider:** `app/llm/kimi.py` — `KimiProvider` (OpenAI-compatible, `api.moonshot.ai/v1/chat/completions`, httpx, 60s timeout), mirrors the DeepSeek adapter pattern; registered in the LLM factory; config defaults now `LLM_PROVIDER=kimi` / `LLM_MODEL=kimi-k3` (root `.env.example` + `backend/README.md` updated).
+- Tests: factory routing, missing-key error, request shape, HTTP error handling (+64 lines in `tests/test_llm.py`; `tests/test_config.py` defaults updated). **133 passed + 4 skipped**, ruff clean.
+- Note: shipped on branch `feature/kimi-k3-provider` (commit `4fbae6e`), **merged to main 2026-08-15** (merge `c263f23`); this MEMORY entry was back-filled at merge time (owner's own 08-12 P6.2 / markdown entries live in `995abc1` / `fe9ac7f`). Live eval NOT rerun on Kimi by owner decision — last live eval remains DeepSeek 8/8 PASS (2026-07-31).
+- **Next pick-up:** unchanged — step **6.3 Eval fixture matrix** (`IMPLEMENTATION-PLAN-2.md`).
 
 ### 2026-08-12 — Markdown rendering rebuilt on react-markdown (tables + checkbox lists)
 - Owner reported (2nd time) that tutor markdown renders wrong: the think-aloud `| … | … |` GFM table showed as raw pipe text, and the `□ I can …` success criteria collapsed into one inline paragraph.
