@@ -147,6 +147,13 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 11. Session log
 
+### 2026-08-19 — ISS-004 done: persuasive reference packs for Year 8-10
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-004 (P1, dep ISS-003 DONE).
+- **Shipped:** twelve persuasive packs — six pack-bearing skills (check-structure, diagnose-errors, elevate-vocabulary, give-feedback, independent-task, set-success-criteria) × `year-8` + `year-9-10`, filenames mirroring the analytical packs. Content: argument-structure rubric (contention → reason/elaboration/evidence/link, escalation + rebuttal at 9-10), error taxonomy routing to existing skills, modality ladder + audience register + Tier 3 rhetorical metalanguage (ethos/pathos/logos at 9-10), A–E persuasive descriptors mapped to QCAA criteria + NAPLAN persuasive criteria, QCAA task specs per band with copyright-safe stimulus rules, "I can…" criteria banks.
+- Traceability: every pack cites `reaserch.md` (persuasive domain, Year 8/9 formats, conditions, marking criteria, NAPLAN), `teacher-skills.md` (AERO Writing Instruction Model), `Queensland English Tutoring Blueprint.md` (PEEL); Year 10 descriptors carry Q-001 derived-not-verbatim notes. No backend source changed; analytical packs untouched (behaviour byte-identical).
+- Verified: targeted 32 passed/1 skipped; full suite **157 passed/4 skipped** (+4 new tests); ruff clean; mypy unchanged vs baseline; `python -m app.eval --no-judge` (fake) 16 cases 12 passed/4 failed — unchanged baseline. Fallback proven: exact for persuasive 8-10, nearest-band note for 11-12, instructions-only for imaginative.
+- **Next pick-up:** ISS-005 — new skill `strengthen-argument` (ninth skill; golden examples + diagnose-errors routing for persuasive).
+
 ### 2026-08-19 — ISS-003 done: Year 9-10 analytical loop seeded and proven
 - Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-003 (P0, dep ISS-002 DONE).
 - **Shipped:** `app/seed.py` now idempotently seeds 12 QCAA analytical outcomes across three year levels — Year 8 unchanged, `YEAR_9_OUTCOMES` (QCAA-Y9-ANL-01..04: discriminating thesis, representations/reader-positioning, formal register/metalanguage, 600–800 word sustained response — traced to `reaserch.md` Year 9 marking criteria + the ISS-002 year-9-10 packs), `YEAR_10_OUTCOMES` (QCAA-Y10-ANL-01..04, derived one band up per Q-001).

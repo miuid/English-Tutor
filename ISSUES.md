@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-19T20:59:00+10:00`
+- Last evaluated: `2026-08-19T23:20:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -39,7 +39,7 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-001 | Eval fixture matrix by year band and text type | `DONE` | `P0` | `None` | `None` |
 | ISS-002 | Year 9-10 analytical reference packs | `DONE` | `P0` | `ISS-001` | `None` |
 | ISS-003 | Seed and evaluate Year 9-10 analytical loop | `DONE` | `P0` | `ISS-002` | `None` |
-| ISS-004 | Persuasive reference packs for Year 8-10 | `READY` | `P1` | `ISS-003` | `None` |
+| ISS-004 | Persuasive reference packs for Year 8-10 | `DONE` | `P1` | `ISS-003` | `None` |
 | ISS-005 | New skill strengthen-argument | `READY` | `P1` | `ISS-004` | `None` |
 | ISS-006 | Seed and wire persuasive daily loop | `READY` | `P1` | `ISS-005` | `None` |
 | ISS-007 | Imaginative reference packs for Year 8-10 | `READY` | `P1` | `ISS-006` | `None` |
@@ -189,7 +189,7 @@ Seed Year 9-10 QCAA analytical outcomes and prove a year_level=9 session can run
 - 2026-08-19T20:59:00+10:00 - DONE. Year 9-10 QCAA analytical outcomes seeded idempotently (12 outcomes across Year 8/9/10); year_level=9 loop proven end-to-end with FakeProvider at orchestrator and HTTP level, with year-9-10 packs cited in prompts and 5 rubric scores persisted. Verification: targeted 19 passed; full suite 153 passed/4 skipped; ruff clean; mypy unchanged vs baseline. Unlocks ISS-004.
 
 ## ISS-004 - Persuasive reference packs for Year 8-10
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P1`
 - Type: `research`
 - Depends on: `ISS-003`
@@ -198,32 +198,39 @@ Seed Year 9-10 QCAA analytical outcomes and prove a year_level=9 session can run
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: 7.1; PRD: §9 FR-GA-003; ERD: curriculum_outcome`
 - Effort: `M`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
+- Attempt: `1`
+- Started: `2026-08-19T22:59:00+10:00`
+- Completed: `2026-08-19T23:20:00+10:00`
 - Commit: `None`
 
 ### Outcome and scope
 Create persuasive reference packs covering argument structure, rhetorical devices by band, QCAA persuasive A-E descriptors, and task specs.
 
 ### Acceptance criteria
-- [ ] Persuasive packs exist for the relevant skills and year bands.
-- [ ] Every pedagogical claim traces to a research source file.
-- [ ] Pack selection falls back safely when an exact combo is missing.
+- [x] Persuasive packs exist for the relevant skills and year bands.
+- [x] Every pedagogical claim traces to a research source file.
+- [x] Pack selection falls back safely when an exact combo is missing.
 
 ### Implementation notes
 - Likely files or components: skills/*/references/persuasive/, reaserch.md, Queensland English Tutoring Blueprint.md, backend/app/skills/executor.py.
 - Constraints: no copyrighted set texts; use public-domain or generated stimulus only.
 
 ### Verification
-- [ ] `cd backend && uv run pytest tests/test_skill_loader.py tests/test_skill_executor.py`
-- [ ] `cd backend && uv run python -m app.eval --no-judge`
+- [x] `cd backend && uv run pytest tests/test_skill_loader.py tests/test_skill_executor.py` — 32 passed, 1 skipped.
+- [x] `cd backend && LLM_PROVIDER=fake uv run python -m app.eval --no-judge` — 16 cases, 12 passed / 4 failed (canned-fake rule failures on give-feedback + diagnose-errors, the expected no-judge baseline, unchanged); exit 1 as expected.
+- [x] `cd backend && uv run pytest` — 157 passed, 4 skipped (was 153/4; +4 new tests).
+- [x] `cd backend && uv run ruff check .` — clean; `uv run mypy app tests` — 29 errors in 4 unrelated test files, identical to the ISS-003 baseline; changed files clean.
 
 ### Completion evidence
-- Pending
+- Twelve persuasive packs authored (six pack-bearing skills × `year-8` + `year-9-10`), filenames mirroring the analytical packs: `check-structure/rubric.md` (argument-structure rubric: contention, reason/elaboration/evidence/link, response architecture, rebuttal at 9-10), `diagnose-errors/taxonomy.md` (six leverage-ordered categories routing to existing skills; strengthen-argument noted as planned ISS-005), `elevate-vocabulary/tiers.md` (modality ladder, audience register, Tier 3 rhetorical metalanguage incl. ethos/pathos/logos at 9-10), `give-feedback/rubric.md` (A–E persuasive descriptors mapped to QCAA criteria + NAPLAN persuasive criteria), `independent-task/task-specs.md` (QCAA conditions, approved persuasive formats per band, copyright-safe stimulus rules), `set-success-criteria/criteria-bank.md` ("I can…" banks + learning-intention stems).
+- Traceability: every pack cites `reaserch.md` sections (persuasive domain "arguments, rhetoric, and evidence to sway an audience"; Year 8 formats — speeches/vlogs adapting voice to formal/informal audiences; Year 9 formats — feature articles, letters to the editor, campaign pitches, formal reviews with rhetorical strategies and evidence; assessment conditions; marking criteria; NAPLAN persuasive criteria) plus `teacher-skills.md` (AERO Writing Instruction Model) and `Queensland English Tutoring Blueprint.md` (PEEL). Year 10 descriptors carry Q-001 derived-not-verbatim provenance notes.
+- Fallback proven by tests: `persuasive/year-8` and `persuasive/year-9-10` resolve exactly (no degradation note); `persuasive/year-11-12` falls back to `persuasive/year-8` with the nearest-band note; `imaginative/year-8` still falls back to skill instructions only. Tests: `test_reference_files_load_into_persuasive_year_8_pack`, `test_reference_files_load_into_persuasive_year_9_10_pack`, updated `test_select_packs_prefers_exact_then_nearest_band`, new `test_execute_persuasive_year_9_uses_exact_pack_without_degradation_note`, new `test_execute_appends_degradation_note_on_persuasive_band_fallback`, `test_execute_without_matching_pack_returns_response_with_note` retargeted to imaginative. No backend source changed; analytical packs untouched, so analytical behaviour is byte-identical.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: 7.1; PRD: §9 FR-GA-003; ERD: curriculum_outcome` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-19T22:59:00+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-19T23:20:00+10:00 - DONE. Persuasive reference packs shipped for all six pack-bearing skills across year-8 and year-9-10 (12 packs), traced to reaserch.md/teacher-skills.md/Blueprint with Q-001 provenance notes; safe fallback proven (exact for 8-10, nearest-band note for 11-12, instructions-only for imaginative). Verification: targeted 32 passed/1 skipped; full suite 157 passed/4 skipped; ruff clean; mypy unchanged vs baseline; `python -m app.eval --no-judge` (fake) 16 cases, 12 passed/4 failed — unchanged baseline. Unlocks ISS-005.
 
 ## ISS-005 - New skill strengthen-argument
 - Status: `READY`

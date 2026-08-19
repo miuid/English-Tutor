@@ -86,6 +86,32 @@ def test_skills_without_references_have_empty_packs() -> None:
         assert skill.packs == {}, name
 
 
+PACK_BEARING_SKILLS = {
+    "check-structure": "rubric.md",
+    "diagnose-errors": "taxonomy.md",
+    "elevate-vocabulary": "tiers.md",
+    "give-feedback": "rubric.md",
+    "independent-task": "task-specs.md",
+    "set-success-criteria": "criteria-bank.md",
+}
+
+
+def test_reference_files_load_into_persuasive_year_8_pack() -> None:
+    for name, filename in PACK_BEARING_SKILLS.items():
+        skill = load_skill(SKILLS_DIR / name)
+        assert "persuasive/year-8" in skill.packs, name
+        assert list(skill.packs["persuasive/year-8"]) == [filename], name
+        assert skill.packs["persuasive/year-8"][filename].strip(), name
+
+
+def test_reference_files_load_into_persuasive_year_9_10_pack() -> None:
+    for name, filename in PACK_BEARING_SKILLS.items():
+        skill = load_skill(SKILLS_DIR / name)
+        assert "persuasive/year-9-10" in skill.packs, name
+        assert list(skill.packs["persuasive/year-9-10"]) == [filename], name
+        assert skill.packs["persuasive/year-9-10"][filename].strip(), name
+
+
 def _write_minimal_skill(skill_dir: Path) -> None:
     skill_dir.mkdir(parents=True)
     sections = "\n\n".join(
