@@ -117,7 +117,7 @@ Extend the eval harness so one skill can ship multiple golden fixtures tagged by
 - Attempt: `1`
 - Started: `2026-08-19T18:26:00+10:00`
 - Completed: `2026-08-19T18:40:46+10:00`
-- Commit: `None`
+- Commit: `4f4d6a8`
 
 ### Outcome and scope
 Add analytical reference packs for year-9-10 across the existing skills, with band-adjusted rubric descriptors, vocabulary ceilings, task specs, and register transition.
