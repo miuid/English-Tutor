@@ -379,7 +379,7 @@ Create imaginative reference packs for narrative structure, character/setting/PO
 - Attempt: `1`
 - Started: `2026-08-20T08:00:00+10:00`
 - Completed: `2026-08-20T08:15:00+10:00`
-- Commit: `None`
+- Commit: `530b4fa`
 
 ### Outcome and scope
 Add the tenth agent skill craft-voice to diagnose telling-vs-showing, thin imagery, and POV drift, then coach the fix.
