@@ -147,6 +147,13 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 11. Session log
 
+### 2026-08-19 — ISS-003 done: Year 9-10 analytical loop seeded and proven
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-003 (P0, dep ISS-002 DONE).
+- **Shipped:** `app/seed.py` now idempotently seeds 12 QCAA analytical outcomes across three year levels — Year 8 unchanged, `YEAR_9_OUTCOMES` (QCAA-Y9-ANL-01..04: discriminating thesis, representations/reader-positioning, formal register/metalanguage, 600–800 word sustained response — traced to `reaserch.md` Year 9 marking criteria + the ISS-002 year-9-10 packs), `YEAR_10_OUTCOMES` (QCAA-Y10-ANL-01..04, derived one band up per Q-001).
+- **Loop proven for year_level=9** with FakeProvider at two levels: orchestrator (`test_run_daily_loop_year_9_cites_year_9_descriptors`) and HTTP (`test_year_9_session_runs_loop_and_persists_scores`) — every pack-bearing prompt cites the year-9-10 packs (no degradation note anywhere), and 5 rubric scores persist for the graded Year 9 attempt.
+- Verified: targeted 19 passed; full suite **153 passed/4 skipped** (+3); ruff clean; mypy 29 errors in 4 unrelated test files — identical to the ISS-002 baseline. Year 8 outcomes/behaviour untouched.
+- **Next pick-up:** ISS-004 — persuasive reference packs for Year 8-10 (research ticket; no copyrighted set texts).
+
 ### 2026-08-19 — ISS-002 done: Year 9-10 analytical reference packs + fixtures
 - Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-002 (P0, dep ISS-001 DONE).
 - **Shipped:** six `references/analytical/year-9-10/` packs (check-structure, diagnose-errors, elevate-vocabulary, give-feedback, independent-task, set-success-criteria) + one year-9-10 golden fixture per core skill (8 × sample-02/expected-02, `year_level: 9`, Macbeth thread — public domain).

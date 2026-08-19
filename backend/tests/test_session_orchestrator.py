@@ -146,3 +146,66 @@ async def test_run_daily_loop_persists_rubric_scores(db_session: SqlSession) -> 
         db_session.execute(select(Attempt).where(Attempt.session_id == session.id)).scalars().all()
     )
     assert len(attempts) == 7
+
+
+@pytest.mark.asyncio
+async def test_run_daily_loop_year_9_cites_year_9_descriptors(
+    db_session: SqlSession,
+) -> None:
+    """A year_level=9 loop runs end-to-end on the year-9-10 packs and persists scores."""
+    sync_skills(db_session)
+
+    student = Student(name="Year 9 Student", year_level=9, curriculum="QCAA")
+    db_session.add(student)
+    db_session.flush()
+
+    skills = {s.name: s for s in load_skills(SKILLS_DIR)}
+    fake = FakeProvider(
+        canned_responses=[
+            "criteria output",
+            "model output",
+            "guided output",
+            "independent task",
+            "Route to: check-structure",
+            "coaching output",
+            FEEDBACK_WITH_LEVELS,
+        ]
+    )
+    executor = SkillExecutionService(provider=fake)
+    orchestrator = SessionOrchestrator(db_session, executor, skills)
+
+    session = await orchestrator.run_daily_loop(
+        student_id=student.id,
+        year_level="9",
+        text_type="analytical",
+        task_prompt="How does Shakespeare construct the representation of ambition in Macbeth?",
+        student_text="Macbeth is ambitious.",
+    )
+
+    assert session.ended_at is not None
+
+    # Every pack-bearing tutor turn ran against the exact analytical/year-9-10
+    # packs (packs mention "Year 9"); the feedback prompt cites the Year 9
+    # descriptors ("discriminating thesis"), and no degradation note appears.
+    assert len(fake.calls) == 7
+    pack_bearing_calls = [0, 3, 4, 5, 6]  # criteria, independent, diagnosis, coach, feedback
+    for index in pack_bearing_calls:
+        system_prompt = fake.calls[index][0]
+        assert "Year 9" in system_prompt
+    assert "discriminating thesis" in fake.calls[6][0]  # give-feedback rubric
+    for attempt in session.attempts:
+        assert "_Note: no dedicated references" not in attempt.student_text
+
+    # Rubric scores persist for the graded Year 9 attempt.
+    feedback = db_session.execute(
+        select(Feedback).join(Attempt).where(Attempt.session_id == session.id)
+    ).scalar_one()
+    scores = (
+        db_session.execute(select(RubricScore).where(RubricScore.feedback_id == feedback.id))
+        .scalars()
+        .all()
+    )
+    assert len(scores) == 5
+    by_name = {score.criterion_name: score for score in scores}
+    assert by_name["Analysis (how techniques create meaning)"].level == "D"
+    assert by_name["Structure & cohesion"].level == "D+"

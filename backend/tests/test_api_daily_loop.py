@@ -202,6 +202,64 @@ def test_progress_endpoint_returns_rubric_rows(api_client: ApiClient) -> None:
         assert score["scored_at"]
 
 
+def test_year_9_session_runs_loop_and_persists_scores(api_client: ApiClient) -> None:
+    """A year_level=9 student runs the full loop over HTTP with Year 9 packs."""
+    client, fake = api_client
+
+    created = client.post(
+        "/api/students",
+        json={"name": "Year 9 Student", "year_level": 9, "curriculum": "QCAA"},
+    )
+    assert created.status_code == 201
+    student_id = created.json()["id"]
+
+    started = client.post(
+        "/api/sessions",
+        json={
+            "student_id": student_id,
+            "task_prompt": "How does Shakespeare position the reader in Macbeth?",
+        },
+    )
+    assert started.status_code == 201
+    session_id = started.json()["id"]
+
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    assert (
+        client.post(
+            f"/api/sessions/{session_id}/submit", json={"text": "My guided attempt."}
+        ).status_code
+        == 200
+    )
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    final = client.post(
+        f"/api/sessions/{session_id}/submit", json={"text": "Macbeth is ambitious."}
+    )
+    assert final.status_code == 200
+    body = final.json()
+    assert body["ended"] is True
+
+    # Rubric scores persist for the graded Year 9 attempt.
+    feedback = body["feedback"]
+    assert feedback is not None
+    levels = {score["criterion_name"]: score["level"] for score in feedback["rubric_scores"]}
+    assert len(levels) == 5
+    assert levels["Analysis (how techniques create meaning)"] == "D"
+
+    # The loop ran against the exact analytical/year-9-10 packs: Year 9
+    # descriptors are cited in the pack-bearing prompts (criteria, independent,
+    # diagnosis, coach, feedback) and the feedback prompt carries the Year 9
+    # rubric language; no degradation note was appended to any tutor turn.
+    assert len(fake.calls) == 8
+    for index in (0, 4, 5, 6, 7):
+        assert "Year 9" in fake.calls[index][0]
+    assert "discriminating thesis" in fake.calls[7][0]
+    state = client.get(f"/api/sessions/{session_id}").json()
+    tutor_turns = [turn for turn in state["turns"] if turn["kind"] == "tutor"]
+    for turn in tutor_turns:
+        assert "_Note: no dedicated references" not in turn["text"]
+
+
 def test_openapi_schema_renders(api_client: ApiClient) -> None:
     client, _ = api_client
     response = client.get("/openapi.json")

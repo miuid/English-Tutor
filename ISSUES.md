@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-19T18:40:46+10:00`
+- Last evaluated: `2026-08-19T20:59:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -38,7 +38,7 @@ This document is the canonical delivery state for autonomous development. Detail
 |---|---|---|---|---|---|
 | ISS-001 | Eval fixture matrix by year band and text type | `DONE` | `P0` | `None` | `None` |
 | ISS-002 | Year 9-10 analytical reference packs | `DONE` | `P0` | `ISS-001` | `None` |
-| ISS-003 | Seed and evaluate Year 9-10 analytical loop | `READY` | `P0` | `ISS-002` | `None` |
+| ISS-003 | Seed and evaluate Year 9-10 analytical loop | `DONE` | `P0` | `ISS-002` | `None` |
 | ISS-004 | Persuasive reference packs for Year 8-10 | `READY` | `P1` | `ISS-003` | `None` |
 | ISS-005 | New skill strengthen-argument | `READY` | `P1` | `ISS-004` | `None` |
 | ISS-006 | Seed and wire persuasive daily loop | `READY` | `P1` | `ISS-005` | `None` |
@@ -147,7 +147,7 @@ Add analytical reference packs for year-9-10 across the existing skills, with ba
 - 2026-08-19T18:40:46+10:00 - DONE. Year 9-10 analytical reference packs shipped for all six pack-bearing skills + one year-9-10 golden fixture per core skill (8 fixtures, Macbeth thread). Content traces to reaserch.md with Q-001 derived-not-verbatim notes for Year 10. Verification: targeted loader/executor/eval tests 61 passed/2 skipped; full suite 150 passed/4 skipped; ruff clean; mypy unchanged vs baseline; `python -m app.eval --no-judge` (fake) 16 cases with per-skill `analytical/year-9-10` combo rows. Unlocks ISS-003.
 
 ## ISS-003 - Seed and evaluate Year 9-10 analytical loop
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P0`
 - Type: `feature`
 - Depends on: `ISS-002`
@@ -156,32 +156,37 @@ Add analytical reference packs for year-9-10 across the existing skills, with ba
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: 9.2; PRD: §5 North Star metric; ERD: curriculum_outcome/rubric_score`
 - Effort: `S`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
+- Attempt: `1`
+- Started: `2026-08-19T20:46:51+10:00`
+- Completed: `2026-08-19T20:59:00+10:00`
 - Commit: `None`
 
 ### Outcome and scope
 Seed Year 9-10 QCAA analytical outcomes and prove a year_level=9 session can run the loop with Year 9 descriptors cited in feedback.
 
 ### Acceptance criteria
-- [ ] Year 9-10 QCAA analytical outcomes are seeded idempotently.
-- [ ] A year_level=9 analytical session runs end-to-end with FakeProvider in tests.
-- [ ] Rubric scores persist for a graded Year 9 attempt.
+- [x] Year 9-10 QCAA analytical outcomes are seeded idempotently.
+- [x] A year_level=9 analytical session runs end-to-end with FakeProvider in tests.
+- [x] Rubric scores persist for a graded Year 9 attempt.
 
 ### Implementation notes
 - Likely files or components: backend/app/seed.py, backend/seed.py, backend/tests/test_seed.py, backend/tests/test_session_orchestrator.py, backend/tests/test_api_daily_loop.py.
 - Constraints: keep seed idempotent; do not broaden to persuasive/imaginative yet.
 
 ### Verification
-- [ ] `cd backend && uv run pytest tests/test_seed.py tests/test_session_orchestrator.py tests/test_api_daily_loop.py`
-- [ ] `cd backend && uv run pytest`
+- [x] `cd backend && uv run pytest tests/test_seed.py tests/test_session_orchestrator.py tests/test_api_daily_loop.py` — 19 passed.
+- [x] `cd backend && uv run pytest` — 153 passed, 4 skipped (was 150/4; +3 new tests).
 
 ### Completion evidence
-- Pending
+- `app/seed.py` generalised to seed three outcome sets idempotently: `YEAR_8_OUTCOMES` (unchanged), `YEAR_9_OUTCOMES` (QCAA-Y9-ANL-01..04, traced to reaserch.md Year 9 marking criteria + the ISS-002 year-9-10 packs: discriminating thesis, representations/reader-positioning, formal register/metalanguage, 600–800 word sustained response), `YEAR_10_OUTCOMES` (QCAA-Y10-ANL-01..04, derived one band up per Q-001 provenance note). `backend/seed.py` print updated; analytical only, persuasive/imaginative untouched.
+- Tests: `test_seed.py` rewritten (+2 tests: year-9-10 creation incl. band-shift descriptor assertion, idempotency extended to all 12 outcomes); `test_session_orchestrator.py::test_run_daily_loop_year_9_cites_year_9_descriptors` — full year_level=9 loop with FakeProvider, asserts every pack-bearing prompt (criteria/independent/diagnosis/coach/feedback) cites the year-9-10 packs ("Year 9", give-feedback carries "discriminating thesis"), no degradation note on any tutor turn, 5 rubric scores persisted; `test_api_daily_loop.py::test_year_9_session_runs_loop_and_persists_scores` — HTTP-level loop for a year-9 student profile, scores persisted and surfaced in the feedback body.
+- Full suite 153 passed/4 skipped; ruff check clean; mypy 29 errors in 4 unrelated test files — identical to the ISS-002 baseline, changed files clean. One new mypy error in test_seed.py (Sequence `+`) found and fixed during the run.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: 9.2; PRD: §5 North Star metric; ERD: curriculum_outcome/rubric_score` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-19T20:46:51+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-19T20:59:00+10:00 - DONE. Year 9-10 QCAA analytical outcomes seeded idempotently (12 outcomes across Year 8/9/10); year_level=9 loop proven end-to-end with FakeProvider at orchestrator and HTTP level, with year-9-10 packs cited in prompts and 5 rubric scores persisted. Verification: targeted 19 passed; full suite 153 passed/4 skipped; ruff clean; mypy unchanged vs baseline. Unlocks ISS-004.
 
 ## ISS-004 - Persuasive reference packs for Year 8-10
 - Status: `READY`
