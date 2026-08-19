@@ -201,7 +201,7 @@ Seed Year 9-10 QCAA analytical outcomes and prove a year_level=9 session can run
 - Attempt: `1`
 - Started: `2026-08-19T22:59:00+10:00`
 - Completed: `2026-08-19T23:20:00+10:00`
-- Commit: `None`
+- Commit: `3695649`
 
 ### Outcome and scope
 Create persuasive reference packs covering argument structure, rhetorical devices by band, QCAA persuasive A-E descriptors, and task specs.
