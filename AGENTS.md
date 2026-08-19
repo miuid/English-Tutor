@@ -12,10 +12,13 @@ MVP focus: **Year 8 · QCAA · analytical/essay writing**, tuned to the first st
 
 1. `MEMORY.md` — vision, decision log, what's built, roadmap, open questions.
 2. `MVP-Plan.md` — scope, architecture, data model, phased build plan (P0–P5).
-3. `PRD.md` — user stories, daily-loop UX, North Star metric, privacy requirements.
-4. `ERD.md` — data model: entities, fields, relationships, key queries.
-5. `IMPLEMENTATION-PLAN.md` — the resumable, multi-session build plan. **When building, this is the working checklist** — do the first unchecked step, verify, tick it, log it.
-6. `skills/README.md` — the agent-skill authoring convention and how the 8 skills compose into a session loop.
+3. `PRD.md` — user stories, daily-loop UX, North Star metric, privacy requirements, GA public paid product delta.
+4. `ERD.md` — current data model plus GA auth/billing/public-deployment delta.
+5. `ISSUES.md` — the autonomous delivery backlog and delivery gate. **When developing, this is the working queue** — pick only one eligible `READY` ticket.
+6. `QUESTIONS.md` — the canonical decision log for unresolved delivery questions; an open `BLOCKING` question blocks `ISSUES.md`.
+7. `IMPLEMENTATION-PLAN.md` — historical MVP build checklist (P0–P5, complete).
+8. `IMPLEMENTATION-PLAN-2.md` — historical Phase 2 checklist; executable queue now lives in `ISSUES.md`.
+9. `skills/README.md` — the agent-skill authoring convention and how the 8 skills compose into a session loop.
 
 ## Core idea: teaching logic lives in files, not code
 

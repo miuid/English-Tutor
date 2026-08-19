@@ -2,7 +2,7 @@
 
 > Long-term memory for this project. It records the vision, every meaningful decision (with dates and rationale), what's been built, the roadmap, and open questions. **Update this file whenever a decision is made, a milestone is hit, or something important is discovered — and append a dated entry to the Session log (§11) at the end of each working session.** New sessions should read this first.
 
-Last updated: 2026-08-15
+Last updated: 2026-08-19
 
 ---
 
@@ -84,6 +84,8 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | 2026-07-17 | **MVP default model switched to DeepSeek `deepseek-chat`**; Anthropic/Sonnet remains a config-only swap | Owner decision. The adapter layer paid off: the switch touched only `app/llm/deepseek.py` (new), factory, and config defaults — zero business-logic changes. Eval + live runs now need `LLM_API_KEY` (DeepSeek) in `backend/.env`. |
 | 2026-07-31 | **Phase 2 decisions D1–D4 confirmed** (see `PHASE-2-PLAN.md` §1): D1 per-family local install for Beta (hosted multi-tenant stays GA); D2 senior = framework + IA1 depth only; D3 parents see trends, not full essays; D4 order P6→P9→P7→P8→B1–B6 | Owner confirmed all four recommendations unchanged. Unblocks the Phase 2 checklist (`IMPLEMENTATION-PLAN-2.md`). |
 | 2026-08-12 | **MVP default model switched to Kimi K3 (Moonshot AI) `kimi-k3`**; DeepSeek/Anthropic stay config-only swaps | Owner decision. Adapter layer paid off again: new `app/llm/kimi.py` (OpenAI-compatible, `api.moonshot.ai`), one factory branch, config defaults — zero business-logic changes. `LLM_API_KEY` in `backend/.env` is now a Moonshot key. (Live eval not rerun on Kimi yet; last live eval = DeepSeek 8/8 PASS, 2026-07-31.) |
+| 2026-08-19 | **Product boundary clarified:** V1 remains local MVP; GA direction is a public paid product (Google sign-in first, AUD 9.9/month baseline) | Owner direction. Keeps current engineering on Phase 2 while making GA scope explicit in `PRD.md` and `ERD.md`. |
+| 2026-08-19 | **Autonomous delivery workflow adopted:** spike → plan → `ISSUES.md`/`QUESTIONS.md` → cron `/develop` one ticket at a time | Owner workflow. `ISSUES.md` becomes the delivery state source of truth; `QUESTIONS.md` blocks the gate when an open `BLOCKING` question exists. Completed historical checklists stay as context, not tickets. |
 
 ## 8. Milestones / roadmap
 
@@ -113,12 +115,12 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 - ⬜ 5 new skills planned: `strengthen-argument`, `craft-voice`, `fix-mechanics`, `spaced-review`, `baseline-assessment` (→ 13 total).
 
 **Later (GA)**
-- ⬜ Hosted multi-tenant, real auth, Postgres, deployment; NESA/other states; black-swan experiments (voice, teach-the-AI, character interrogation).
+- ⬜ Hosted multi-tenant, real auth (Google sign-in first), paid subscriptions (AUD 9.9/month baseline), Postgres, public deployment; NESA/other states; black-swan experiments (voice, teach-the-AI, character interrogation).
 
 ## 9. Open questions
 
 - ~~Which LLM for MVP?~~ **Resolved 2026-07-10 (Sonnet); revised 2026-07-17 (DeepSeek `deepseek-chat`); revised again 2026-08-12: default now Kimi K3 `kimi-k3` (Moonshot), adapter-swappable.** (see §7)
-- User login for MVP? (Single-user can skip; schema still reserves it.)
+- ~~User login for MVP?~~ **Resolved 2026-08-19: V1 local MVP skips login; GA public product requires Google sign-in first.** Schema still reserves multi-user.
 - Source for structured QCAA outcome data (research files already have a lot to extract).
 
 ## 10. File index
@@ -130,9 +132,11 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | `MVP-Plan.md` | MVP scope, architecture, data model, phased build plan. |
 | `IMPLEMENTATION-PLAN.md` | Resumable multi-session build checklist (MVP P0–P5, complete). |
 | `PHASE-2-PLAN.md` | Phase 2 plan: skill-depth extension (Y9–12, persuasive/imaginative) + Beta features. D1–D4 confirmed 2026-07-31. |
-| `IMPLEMENTATION-PLAN-2.md` | Phase 2 resumable build checklist (P6–P10 + B1–B6). The working to-do while building Phase 2. |
-| `PRD.md` | User stories, daily-loop UX, North Star metric, non-functional (privacy) requirements. |
-| `ERD.md` | Data model: entities, fields, relationships (Mermaid), key queries, privacy/retention. |
+| `IMPLEMENTATION-PLAN-2.md` | Historical Phase 2 checklist; executable autonomous queue now lives in `ISSUES.md`. |
+| `ISSUES.md` | Autonomous delivery backlog and delivery gate; `/develop` picks one eligible `READY` ticket per run. |
+| `QUESTIONS.md` | Canonical unresolved delivery decisions; an open `BLOCKING` question blocks the `ISSUES.md` gate. |
+| `PRD.md` | User stories, daily-loop UX, North Star metric, V1 non-functional requirements, and the GA public paid product delta. |
+| `ERD.md` | Current data model plus GA auth/billing/public-deployment delta: entities, fields, relationships (Mermaid), key queries, privacy/retention, traceability. |
 | `skills/README.md` | Skill authoring convention + skill index + loop composition. |
 | `skills/<name>/` | The 8 v1 agent skills (SKILL.md + reference + examples). |
 | `reaserch.md` | QCAA Year 8/9 curriculum, pedagogy, assessment conditions, A–E standards. |
@@ -142,6 +146,23 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | `English Circulum.md` | Curriculum reference. |
 
 ## 11. Session log
+
+### 2026-08-19 — Cron configured for autonomous `/develop`
+- Created Hermes cron job `english-tutor-develop` (`7b522fa7e3d9`) to run the `develop` skill every 2 hours in `/home/cheng/workspace/English-Tutor`.
+- The job is local-only (`deliver=local`) and instructed to process exactly one eligible `ISSUES.md` ticket per run, honor the delivery gate, work only on `feature/english-tutor-delivery`, never push/merge, and write blockers to `QUESTIONS.md` instead of guessing.
+- Safety note: the repo still has uncommitted planning docs and untracked `backend/uv.lock`; the first run may return `BLOCKED`/`NOOP` until the tree is clean.
+
+### 2026-08-19 — `/plan` initialized autonomous delivery backlog
+- Created `ISSUES.md` and `QUESTIONS.md` from `PRD.md`, `ERD.md`, and `IMPLEMENTATION-PLAN-2.md` using the `/plan` workflow.
+- Decision: completed P0–P5 and Phase 2 `6.1`/`6.2` work is **not** converted into tickets; it is recorded as `Completed Context (Not Tickets)` so cron only sees executable future work.
+- `ISSUES.md` contains 25 `READY` tickets (`ISS-001`–`ISS-025`), dependency-ordered from eval fixture matrix → Year 9–10 analytical → persuasive → imaginative → Beta B1–B6 → senior framework. Delivery Gate is `OPEN`; first eligible ticket is `ISS-001`.
+- `QUESTIONS.md` contains 4 open `NON_BLOCKING` questions (QCAA descriptor source, beta recruitment channel, GA billing, GA deployment/data residency); no `BLOCKING` question exists, so autonomous development is not gated.
+- Updated `IMPLEMENTATION-PLAN-2.md` to mark itself as historical scope/rationale; executable delivery state now lives in `ISSUES.md`.
+
+### 2026-08-19 — Product boundary clarified: local MVP now, public paid GA later
+- Updated `PRD.md` and `ERD.md` to make the boundary explicit: **V1 remains local MVP**; **GA is a public paid product** with Google sign-in first and an AUD 9.9/month baseline.
+- `PRD.md` gained a GA delta section (`FR-GA-*` / `NFR-GA-*` + GA acceptance boundary); `ERD.md` gained current-code field corrections plus planned GA entities (`auth_account`, `subscription`, `billing_event`), requirement traceability, deployment/migration notes, and open technical decisions.
+- No code changed. Engineering next pick-up remains `IMPLEMENTATION-PLAN-2.md` step **6.3 Eval fixture matrix**.
 
 ### 2026-08-12 — Kimi K3 (Moonshot AI) provider added; default LLM switched
 - **New provider:** `app/llm/kimi.py` — `KimiProvider` (OpenAI-compatible, `api.moonshot.ai/v1/chat/completions`, httpx, 60s timeout), mirrors the DeepSeek adapter pattern; registered in the LLM factory; config defaults now `LLM_PROVIDER=kimi` / `LLM_MODEL=kimi-k3` (root `.env.example` + `backend/README.md` updated).

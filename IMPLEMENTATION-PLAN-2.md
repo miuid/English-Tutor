@@ -1,6 +1,8 @@
 # English Tutor — Phase 2 Implementation Plan (Skills Depth + Beta)
 
 > Resumable build checklist for Phase 2. Same resume protocol as `IMPLEMENTATION-PLAN.md`: read `MEMORY.md` → this file → do the first unchecked step → verify → tick → log to MEMORY §11. Planning rationale and decision points live in `PHASE-2-PLAN.md` (D1–D4 confirmed by owner 2026-07-31).
+>
+> **2026-08-19 workflow update:** the executable autonomous delivery queue now lives in `ISSUES.md`, with unresolved decisions in `QUESTIONS.md`. Treat this file as historical Phase 2 scope/rationale; `/develop` should update `ISSUES.md`, not this checklist.
 
 Last updated: 2026-07-31
 
@@ -178,4 +180,4 @@ Skills stay generic; content depth lives in `skills/<skill>/references/<text_typ
 
 ## Progress
 
-Phase 2 milestones done: **6.1, 6.2**. Next: 6.3 eval fixture matrix.
+Phase 2 milestones done: **6.1, 6.2**. Next: autonomous queue `ISSUES.md` → first eligible ticket `ISS-001` (eval fixture matrix). This file is historical scope/rationale; delivery state is tracked in `ISSUES.md`.
