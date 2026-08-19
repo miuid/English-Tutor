@@ -5,13 +5,13 @@ Used by `diagnose-errors`. Categories are ordered by leverage — fix higher cat
 | # | Category | What it looks like at Year 8 | Routes to |
 |---|---|---|---|
 | 1 | **Contention / position** | No stated position; discusses both sides without choosing; position drifts between paragraphs. | `check-structure` (Contention) |
-| 2 | **Argument / evidence** | Reasons asserted but never elaborated; "everyone knows" support; anecdotes stacked without reasoning. | `check-structure` (P/E1/E2) |
+| 2 | **Argument / evidence** | Reasons asserted but never elaborated; "everyone knows" support; anecdotes stacked without reasoning. | `strengthen-argument` |
 | 3 | **Structure / cohesion** | Reasons not separated per paragraph; missing links; conclusion repeats instead of reinforcing with a call to action. | `check-structure` (L / response-level) |
 | 4 | **Audience / voice** | Voice doesn't fit the stated audience (too casual for a formal speech, too stiff for a peer audience); no direct address where the format calls for it. | `elevate-vocabulary` (register) |
 | 5 | **Language / vocabulary** | Flat persuasive verbs ("is good/bad"); no modality control; vague intensifiers ("very", "really"). | `elevate-vocabulary` |
 | 6 | **Mechanics** | Grammar, punctuation, spelling errors (only once higher levels are sound). | (future) `fix-mechanics` |
 
-Note: a dedicated `strengthen-argument` coaching skill is planned (see ISSUES.md ISS-005); until it exists, categories 1–2 route to `check-structure` as above.
+Note: category 2 (the argument chain — elaboration, load-bearing support, rebuttal) routes to `strengthen-argument`; categories 1 and 3 stay with `check-structure` (contention placement and response architecture).
 
 ## Priority rule
 Choose the primary issue as the **lowest-numbered category rated "major"**. Rationale: polished rhetoric can't rescue a piece with no position, so fix the contention first. Mechanics is last — don't polish sentences that persuade nobody.

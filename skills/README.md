@@ -51,7 +51,7 @@ Skills are authored to generalise across Year 8–12 and all text types (imagina
 
 ## Skill index
 
-All 8 v1 skills authored. Ordered by where they sit in a session loop.
+Nine skills authored (8 v1 + `strengthen-argument`). Ordered by where they sit in a session loop.
 
 | Skill | Status | Loop stage | Targets |
 |---|---|---|---|
@@ -62,10 +62,11 @@ All 8 v1 skills authored. Ordered by where they sit in a session loop.
 | `diagnose-errors` | v1 | triage | Classify error type + route to a specialist skill |
 | `check-structure` | v1 | coach | Paragraph/essay structure (PEEL/TEEL) — weakness #2 |
 | `elevate-vocabulary` | v1 | coach | Flat vocabulary → precise academic language — weakness #1 |
+| `strengthen-argument` | v1 | coach | Weak argument chains: asserted reasons, decorative evidence, missing rebuttal |
 | `give-feedback` | v1 | end | QCAA A–E scoring + ≤2 next steps + self-check |
 
 ### How they compose (typical daily loop)
 
-`set-success-criteria` → `model-response` (I do) → `guided-practice` (we do) → `independent-task` (you do) → student submits → `diagnose-errors` (triage) routes to `check-structure` / `elevate-vocabulary` for coaching → `give-feedback` closes with an A–E judgement + self-check.
+`set-success-criteria` → `model-response` (I do) → `guided-practice` (we do) → `independent-task` (you do) → student submits → `diagnose-errors` (triage) routes to `check-structure` / `strengthen-argument` / `elevate-vocabulary` for coaching → `give-feedback` closes with an A–E judgement + self-check.
 
 `diagnose-errors` is the router: it never coaches itself, it decides which specialist skill acts.

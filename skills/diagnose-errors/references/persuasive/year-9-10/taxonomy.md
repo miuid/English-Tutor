@@ -7,13 +7,13 @@ Used by `diagnose-errors`. Categories are ordered by leverage — fix higher cat
 | # | Category | What it looks like at Year 9–10 | Routes to |
 |---|---|---|---|
 | 1 | **Contention / viewpoint** | No position, or a general position not framed against the social theme; viewpoint not sustained. | `check-structure` (Contention) |
-| 2 | **Argument / substantiation** | Reasons asserted, never developed; evidence decorative rather than load-bearing; no rebuttal where opposition is invited. | `check-structure` (P/E1/E2) |
+| 2 | **Argument / substantiation** | Reasons asserted, never developed; evidence decorative rather than load-bearing; no rebuttal where opposition is invited. | `strengthen-argument` |
 | 3 | **Rhetorical control** | Devices formulaic or stacked without effect; no deliberate appeals; tone swings break the voice. | `elevate-vocabulary` (rhetorical register) |
 | 4 | **Structure / cohesion** | Reasons unordered (no escalation); missing links; conclusion summarises instead of synthesising with a final appeal. | `check-structure` (L / architecture) |
 | 5 | **Language / register** | Informal register in a formal format (letter to the editor, formal review); flat persuasive verbs; uncontrolled modality. | `elevate-vocabulary` |
 | 6 | **Mechanics** | Grammar, punctuation, spelling errors (only once higher levels are sound). | (future) `fix-mechanics` |
 
-Note: a dedicated `strengthen-argument` coaching skill is planned (see ISSUES.md ISS-005); until it exists, categories 1–2 and 4 route to `check-structure` as above.
+Note: category 2 (the argument chain — substantiation, load-bearing evidence, rebuttal) routes to `strengthen-argument`; categories 1 and 4 stay with `check-structure` (viewpoint placement and response architecture).
 
 ## Priority rule
 Choose the primary issue as the **lowest-numbered category rated "major"**. Rationale: rhetorical polish can't rescue an unsubstantiated viewpoint, so fix the argument first. Mechanics is last.

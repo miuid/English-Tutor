@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-19T23:20:00+10:00`
+- Last evaluated: `2026-08-20T00:40:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -40,7 +40,7 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-002 | Year 9-10 analytical reference packs | `DONE` | `P0` | `ISS-001` | `None` |
 | ISS-003 | Seed and evaluate Year 9-10 analytical loop | `DONE` | `P0` | `ISS-002` | `None` |
 | ISS-004 | Persuasive reference packs for Year 8-10 | `DONE` | `P1` | `ISS-003` | `None` |
-| ISS-005 | New skill strengthen-argument | `READY` | `P1` | `ISS-004` | `None` |
+| ISS-005 | New skill strengthen-argument | `DONE` | `P1` | `ISS-004` | `None` |
 | ISS-006 | Seed and wire persuasive daily loop | `READY` | `P1` | `ISS-005` | `None` |
 | ISS-007 | Imaginative reference packs for Year 8-10 | `READY` | `P1` | `ISS-006` | `None` |
 | ISS-008 | New skill craft-voice | `READY` | `P1` | `ISS-007` | `None` |
@@ -233,7 +233,7 @@ Create persuasive reference packs covering argument structure, rhetorical device
 - 2026-08-19T23:20:00+10:00 - DONE. Persuasive reference packs shipped for all six pack-bearing skills across year-8 and year-9-10 (12 packs), traced to reaserch.md/teacher-skills.md/Blueprint with Q-001 provenance notes; safe fallback proven (exact for 8-10, nearest-band note for 11-12, instructions-only for imaginative). Verification: targeted 32 passed/1 skipped; full suite 157 passed/4 skipped; ruff clean; mypy unchanged vs baseline; `python -m app.eval --no-judge` (fake) 16 cases, 12 passed/4 failed — unchanged baseline. Unlocks ISS-005.
 
 ## ISS-005 - New skill strengthen-argument
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P1`
 - Type: `feature`
 - Depends on: `ISS-004`
@@ -242,32 +242,42 @@ Create persuasive reference packs covering argument structure, rhetorical device
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: 7.2; PRD: §3 bounded feedback; ERD: skill registry`
 - Effort: `M`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
-- Commit: `None`
+- Attempt: `1`
+- Started: `2026-08-20T00:10:00+10:00`
+- Completed: `2026-08-20T00:40:00+10:00`
+- Commit: `<recorded post-commit>`
 
 ### Outcome and scope
 Add the ninth agent skill strengthen-argument to diagnose weak argument chains and coach the fix within the global guardrails.
 
 ### Acceptance criteria
-- [ ] skills/strengthen-argument/ follows skills/README.md convention.
-- [ ] Golden examples exist and are discovered by the eval harness.
-- [ ] diagnose-errors can route persuasive submissions to strengthen-argument.
+- [x] skills/strengthen-argument/ follows skills/README.md convention.
+- [x] Golden examples exist and are discovered by the eval harness.
+- [x] diagnose-errors can route persuasive submissions to strengthen-argument.
 
 ### Implementation notes
 - Likely files or components: skills/strengthen-argument/, backend/app/skills/router.py, backend/tests/test_diagnosis_router.py, backend/tests/test_skill_sync.py.
 - Constraints: coach do not ghostwrite; bounded feedback max 1-2 next steps; model-agnostic skill package.
 
 ### Verification
-- [ ] `cd backend && uv run pytest tests/test_diagnosis_router.py tests/test_skill_loader.py tests/test_skill_sync.py`
-- [ ] `cd backend && uv run python -m app.eval --skill strengthen-argument --no-judge`
+- [x] `cd backend && uv run pytest tests/test_diagnosis_router.py tests/test_skill_loader.py tests/test_skill_sync.py` — 18 passed.
+- [x] `cd backend && uv run python -m app.eval --skill strengthen-argument --no-judge` — 2 cases, 2 passed (persuasive/year-8 + persuasive/year-9-10 combo rows).
+- [x] `cd backend && uv run pytest` — 159 passed, 4 skipped (was 157/4; +2 new tests).
+- [x] `cd backend && uv run ruff check .` — clean; `uv run mypy app tests` — 29 errors in the same 4 unrelated test files as the ISS-004 baseline (test_config, test_delete_student, test_interaction_log, test_session_time); changed files clean.
+- [x] `cd backend && LLM_PROVIDER=fake uv run python -m app.eval --no-judge` — 18 cases, 14 passed / 4 failed (the same canned-fake give-feedback + diagnose-errors baseline as ISS-004); strengthen-argument 2/2 PASS.
 
 ### Completion evidence
-- Pending
+- `skills/strengthen-argument/` authored per the convention: SKILL.md with all 8 required sections (chain-trace method: contention → reason → elaboration → evidence → link, one broken link per turn, model on a different topic, hand back with an "I can…" criterion); two reference packs (`references/persuasive/year-8/argument-chains.md`, `references/persuasive/year-9-10/argument-chains.md`) encoding the four break types (contention w/o reasons, reason w/o elaboration, decorative evidence, missing/token rebuttal) with priority rules and band calibration, traced to reaserch.md (persuasive domain, Year 8/9 formats, marking criteria, A–E elaborations), Blueprint (PEEL), teacher-skills.md (AERO); Year 10 carries the Q-001 derived-not-verbatim note.
+- Two golden fixtures: sample-01 (Year 8 speech — asserted reasons + "everyone knows" decorative evidence; no rebuttal demanded) and sample-02 (Year 9 letter to the editor — "research shows" not load-bearing + strawman dismissal where the task invites opposition), discovered as persuasive/year-8 and persuasive/year-9-10.
+- Routing wired: diagnose-errors SKILL.md route list + both persuasive taxonomy packs now route category 2 (argument/evidence, argument/substantiation) to `strengthen-argument` (contention/architecture stay with check-structure; "planned ISS-005" notes removed). `LOOP_STAGES` gains `strengthen-argument: coach`; skills/README.md index updated (nine skills).
+- Tests: new `test_strengthen_argument_loads_persuasive_packs_and_examples`, new `test_diagnosis_router_routes_persuasive_to_strengthen_argument` (dispatch + persuasive year-8 pack in the coaching prompt); count updates (8→9 skills, 16→18 cases) in loader/sync/eval tests; two fixture tests pinned to the 8 original core skills (specialist skills intentionally ship no analytical fixtures).
+- Live LLM judge eval was not run (no API credential in this environment); the historical "live eval PASS" line in IMPLEMENTATION-PLAN-2 7.2 remains a pre-beta follow-up, while this ticket's declared verification is the no-judge harness above.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: 7.2; PRD: §3 bounded feedback; ERD: skill registry` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-20T00:10:00+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-20T00:40:00+10:00 - DONE. Ninth skill strengthen-argument shipped: SKILL.md + two persuasive argument-chain packs (year-8, year-9-10) + two golden fixtures; diagnose-errors persuasive taxonomies route argument/substantiation to it. Verification: targeted 18 passed; full suite 159 passed/4 skipped; ruff clean; mypy unchanged vs baseline; skill eval 2/2 PASS; full no-judge eval 18 cases, 14 passed/4 failed — unchanged canned-fake baseline. Unlocks ISS-006.
 
 ## ISS-006 - Seed and wire persuasive daily loop
 - Status: `READY`

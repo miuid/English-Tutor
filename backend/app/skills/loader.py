@@ -48,6 +48,7 @@ LOOP_STAGES: dict[str, str] = {
     "diagnose-errors": "triage",
     "check-structure": "coach",
     "elevate-vocabulary": "coach",
+    "strengthen-argument": "coach",
     "give-feedback": "end",
 }
 

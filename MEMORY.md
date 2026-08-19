@@ -147,6 +147,15 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 11. Session log
 
+### 2026-08-20 — ISS-005 done: ninth skill `strengthen-argument` shipped
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-005 (P1, dep ISS-004 DONE).
+- **Shipped:** `skills/strengthen-argument/` — SKILL.md (chain-trace method: contention → reason → elaboration → evidence → link; ONE broken link per turn; model on a different topic; hand back with an "I can…" criterion), two persuasive reference packs (`argument-chains.md` × year-8/year-9-10: four break types — contention w/o reasons, reason w/o elaboration, decorative evidence, missing/token rebuttal — with priority rules + band calibration, Q-001 note for Year 10), and two golden fixtures (Year 8 speech, Year 9 letter to the editor).
+- **Routing wired:** diagnose-errors SKILL.md route list + both persuasive taxonomy packs route category 2 (argument/substantiation) to `strengthen-argument`; contention/architecture stay with `check-structure`. `LOOP_STAGES` gains the skill as `coach`; skills/README.md index now lists nine skills.
+- Lane discipline decision: check-structure keeps contention placement + paragraph/response skeleton; strengthen-argument owns chain logic (substantiation, load-bearing evidence, rebuttal); elevate-vocabulary keeps rhetoric/register.
+- Verified: targeted 18 passed; full suite **159 passed/4 skipped** (+2 new tests); ruff clean; mypy 29 errors in the same 4 unrelated test files as baseline; `--skill strengthen-argument --no-judge` eval 2/2 PASS (persuasive/year-8 + year-9-10 combos); full no-judge eval 18 cases 14 passed/4 failed — unchanged canned-fake baseline. Live LLM judge eval not run (no credential); remains a pre-beta follow-up.
+- Test-convention note: eval fixture tests that iterate "all skills" were pinned to the 8 original core skills — specialist skills (strengthen-argument now, craft-voice later) intentionally ship no analytical fixtures.
+- **Next pick-up:** ISS-006 — seed persuasive outcomes + wire the persuasive daily loop.
+
 ### 2026-08-19 — ISS-004 done: persuasive reference packs for Year 8-10
 - Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-004 (P1, dep ISS-003 DONE).
 - **Shipped:** twelve persuasive packs — six pack-bearing skills (check-structure, diagnose-errors, elevate-vocabulary, give-feedback, independent-task, set-success-criteria) × `year-8` + `year-9-10`, filenames mirroring the analytical packs. Content: argument-structure rubric (contention → reason/elaboration/evidence/link, escalation + rebuttal at 9-10), error taxonomy routing to existing skills, modality ladder + audience register + Tier 3 rhetorical metalanguage (ethos/pathos/logos at 9-10), A–E persuasive descriptors mapped to QCAA criteria + NAPLAN persuasive criteria, QCAA task specs per band with copyright-safe stimulus rules, "I can…" criteria banks.

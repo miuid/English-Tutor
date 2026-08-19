@@ -49,3 +49,30 @@ async def test_diagnosis_router_routes_to_check_structure() -> None:
     assert len(fake.calls) == 2
     assert "# diagnose-errors" in fake.calls[0][0]
     assert "# check-structure" in fake.calls[1][0]
+
+
+@pytest.mark.asyncio
+async def test_diagnosis_router_routes_persuasive_to_strengthen_argument() -> None:
+    skills = {s.name: s for s in load_skills(SKILLS_DIR)}
+    fake = FakeProvider(
+        canned_responses=["Route to: strengthen-argument", "argument coaching output"]
+    )
+    executor = SkillExecutionService(provider=fake)
+    router = DiagnosisRouter(executor=executor, skills=list(skills.values()))
+
+    diagnosis, coaching, route = await router.coach(
+        {
+            "student_text": "Uniforms are unfair. Everyone knows they are uncomfortable.",
+            "text_type": "persuasive",
+            "year_level": "8",
+        }
+    )
+
+    assert route == "strengthen-argument"
+    assert coaching == "argument coaching output"
+    assert len(fake.calls) == 2
+    assert "# diagnose-errors" in fake.calls[0][0]
+    assert "# strengthen-argument" in fake.calls[1][0]
+    # The coaching prompt must carry the persuasive year-8 argument-chains pack.
+    assert "argument-chains.md" in fake.calls[1][0]
+    assert "Argument chains (Year 8 persuasive)" in fake.calls[1][0]

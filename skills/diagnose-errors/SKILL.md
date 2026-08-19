@@ -8,7 +8,7 @@ Read a student's response and classify what's holding it back by *error type* â€
 
 - On any submitted response, before deciding what feedback/coaching to give.
 - When multiple things are weak and the tutor must choose where to start.
-- As the router that dispatches to `check-structure`, `elevate-vocabulary`, or `give-feedback`.
+- As the router that dispatches to `check-structure`, `strengthen-argument`, `elevate-vocabulary`, or `give-feedback`.
 
 ## Inputs
 
@@ -41,8 +41,10 @@ Diagnosis:
   Language/vocabulary: <ok | minor | major>
   Mechanics:           <ok | minor | major>
 Primary issue: <one category> â€” <one-line why>
-Route to: <check-structure | elevate-vocabulary | give-feedback | guided-practice>
+Route to: <check-structure | strengthen-argument | elevate-vocabulary | give-feedback | guided-practice>
 ```
+
+For persuasive submissions, route argument/substantiation problems (asserted reasons, decorative evidence, missing rebuttal) to `strengthen-argument`; route contention placement and paragraph/response architecture to `check-structure`.
 
 ## Success criteria (drives eval)
 
