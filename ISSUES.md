@@ -77,7 +77,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Attempt: `1`
 - Started: `2026-08-19T16:08:19+10:00`
 - Completed: `2026-08-19T16:17:19+10:00`
-- Commit: `1b7e2d1`
+- Commit: `9aa7c77`
 
 ### Outcome and scope
 Extend the eval harness so one skill can ship multiple golden fixtures tagged by year band and text type, and the scorecard groups results by combo.
