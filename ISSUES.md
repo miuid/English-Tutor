@@ -159,7 +159,7 @@ Add analytical reference packs for year-9-10 across the existing skills, with ba
 - Attempt: `1`
 - Started: `2026-08-19T20:46:51+10:00`
 - Completed: `2026-08-19T20:59:00+10:00`
-- Commit: `None`
+- Commit: `25aee22`
 
 ### Outcome and scope
 Seed Year 9-10 QCAA analytical outcomes and prove a year_level=9 session can run the loop with Year 9 descriptors cited in feedback.
