@@ -19,11 +19,18 @@ class CaseResult:
 
     skill_name: str
     example: str
+    text_type: str = "analytical"
+    year_band: str = "year-8"
     output: str = ""
     rule_results: list[RuleResult] = field(default_factory=list)
     judge_result: JudgeResult | None = None
     judge_error: str | None = None
     error: str | None = None
+
+    @property
+    def combo(self) -> str:
+        """Scorecard grouping key: ``<text_type>/<year_band>``."""
+        return f"{self.text_type}/{self.year_band}"
 
     @property
     def rules_passed(self) -> bool:
@@ -50,12 +57,15 @@ async def run_case(
     judge: bool = True,
 ) -> CaseResult:
     """Execute one case end to end; errors are captured, never raised."""
+    text_type, _, year_band = case.combo.partition("/")
     try:
         output = await executor.execute(case.skill, case.inputs)
     except Exception as exc:  # an errored case must not stop the run
         return CaseResult(
             skill_name=case.skill.name,
             example=case.example,
+            text_type=text_type,
+            year_band=year_band,
             error=f"{type(exc).__name__}: {exc}",
         )
 
@@ -80,6 +90,8 @@ async def run_case(
     return CaseResult(
         skill_name=case.skill.name,
         example=case.example,
+        text_type=text_type,
+        year_band=year_band,
         output=output,
         rule_results=rule_results,
         judge_result=judge_result,

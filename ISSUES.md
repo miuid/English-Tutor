@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-19T13:44:45+10:00`
+- Last evaluated: `2026-08-19T16:17:19+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -36,7 +36,7 @@ This document is the canonical delivery state for autonomous development. Detail
 ## Issue Index
 | ID | Title | Status | Priority | Depends on | Blocked by |
 |---|---|---|---|---|---|
-| ISS-001 | Eval fixture matrix by year band and text type | `READY` | `P0` | `None` | `None` |
+| ISS-001 | Eval fixture matrix by year band and text type | `DONE` | `P0` | `None` | `None` |
 | ISS-002 | Year 9-10 analytical reference packs | `READY` | `P0` | `ISS-001` | `None` |
 | ISS-003 | Seed and evaluate Year 9-10 analytical loop | `READY` | `P0` | `ISS-002` | `None` |
 | ISS-004 | Persuasive reference packs for Year 8-10 | `READY` | `P1` | `ISS-003` | `None` |
@@ -65,7 +65,7 @@ This document is the canonical delivery state for autonomous development. Detail
 ## Issues
 
 ## ISS-001 - Eval fixture matrix by year band and text type
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P0`
 - Type: `chore`
 - Depends on: `None`
@@ -74,32 +74,35 @@ This document is the canonical delivery state for autonomous development. Detail
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: 6.3; PRD: §5 North Star metric; ERD: Key queries/Replay-eval`
 - Effort: `M`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
-- Commit: `None`
+- Attempt: `1`
+- Started: `2026-08-19T16:08:19+10:00`
+- Completed: `2026-08-19T16:17:19+10:00`
+- Commit: `1b7e2d1`
 
 ### Outcome and scope
 Extend the eval harness so one skill can ship multiple golden fixtures tagged by year band and text type, and the scorecard groups results by combo.
 
 ### Acceptance criteria
-- [ ] A skill can provide multiple fixtures with band/text_type frontmatter.
-- [ ] Scorecard output groups pass/fail results by skill and by band/text_type combo.
-- [ ] Existing Year 8 analytical fixtures still run unchanged.
+- [x] A skill can provide multiple fixtures with band/text_type frontmatter.
+- [x] Scorecard output groups pass/fail results by skill and by band/text_type combo.
+- [x] Existing Year 8 analytical fixtures still run unchanged.
 
 ### Implementation notes
 - Likely files or components: backend/app/eval/fixtures.py, backend/app/eval/runner.py, backend/app/eval/scorecard.py, skills/*/examples/.
 - Constraints: preserve current fixture discovery behaviour for untagged Year 8 analytical examples; no live LLM required for plumbing tests.
 
 ### Verification
-- [ ] `cd backend && uv run pytest tests/test_eval_fixtures.py tests/test_eval_runner.py tests/test_eval_rules.py`
-- [ ] `cd backend && uv run python -m app.eval --no-judge`
+- [x] `cd backend && uv run pytest tests/test_eval_fixtures.py tests/test_eval_runner.py tests/test_eval_rules.py` — 32 passed, 1 skipped.
+- [x] `cd backend && uv run python -m app.eval --no-judge` — 8 cases run; scorecard prints per-skill combo breakdown; exit 1 on canned fake failures (expected baseline, unchanged).
 
 ### Completion evidence
-- Pending
+- `EvalCase.tags` (`text_type` + `year_band`) populated in `discover_cases`; optional `year_band:` header line is a discovery tag stripped from executor inputs (never reaches the prompt); band falls back to `year_band_for(year_level)`. `CaseResult` carries the combo; `render_combo_breakdown()` groups pass/fail by skill then `text_type/year_band`. 6 new tests (3 fixture-discovery incl. a tmp 2-fixture/different-band skill, 1 scorecard grouping, 1 runner tag propagation, 1 default-tags regression). Full suite: 147 passed, 4 skipped; ruff + mypy clean. No real fixture files touched, so Year 8 analytical prompts/behaviour are byte-identical.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: 6.3; PRD: §5 North Star metric; ERD: Key queries/Replay-eval` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-19T16:08:19+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-19T16:17:19+10:00 - DONE. Eval fixture matrix shipped: multiple tagged fixtures per skill + scorecard combo breakdown. Verification: targeted eval tests 32 passed/1 skipped; full suite 147 passed/4 skipped; ruff/mypy clean; `python -m app.eval --no-judge` runs and groups by combo. Unlocks ISS-002.
 
 ## ISS-002 - Year 9-10 analytical reference packs
 - Status: `READY`

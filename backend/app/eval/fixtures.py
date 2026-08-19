@@ -24,10 +24,23 @@ Sample → inputs mapping (kept deliberately simple):
   (the MVP defaults), since every v1 skill expects them.
 - Fallback: a sample with no parseable header and no separator is treated as
   bare student text (``{"student_text": sample}``).
+
+Fixture tags (scorecard grouping):
+
+- Every case is tagged with a ``text_type`` and a ``year_band`` so the
+  scorecard can group results by band/text_type combo. ``text_type`` comes
+  from the fixture header (default ``"analytical"``); ``year_band`` comes
+  from an optional ``year_band: <band>`` header line, falling back to the
+  band implied by ``year_level`` via ``year_band_for``.
+- ``year_band`` is a discovery-level tag only: it is stripped from the
+  executor inputs and never reaches the prompt. A skill may ship any number
+  of ``sample-NN.md``/``expected-NN.md`` pairs with different tags (the
+  fixture matrix); untagged fixtures behave exactly as before.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+from app.skills.executor import year_band_for
 from app.skills.loader import Skill
 
 SEPARATOR = "---"
@@ -36,6 +49,11 @@ DEFAULT_INPUTS = {
     "year_level": "8",
     "text_type": "analytical",
 }
+
+DEFAULT_TEXT_TYPE = DEFAULT_INPUTS["text_type"]
+# Header key that tags a fixture with an explicit year band. Not an executor
+# input — popped during discovery so it never appears in the prompt.
+YEAR_BAND_TAG_KEY = "year_band"
 
 
 @dataclass(frozen=True)
@@ -47,6 +65,14 @@ class EvalCase:
     inputs: dict[str, str]
     sample: str
     expected: str
+    tags: dict[str, str] = field(default_factory=dict)
+
+    @property
+    def combo(self) -> str:
+        """Scorecard grouping key: ``<text_type>/<year_band>``."""
+        text_type = self.tags.get("text_type", DEFAULT_TEXT_TYPE)
+        year_band = self.tags.get("year_band", year_band_for(self.inputs.get("year_level")))
+        return f"{text_type}/{year_band}"
 
 
 def parse_sample_inputs(sample: str) -> dict[str, str]:
@@ -76,13 +102,20 @@ def discover_cases(skills: list[Skill]) -> list[EvalCase]:
     cases: list[EvalCase] = []
     for skill in skills:
         for index, example in enumerate(skill.examples, start=1):
+            inputs = parse_sample_inputs(example.sample)
+            explicit_band = inputs.pop(YEAR_BAND_TAG_KEY, None)
+            tags = {
+                "text_type": inputs.get("text_type", DEFAULT_TEXT_TYPE),
+                "year_band": explicit_band or year_band_for(inputs.get("year_level")),
+            }
             cases.append(
                 EvalCase(
                     skill=skill,
                     example=f"sample-{index:02d}",
-                    inputs=parse_sample_inputs(example.sample),
+                    inputs=inputs,
                     sample=example.sample,
                     expected=example.expected,
+                    tags=tags,
                 )
             )
     return cases

@@ -147,6 +147,13 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 11. Session log
 
+### 2026-08-19 — ISS-001 done: eval fixture matrix (first autonomous `/develop` ticket)
+- First cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-001 (P0, no deps).
+- **Shipped:** a skill can now ship multiple golden fixtures as an eval matrix — `EvalCase.tags` (`text_type` + `year_band`) from fixture header, optional `year_band:` frontmatter tag (discovery metadata only, stripped from executor inputs; defaults to the band implied by `year_level` via `year_band_for`). Scorecard gained `render_combo_breakdown()`: pass/fail grouped by skill then `text_type/year_band` combo. `skills/README.md` examples convention documented.
+- Existing Year 8 analytical fixtures untouched → prompts byte-identical; default tags `analytical/year-8` regression-tested.
+- Verified: targeted eval tests 32 passed/1 skipped (+6 new); full suite 147 passed/4 skipped; ruff + mypy clean; `python -m app.eval --no-judge` prints the combo breakdown (2 canned-fake rule FAILs remain the expected baseline).
+- **Next pick-up:** ISS-002 — Year 9-10 analytical reference packs (Q-001 NON_BLOCKING: cite research files, mark uncertain descriptors as derived).
+
 ### 2026-08-19 — Cron configured for autonomous `/develop`
 - Created Hermes cron job `english-tutor-develop` (`7b522fa7e3d9`) to run the `develop` skill every 2 hours in `/home/cheng/workspace/English-Tutor`.
 - The job is local-only (`deliver=local`) and instructed to process exactly one eligible `ISSUES.md` ticket per run, honor the delivery gate, work only on `feature/english-tutor-delivery`, never push/merge, and write blockers to `QUESTIONS.md` instead of guessing.

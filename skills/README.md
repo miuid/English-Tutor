@@ -18,6 +18,8 @@ skills/
       expected-NN.md    # the behaviour a good response must exhibit
 ```
 
+A skill may ship **multiple fixture pairs** (`sample-01/02/…`) as an eval matrix. Each sample's header declares its combo: `year_level` + `text_type`, plus an optional `year_band: year-8 | year-9-10 | year-11-12` tag (defaults to the band implied by `year_level`; the tag is scorecard metadata only and never reaches the prompt). The eval scorecard groups pass/fail by skill and by `text_type/year_band` combo.
+
 Reference content is organised into **packs** keyed by `(text-type, year-band)`. The backend loads `shared` plus the pack matching the session's `text_type` and `year_level` (≤8 → `year-8`, 9–10 → `year-9-10`, ≥11 → `year-11-12`; unparseable → `year-8`); if no exact pack exists it falls back to the same text type's nearest band and flags the degradation in the response. Skill instructions stay generic — depth lives in the packs.
 
 ## SKILL.md required sections

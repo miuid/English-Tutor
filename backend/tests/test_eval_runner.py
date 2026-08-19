@@ -9,11 +9,12 @@ import pytest
 from app.config import get_settings
 from app.eval.__main__ import main
 from app.eval.fixtures import EvalCase, discover_cases
-from app.eval.runner import ERROR, PASS, run_cases
+from app.eval.runner import ERROR, PASS, CaseResult, run_cases
 from app.eval.scorecard import render_scorecard, summarize
 from app.llm import FakeProvider
 from app.skills import load_skills
 from app.skills.executor import SkillExecutionService
+from tests.test_eval_fixtures import _write_skill
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 SKILLS_DIR = PROJECT_ROOT / "skills"
@@ -91,6 +92,47 @@ def test_scorecard_renders_table_and_summary() -> None:
     assert "skill" in card and "overall" in card
     assert "give-feedback" in card
     assert summarize(results) == "Summary: 8 cases — 8 passed, 0 failed, 0 errors"
+
+
+def test_scorecard_groups_results_by_skill_and_combo() -> None:
+    results = [
+        CaseResult(skill_name="demo-skill", example="sample-01"),
+        CaseResult(skill_name="demo-skill", example="sample-02", error="boom"),
+        CaseResult(
+            skill_name="demo-skill",
+            example="sample-03",
+            text_type="persuasive",
+            year_band="year-9-10",
+        ),
+    ]
+    card = render_scorecard(results)
+    breakdown = card.split("By skill and band/text_type combo:", 1)[1]
+    assert "demo-skill" in breakdown
+    assert "analytical/year-8     1/2 passed (1 errors)" in breakdown
+    assert "persuasive/year-9-10  1/1 passed" in breakdown
+
+
+@pytest.mark.asyncio
+async def test_run_cases_propagates_fixture_tags(tmp_path: Path) -> None:
+    _write_skill(
+        tmp_path,
+        "demo-skill",
+        {
+            "sample-01.md": "year_level: 8\n\n---\n\nFirst text.",
+            "expected-01.md": "Expected one.",
+            "sample-02.md": "year_level: 10\ntext_type: persuasive\n\n---\n\nSecond text.",
+            "expected-02.md": "Expected two.",
+        },
+    )
+    cases = discover_cases(load_skills(tmp_path))
+    provider = FakeProvider(canned_responses=[RULE_PASSING_OUTPUT])
+    results = await run_cases(
+        cases, SkillExecutionService(provider=provider), provider, judge=False
+    )
+    assert [result.combo for result in results] == [
+        "analytical/year-8",
+        "persuasive/year-9-10",
+    ]
 
 
 def test_main_runs_end_to_end_with_fake_provider(

@@ -8,6 +8,50 @@ from app.skills import load_skills
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 SKILLS_DIR = PROJECT_ROOT / "skills"
 
+MINIMAL_SKILL_MD = """# demo-skill
+
+## Purpose
+
+Demo.
+
+## When to use
+
+Demo.
+
+## Inputs
+
+Demo.
+
+## Pedagogical basis
+
+Demo.
+
+## Method
+
+Demo.
+
+## Output contract
+
+Demo.
+
+## Success criteria
+
+Demo.
+
+## Guardrails
+
+Demo.
+"""
+
+
+def _write_skill(skill_root: Path, name: str, fixtures: dict[str, str]) -> None:
+    """Create a minimal valid skill package with the given example fixtures."""
+    examples_dir = skill_root / name / "examples"
+    examples_dir.mkdir(parents=True)
+    (skill_root / name / "SKILL.md").write_text(MINIMAL_SKILL_MD, encoding="utf-8")
+    for filename, content in fixtures.items():
+        (examples_dir / filename).write_text(content, encoding="utf-8")
+
 
 def test_discover_cases_finds_all_skill_examples() -> None:
     skills = load_skills(SKILLS_DIR)
@@ -72,3 +116,53 @@ def test_parse_sample_bare_student_text_fallback() -> None:
         "year_level": "8",
         "text_type": "analytical",
     }
+
+
+def test_existing_fixtures_get_default_analytical_year_8_tags() -> None:
+    cases = discover_cases(load_skills(SKILLS_DIR))
+    assert cases
+    for case in cases:
+        assert case.tags == {"text_type": "analytical", "year_band": "year-8"}
+        assert case.combo == "analytical/year-8"
+
+
+def test_discover_cases_supports_multiple_tagged_fixtures_per_skill(tmp_path: Path) -> None:
+    _write_skill(
+        tmp_path,
+        "demo-skill",
+        {
+            "sample-01.md": "year_level: 8\ntext_type: analytical\n\n---\n\nFirst text.",
+            "expected-01.md": "Expected one.",
+            "sample-02.md": (
+                "year_level: 10\ntext_type: persuasive\nyear_band: year-9-10\n\n---\n\nSecond text."
+            ),
+            "expected-02.md": "Expected two.",
+        },
+    )
+    cases = discover_cases(load_skills(tmp_path))
+    assert len(cases) == 2
+    first, second = cases
+    assert first.example == "sample-01"
+    assert first.tags == {"text_type": "analytical", "year_band": "year-8"}
+    assert first.combo == "analytical/year-8"
+    assert second.example == "sample-02"
+    assert second.tags == {"text_type": "persuasive", "year_band": "year-9-10"}
+    assert second.combo == "persuasive/year-9-10"
+    # year_band is a discovery tag only — it must never reach the prompt inputs.
+    assert "year_band" not in second.inputs
+    assert second.inputs["year_level"] == "10"
+    assert second.inputs["text_type"] == "persuasive"
+
+
+def test_year_band_tag_derived_from_year_level_when_not_explicit(tmp_path: Path) -> None:
+    _write_skill(
+        tmp_path,
+        "demo-skill",
+        {
+            "sample-01.md": "year_level: 9\ntext_type: analytical\n\n---\n\nText.",
+            "expected-01.md": "Expected.",
+        },
+    )
+    (case,) = discover_cases(load_skills(tmp_path))
+    assert case.tags == {"text_type": "analytical", "year_band": "year-9-10"}
+    assert case.combo == "analytical/year-9-10"
