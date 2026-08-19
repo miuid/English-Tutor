@@ -8,12 +8,12 @@ Used by `diagnose-errors`. Categories are ordered by leverage — fix higher cat
 |---|---|---|---|
 | 1 | **Structural control** | Non-linear/multi-voice/POV experimentation the reader can't follow; fragments without threads. | `check-structure` (Structural control) |
 | 2 | **Plot / tension** | Complication too thin to sustain 600–800 words; stakes flat across a longer piece. | `check-structure` (Complication / Key moments) |
-| 3 | **Showing / immediacy** | Key turning points told in summary; emotions named; imagery thin or clichéd. | (planned ISS-008) `craft-voice` |
-| 4 | **Voice / POV / tone** | POV shifts unsignalled (drift, not design); tone whiplash; monologue voice that doesn't carry. | (planned ISS-008) `craft-voice` |
+| 3 | **Showing / immediacy** | Key turning points told in summary; emotions named; imagery thin or clichéd. | `craft-voice` |
+| 4 | **Voice / POV / tone** | POV shifts unsignalled (drift, not design); tone whiplash; monologue voice that doesn't carry. | `craft-voice` |
 | 5 | **Language / vocabulary** | Serviceable but unremarkable word choice; figurative language formulaic rather than chosen for effect. | `elevate-vocabulary` |
 | 6 | **Mechanics** | Grammar, punctuation, spelling errors (only once higher levels are sound). | (future) `fix-mechanics` |
 
-Note: categories 3 and 4 (telling-vs-showing, voice/POV/tone control) route to `craft-voice` — a planned specialist skill (ISS-008). Until it ships, coach them from `check-structure`'s narrative rubric and the `elevate-vocabulary` tiers, and name the planned routing in the diagnosis. Categories 1 and 2 stay with `check-structure` (structural control and plot).
+Note: categories 3 and 4 (telling-vs-showing, voice/POV/tone control) route to `craft-voice`. Categories 1 and 2 stay with `check-structure` (structural control and plot).
 
 ## Priority rule
 Choose the primary issue as the **lowest-numbered category rated "major"**. Rationale at this band: ambition is not the problem — control is. An experimental structure that loses the reader is category 1 and outranks everything; polish and imagery come after the piece can be followed.

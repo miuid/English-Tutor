@@ -25,7 +25,7 @@ Based on QCAA five-point (A–E) standard elaborations for Year 9 (reaserch.md �
 ## Mapping to the coaching skills
 
 - Structural control / Story weak → next step routes to `check-structure` (structural control, key moments).
-- Voice & tone / Showing weak → next step routes to (planned ISS-008) `craft-voice`.
+- Voice & tone / Showing weak → next step routes to `craft-voice`.
 - Language & imagery weak → next step routes to `elevate-vocabulary` (tonal control + motif).
 
 ## The Year 9–10 → A+ move

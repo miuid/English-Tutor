@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-20T06:10:00+10:00`
+- Last evaluated: `2026-08-20T08:15:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -43,7 +43,7 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-005 | New skill strengthen-argument | `DONE` | `P1` | `ISS-004` | `None` |
 | ISS-006 | Seed and wire persuasive daily loop | `DONE` | `P1` | `ISS-005` | `None` |
 | ISS-007 | Imaginative reference packs for Year 8-10 | `DONE` | `P1` | `ISS-006` | `None` |
-| ISS-008 | New skill craft-voice | `READY` | `P1` | `ISS-007` | `None` |
+| ISS-008 | New skill craft-voice | `DONE` | `P1` | `ISS-007` | `None` |
 | ISS-009 | Seed and wire imaginative daily loop | `READY` | `P1` | `ISS-008` | `None` |
 | ISS-010 | Beta first-run wizard and profile UX | `READY` | `P1` | `ISS-009` | `None` |
 | ISS-011 | Student data export and restore | `READY` | `P1` | `ISS-010` | `None` |
@@ -367,7 +367,7 @@ Create imaginative reference packs for narrative structure, character/setting/PO
 - 2026-08-20T06:10:00+10:00 - DONE. Imaginative reference packs shipped for all six pack-bearing skills across year-8 and year-9-10 (12 packs), traced to reaserch.md/teacher-skills.md with Q-001 provenance notes; safe fallback proven (exact for 8-10, nearest-band note for 11-12, instructions-only for unknown text types). Verification: targeted 37 passed/1 skipped; full suite 165 passed/4 skipped; ruff clean; mypy unchanged vs baseline; `python -m app.eval --no-judge` (fake) 18 cases, 14 passed/4 failed — unchanged baseline. Unlocks ISS-008.
 
 ## ISS-008 - New skill craft-voice
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P1`
 - Type: `feature`
 - Depends on: `ISS-007`
@@ -376,32 +376,40 @@ Create imaginative reference packs for narrative structure, character/setting/PO
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: 8.2; PRD: §3 bounded feedback; ERD: skill registry`
 - Effort: `M`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
+- Attempt: `1`
+- Started: `2026-08-20T08:00:00+10:00`
+- Completed: `2026-08-20T08:15:00+10:00`
 - Commit: `None`
 
 ### Outcome and scope
 Add the tenth agent skill craft-voice to diagnose telling-vs-showing, thin imagery, and POV drift, then coach the fix.
 
 ### Acceptance criteria
-- [ ] skills/craft-voice/ follows skills/README.md convention.
-- [ ] Golden examples exist and are discovered by the eval harness.
-- [ ] diagnose-errors can route imaginative submissions to craft-voice.
+- [x] skills/craft-voice/ follows skills/README.md convention.
+- [x] Golden examples exist and are discovered by the eval harness.
+- [x] diagnose-errors can route imaginative submissions to craft-voice.
 
 ### Implementation notes
 - Likely files or components: skills/craft-voice/, backend/app/skills/router.py, backend/tests/test_diagnosis_router.py, backend/tests/test_skill_sync.py.
 - Constraints: coach do not ghostwrite; bounded feedback max 1-2 next steps; model-agnostic skill package.
 
 ### Verification
-- [ ] `cd backend && uv run pytest tests/test_diagnosis_router.py tests/test_skill_loader.py tests/test_skill_sync.py`
-- [ ] `cd backend && uv run python -m app.eval --skill craft-voice --no-judge`
+- [x] `cd backend && uv run pytest tests/test_diagnosis_router.py tests/test_skill_loader.py tests/test_skill_sync.py` — 22 passed.
+- [x] `cd backend && LLM_PROVIDER=fake uv run python -m app.eval --skill craft-voice --no-judge` — 2 cases, 2 passed (imaginative/year-8 + imaginative/year-9-10 combo rows).
 
 ### Completion evidence
-- Pending
+- `skills/craft-voice/` authored per the convention: SKILL.md with all 8 required sections (three craft dials — key moment shown/told, emotion shown/named, narrator steady/drifting; ONE craft move per turn; model on a different scene; hand back with an "I can…" criterion); two reference packs (`references/imaginative/year-8/voice-craft.md`, `references/imaginative/year-9-10/voice-craft.md`) encoding the priority-ordered issue types (Year 8: summarised key moment / named emotions / POV drift; Year 9–10 adds thin-or-clichéd imagery at the key beat, design-vs-drift POV rule, and tone whiplash) with band calibration, traced to reaserch.md (imaginative domain, Year 8/9 formats, marking criteria, A–E elaborations, NAPLAN narrative criteria), teacher-skills.md (AERO); Year 10 carries the Q-001 derived-not-verbatim note.
+- Two golden fixtures: sample-01 (Year 8 bush story — noise-in-the-dark key moment told in one sentence + named emotions; type 1 is the priority pick) and sample-02 (Year 9 moving-away opening — genuine shown beats inside the lens, but unsignalled drift into Mum's head and third-person "Marcus"; type 3 is the priority pick), discovered as imaginative/year-8 and imaginative/year-9-10.
+- Routing wired: diagnose-errors SKILL.md route list + both imaginative taxonomy packs now route showing/immediacy and voice/POV/tone to `craft-voice` (plot/arc/structural control stay with check-structure; "planned ISS-008" notes removed from the taxonomies and both give-feedback imaginative rubrics). `LOOP_STAGES` gains the skill as `coach`; skills/README.md index updated (ten skills).
+- Lane discipline: check-structure keeps plot arc, complication, scene order, and structural control; craft-voice owns showing strategy, key-moment craft, narrator/POV/tone; elevate-vocabulary keeps individual word choice.
+- Tests: new `test_craft_voice_loads_imaginative_packs_and_examples`, new `test_diagnosis_router_routes_imaginative_to_craft_voice` (dispatch + imaginative year-8 voice-craft pack in the coaching prompt); count updates (9→10 skills, 18→20 cases) in loader/sync/eval tests; fixture-test comments extended to both specialist skills.
+- Live LLM judge eval was not run (no valid API credential in this environment — the `.env` Kimi key returns 401); the historical "live eval PASS" line in IMPLEMENTATION-PLAN-2 8.2 remains a pre-beta follow-up, while this ticket's declared verification is the no-judge harness above.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: 8.2; PRD: §3 bounded feedback; ERD: skill registry` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-20T08:00:00+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-20T08:15:00+10:00 - DONE. Tenth skill craft-voice shipped: SKILL.md + two imaginative voice-craft packs (year-8, year-9-10) + two golden fixtures; diagnose-errors imaginative taxonomies route showing/immediacy and voice/POV/tone to it. Verification: targeted 22 passed; full suite 167 passed/4 skipped; ruff clean; mypy unchanged vs baseline (29 errors in the same 4 unrelated test files); skill eval 2/2 PASS (imaginative/year-8 + year-9-10 combos); full no-judge eval 20 cases, 16 passed/4 failed — unchanged canned-fake baseline. Unlocks ISS-009.
 
 ## ISS-009 - Seed and wire imaginative daily loop
 - Status: `READY`

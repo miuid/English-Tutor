@@ -5,13 +5,13 @@ Used by `diagnose-errors`. Categories are ordered by leverage — fix higher cat
 | # | Category | What it looks like at Year 8 | Routes to |
 |---|---|---|---|
 | 1 | **Plot / tension** | No real complication; events listed ("and then…"); stakes never rise. | `check-structure` (Complication / Rising tension) |
-| 2 | **Showing / immediacy** | Emotions named instead of shown ("she was sad", "it was scary"); the key moment summarised in a sentence. | (planned ISS-008) `craft-voice` |
+| 2 | **Showing / immediacy** | Emotions named instead of shown ("she was sad", "it was scary"); the key moment summarised in a sentence. | `craft-voice` |
 | 3 | **Structure / cohesion** | Scenes blur together; no paragraph breaks at time/place shifts; resolution abrupt ("then I woke up"). | `check-structure` (response-level) |
-| 4 | **Character / POV** | POV drifts between first and third person; characters act out of character; narrator voice inconsistent. | (planned ISS-008) `craft-voice` |
+| 4 | **Character / POV** | POV drifts between first and third person; characters act out of character; narrator voice inconsistent. | `craft-voice` |
 | 5 | **Language / vocabulary** | Flat verbs ("went", "said", "got"); vague adjectives ("nice", "good", "big"); no sensory detail. | `elevate-vocabulary` |
 | 6 | **Mechanics** | Grammar, punctuation, spelling errors (only once higher levels are sound). | (future) `fix-mechanics` |
 
-Note: categories 2 and 4 (telling-vs-showing, thin imagery, POV drift) route to `craft-voice` — a planned specialist skill (ISS-008). Until it ships, coach them from `check-structure`'s narrative rubric and the `elevate-vocabulary` tiers, and name the planned routing in the diagnosis. Categories 1 and 3 stay with `check-structure` (arc and scene structure).
+Note: categories 2 and 4 (telling-vs-showing, thin imagery, POV drift) route to `craft-voice`. Categories 1 and 3 stay with `check-structure` (arc and scene structure).
 
 ## Priority rule
 Choose the primary issue as the **lowest-numbered category rated "major"**. Rationale: beautiful imagery can't rescue a piece with no story, so fix the plot first. Mechanics is last — don't polish sentences in a story that doesn't move.

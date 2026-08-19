@@ -23,7 +23,7 @@ Based on QCAA five-point (A–E) standard elaborations for Year 8 (reaserch.md �
 ## Mapping to the coaching skills
 
 - Story & tension / Structure weak → next step routes to `check-structure` (complication, rising tension, resolution).
-- Showing & voice weak → next step routes to (planned ISS-008) `craft-voice`.
+- Showing & voice weak → next step routes to `craft-voice`.
 - Language & vocabulary weak → next step routes to `elevate-vocabulary` (precision + show-don't-tell).
 
 ## The Year 8 C→A lever

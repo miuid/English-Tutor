@@ -56,8 +56,8 @@ def _write_skill(skill_root: Path, name: str, fixtures: dict[str, str]) -> None:
 def test_discover_cases_finds_all_skill_examples() -> None:
     skills = load_skills(SKILLS_DIR)
     cases = discover_cases(skills)
-    assert len(skills) == 9
-    assert len(cases) == 18
+    assert len(skills) == 10
+    assert len(cases) == 20
     assert {case.skill.name for case in cases} == {skill.name for skill in skills}
     for case in cases:
         assert case.example in {"sample-01", "sample-02"}
@@ -120,8 +120,9 @@ def test_parse_sample_bare_student_text_fallback() -> None:
 
 def test_existing_fixtures_get_default_analytical_year_8_tags() -> None:
     # The original v1 fixtures carry no explicit text_type header and must
-    # default to analytical/year-8. strengthen-argument sample-01 declares
-    # text_type: persuasive explicitly, so it is out of scope here.
+    # default to analytical/year-8. Specialist skills declare their home type
+    # explicitly (strengthen-argument: persuasive; craft-voice: imaginative),
+    # so they are out of scope here.
     core_skills = {
         "set-success-criteria",
         "model-response",
@@ -146,8 +147,9 @@ def test_existing_fixtures_get_default_analytical_year_8_tags() -> None:
 
 def test_each_core_skill_has_a_year_9_10_analytical_fixture() -> None:
     # The 8 original v1 loop skills each carry an analytical/year-9-10 fixture
-    # (ISS-002). Later specialist skills (strengthen-argument) are persuasive-
-    # scoped and intentionally ship no analytical fixtures.
+    # (ISS-002). Later specialist skills (strengthen-argument, craft-voice) are
+    # scoped to persuasive/imaginative and intentionally ship no analytical
+    # fixtures.
     core_skills = {
         "set-success-criteria",
         "model-response",

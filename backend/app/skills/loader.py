@@ -49,6 +49,7 @@ LOOP_STAGES: dict[str, str] = {
     "check-structure": "coach",
     "elevate-vocabulary": "coach",
     "strengthen-argument": "coach",
+    "craft-voice": "coach",
     "give-feedback": "end",
 }
 

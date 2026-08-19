@@ -8,9 +8,9 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 SKILLS_DIR = PROJECT_ROOT / "skills"
 
 
-def test_load_skills_returns_all_nine() -> None:
+def test_load_skills_returns_all_ten() -> None:
     skills = load_skills(SKILLS_DIR)
-    assert len(skills) == 9
+    assert len(skills) == 10
     names = {skill.name for skill in skills}
     assert names == {
         "set-success-criteria",
@@ -21,6 +21,7 @@ def test_load_skills_returns_all_nine() -> None:
         "check-structure",
         "elevate-vocabulary",
         "strengthen-argument",
+        "craft-voice",
         "give-feedback",
     }
 
@@ -97,6 +98,17 @@ def test_strengthen_argument_loads_persuasive_packs_and_examples() -> None:
         assert skill.packs[pack_key]["argument-chains.md"].strip()
     assert len(skill.examples) == 2
     assert "rebuttal" in skill.method
+
+def test_craft_voice_loads_imaginative_packs_and_examples() -> None:
+    skill = load_skill(SKILLS_DIR / "craft-voice")
+    assert skill.loop_stage == "coach"
+    for band in ("year-8", "year-9-10"):
+        pack_key = f"imaginative/{band}"
+        assert pack_key in skill.packs
+        assert list(skill.packs[pack_key]) == ["voice-craft.md"]
+        assert skill.packs[pack_key]["voice-craft.md"].strip()
+    assert len(skill.examples) == 2
+    assert "POV" in skill.method
 
 
 PACK_BEARING_SKILLS = {
