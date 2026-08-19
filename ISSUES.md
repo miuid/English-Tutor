@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-20T03:39:21+10:00`
+- Last evaluated: `2026-08-20T06:10:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -42,7 +42,7 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-004 | Persuasive reference packs for Year 8-10 | `DONE` | `P1` | `ISS-003` | `None` |
 | ISS-005 | New skill strengthen-argument | `DONE` | `P1` | `ISS-004` | `None` |
 | ISS-006 | Seed and wire persuasive daily loop | `DONE` | `P1` | `ISS-005` | `None` |
-| ISS-007 | Imaginative reference packs for Year 8-10 | `READY` | `P1` | `ISS-006` | `None` |
+| ISS-007 | Imaginative reference packs for Year 8-10 | `DONE` | `P1` | `ISS-006` | `None` |
 | ISS-008 | New skill craft-voice | `READY` | `P1` | `ISS-007` | `None` |
 | ISS-009 | Seed and wire imaginative daily loop | `READY` | `P1` | `ISS-008` | `None` |
 | ISS-010 | Beta first-run wizard and profile UX | `READY` | `P1` | `ISS-009` | `None` |
@@ -323,7 +323,7 @@ Seed persuasive outcomes and run the full daily loop with text_type=persuasive, 
 - 2026-08-20T03:39:21+10:00 - DONE. Persuasive outcomes seeded idempotently (12 outcomes across Year 8/9/10, QCAA-Y*-PER-* codes, traced to reaserch.md + ISS-004 packs, Q-001 derived note for Year 10); persuasive daily loop proven over HTTP with FakeProvider — strengthen-argument routing, persuasive pack citations on all pack-bearing prompts, 5 rubric scores persisted. Verification: targeted 18 passed; full suite 161 passed/4 skipped; ruff clean; mypy unchanged vs baseline. Unlocks ISS-007.
 
 ## ISS-007 - Imaginative reference packs for Year 8-10
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P1`
 - Type: `research`
 - Depends on: `ISS-006`
@@ -332,32 +332,39 @@ Seed persuasive outcomes and run the full daily loop with text_type=persuasive, 
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: 8.1; PRD: §9 FR-GA-003; ERD: curriculum_outcome`
 - Effort: `M`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
-- Commit: `None`
+- Attempt: `1`
+- Started: `2026-08-20T05:50:00+10:00`
+- Completed: `2026-08-20T06:10:00+10:00`
+- Commit: `<pending>`
 
 ### Outcome and scope
 Create imaginative reference packs for narrative structure, character/setting/POV, show-don't-tell, sensory imagery, and QCAA imaginative descriptors.
 
 ### Acceptance criteria
-- [ ] Imaginative packs exist for the relevant skills and year bands.
-- [ ] Every pedagogical claim traces to a research source file.
-- [ ] Pack selection falls back safely when an exact combo is missing.
+- [x] Imaginative packs exist for the relevant skills and year bands.
+- [x] Every pedagogical claim traces to a research source file.
+- [x] Pack selection falls back safely when an exact combo is missing.
 
 ### Implementation notes
 - Likely files or components: skills/*/references/imaginative/, reaserch.md, Queensland English Tutoring Blueprint.md, backend/app/skills/executor.py.
 - Constraints: age-appropriate and curriculum-anchored; no ghostwritten story output as the teaching result.
 
 ### Verification
-- [ ] `cd backend && uv run pytest tests/test_skill_loader.py tests/test_skill_executor.py`
-- [ ] `cd backend && uv run python -m app.eval --no-judge`
+- [x] `cd backend && uv run pytest tests/test_skill_loader.py tests/test_skill_executor.py` — 37 passed, 1 skipped.
+- [x] `cd backend && LLM_PROVIDER=fake uv run python -m app.eval --no-judge` — 18 cases, 14 passed / 4 failed (the same canned-fake give-feedback + diagnose-errors baseline as ISS-004/005, unchanged); exit 1 as expected.
+- [x] `cd backend && uv run pytest` — 165 passed, 4 skipped (was 161/4; +4 new tests).
+- [x] `cd backend && uv run ruff check .` — clean; `uv run mypy app tests` — 29 errors in the same 4 unrelated test files as the ISS-006 baseline (test_config, test_delete_student, test_interaction_log, test_session_time); changed files clean.
 
 ### Completion evidence
-- Pending
+- Twelve imaginative packs authored (six pack-bearing skills × `year-8` + `year-9-10`), filenames mirroring the analytical/persuasive packs: `check-structure/rubric.md` (narrative-arc rubric: orientation, complication, rising tension, climax, resolution; 9-10 adds structural control + tone), `diagnose-errors/taxonomy.md` (six leverage-ordered categories routing plot/structure to check-structure, showing/POV to craft-voice (planned ISS-008), vocabulary to elevate-vocabulary), `elevate-vocabulary/tiers.md` (show-don't-tell upgrade table, Tier 3 narrative metalanguage; 9-10 shifts to tonal control + motif/symbolism/foreshadowing), `give-feedback/rubric.md` (A–E imaginative descriptors mapped to QCAA criteria + NAPLAN narrative criteria — Audience, Text Structure, Ideas, Character & Setting, Vocabulary, Cohesion), `independent-task/task-specs.md` (QCAA conditions, approved imaginative formats per band, copyright-safe stimulus rules — public-domain sources only for interventions/transformations), `set-success-criteria/criteria-bank.md` ("I can…" banks + learning-intention stems).
+- Traceability: every pack cites `reaserch.md` sections (imaginative domain "conveys meaning and perspectives through narrative structure"; Year 8 formats — short stories, narrative interventions, text transformations, memoirs, diaries; Year 9 formats — multi-text narratives, serialized vlogs, script transformations, monologues, digital stories with structural experimentation/voice/POV/tone play; assessment conditions; marking criteria; NAPLAN narrative criteria) plus `teacher-skills.md` (AERO Writing Instruction Model). Year 10 descriptors carry Q-001 derived-not-verbatim provenance notes.
+- Fallback proven by tests: `imaginative/year-8` and `imaginative/year-9-10` resolve exactly (no degradation note); `imaginative/year-11-12` falls back to `imaginative/year-8` with the nearest-band note; an unknown text type (`poetry`) still degrades to skill instructions only. Tests: new `test_reference_files_load_into_imaginative_year_8_pack`, `test_reference_files_load_into_imaginative_year_9_10_pack`, new `test_execute_imaginative_year_9_uses_exact_pack_without_degradation_note`, new `test_execute_appends_degradation_note_on_imaginative_band_fallback`; updated `test_select_packs_prefers_exact_then_nearest_band` (imaginative exact + fallback, no-pack case retargeted to `poetry`); `test_execute_without_matching_pack_returns_response_with_note` retargeted to `poetry`. No backend source changed; analytical/persuasive packs untouched, so existing loop behaviour is byte-identical (year-8 analytical byte-identical regression test passes).
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: 8.1; PRD: §9 FR-GA-003; ERD: curriculum_outcome` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-20T05:50:00+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-20T06:10:00+10:00 - DONE. Imaginative reference packs shipped for all six pack-bearing skills across year-8 and year-9-10 (12 packs), traced to reaserch.md/teacher-skills.md with Q-001 provenance notes; safe fallback proven (exact for 8-10, nearest-band note for 11-12, instructions-only for unknown text types). Verification: targeted 37 passed/1 skipped; full suite 165 passed/4 skipped; ruff clean; mypy unchanged vs baseline; `python -m app.eval --no-judge` (fake) 18 cases, 14 passed/4 failed — unchanged baseline. Unlocks ISS-008.
 
 ## ISS-008 - New skill craft-voice
 - Status: `READY`

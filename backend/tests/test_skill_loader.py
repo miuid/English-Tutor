@@ -125,6 +125,22 @@ def test_reference_files_load_into_persuasive_year_9_10_pack() -> None:
         assert skill.packs["persuasive/year-9-10"][filename].strip(), name
 
 
+def test_reference_files_load_into_imaginative_year_8_pack() -> None:
+    for name, filename in PACK_BEARING_SKILLS.items():
+        skill = load_skill(SKILLS_DIR / name)
+        assert "imaginative/year-8" in skill.packs, name
+        assert list(skill.packs["imaginative/year-8"]) == [filename], name
+        assert skill.packs["imaginative/year-8"][filename].strip(), name
+
+
+def test_reference_files_load_into_imaginative_year_9_10_pack() -> None:
+    for name, filename in PACK_BEARING_SKILLS.items():
+        skill = load_skill(SKILLS_DIR / name)
+        assert "imaginative/year-9-10" in skill.packs, name
+        assert list(skill.packs["imaginative/year-9-10"]) == [filename], name
+        assert skill.packs["imaginative/year-9-10"][filename].strip(), name
+
+
 def _write_minimal_skill(skill_dir: Path) -> None:
     skill_dir.mkdir(parents=True)
     sections = "\n\n".join(

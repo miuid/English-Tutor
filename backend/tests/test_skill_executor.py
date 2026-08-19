@@ -129,6 +129,14 @@ def test_select_packs_prefers_exact_then_nearest_band() -> None:
     assert packs == [skill.packs["persuasive/year-8"]]
 
     packs, used = select_packs(skill, "imaginative", "year-8")
+    assert used == "imaginative/year-8"
+    assert packs == [skill.packs["imaginative/year-8"]]
+
+    packs, used = select_packs(skill, "imaginative", "year-11-12")
+    assert used == "imaginative/year-8"  # nearest band fallback
+    assert packs == [skill.packs["imaginative/year-8"]]
+
+    packs, used = select_packs(skill, "poetry", "year-8")
     assert used is None
     assert packs == []
 
@@ -210,18 +218,49 @@ async def test_execute_appends_degradation_note_on_persuasive_band_fallback() ->
 
 
 @pytest.mark.asyncio
+async def test_execute_imaginative_year_9_uses_exact_pack_without_degradation_note() -> None:
+    skill = load_skill(SKILLS_DIR / "check-structure")
+    fake = FakeProvider(canned_responses=["feedback"])
+    service = SkillExecutionService(provider=fake)
+    inputs = {"year_level": "9", "text_type": "imaginative", "student_text": "Text."}
+
+    response = await service.execute(skill, inputs)
+
+    assert "rubric.md" in fake.calls[0][0]
+    assert "complication" in fake.calls[0][0]  # imaginative pack content
+    assert response == "feedback"  # exact pack exists: no degradation note
+
+
+@pytest.mark.asyncio
+async def test_execute_appends_degradation_note_on_imaginative_band_fallback() -> None:
+    skill = load_skill(SKILLS_DIR / "check-structure")
+    fake = FakeProvider(canned_responses=["feedback"])
+    service = SkillExecutionService(provider=fake)
+    inputs = {"year_level": "12", "text_type": "imaginative", "student_text": "Text."}
+
+    response = await service.execute(skill, inputs)
+
+    assert "rubric.md" in fake.calls[0][0]  # nearest imaginative band still included
+    assert response.startswith("feedback")
+    assert response.endswith(
+        "_Note: no dedicated references for imaginative/year-11-12; "
+        "coached from the imaginative/year-8 pack._"
+    )
+
+
+@pytest.mark.asyncio
 async def test_execute_without_matching_pack_returns_response_with_note() -> None:
     skill = load_skill(SKILLS_DIR / "check-structure")
     fake = FakeProvider(canned_responses=["feedback"])
     service = SkillExecutionService(provider=fake)
-    inputs = {"year_level": "8", "text_type": "imaginative", "student_text": "Text."}
+    inputs = {"year_level": "8", "text_type": "poetry", "student_text": "Text."}
 
     response = await service.execute(skill, inputs)
 
     assert response  # a response, not an error
     assert "--- Reference material ---" not in fake.calls[0][0]
     assert response.endswith(
-        "_Note: no dedicated references for imaginative/year-8; "
+        "_Note: no dedicated references for poetry/year-8; "
         "coached from skill instructions only._"
     )
 
