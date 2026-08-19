@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-20T00:40:00+10:00`
+- Last evaluated: `2026-08-20T03:39:21+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -41,7 +41,7 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-003 | Seed and evaluate Year 9-10 analytical loop | `DONE` | `P0` | `ISS-002` | `None` |
 | ISS-004 | Persuasive reference packs for Year 8-10 | `DONE` | `P1` | `ISS-003` | `None` |
 | ISS-005 | New skill strengthen-argument | `DONE` | `P1` | `ISS-004` | `None` |
-| ISS-006 | Seed and wire persuasive daily loop | `READY` | `P1` | `ISS-005` | `None` |
+| ISS-006 | Seed and wire persuasive daily loop | `DONE` | `P1` | `ISS-005` | `None` |
 | ISS-007 | Imaginative reference packs for Year 8-10 | `READY` | `P1` | `ISS-006` | `None` |
 | ISS-008 | New skill craft-voice | `READY` | `P1` | `ISS-007` | `None` |
 | ISS-009 | Seed and wire imaginative daily loop | `READY` | `P1` | `ISS-008` | `None` |
@@ -280,7 +280,7 @@ Add the ninth agent skill strengthen-argument to diagnose weak argument chains a
 - 2026-08-20T00:40:00+10:00 - DONE. Ninth skill strengthen-argument shipped: SKILL.md + two persuasive argument-chain packs (year-8, year-9-10) + two golden fixtures; diagnose-errors persuasive taxonomies route argument/substantiation to it. Verification: targeted 18 passed; full suite 159 passed/4 skipped; ruff clean; mypy unchanged vs baseline; skill eval 2/2 PASS; full no-judge eval 18 cases, 14 passed/4 failed — unchanged canned-fake baseline. Unlocks ISS-006.
 
 ## ISS-006 - Seed and wire persuasive daily loop
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P1`
 - Type: `feature`
 - Depends on: `ISS-005`
@@ -289,32 +289,38 @@ Add the ninth agent skill strengthen-argument to diagnose weak argument chains a
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: 7.3; PRD: §4 daily-loop UX; ERD: session/attempt/rubric_score`
 - Effort: `M`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
+- Attempt: `1`
+- Started: `2026-08-20T03:33:08+10:00`
+- Completed: `2026-08-20T03:39:21+10:00`
 - Commit: `None`
 
 ### Outcome and scope
 Seed persuasive outcomes and run the full daily loop with text_type=persuasive, persisting rubric scores.
 
 ### Acceptance criteria
-- [ ] Persuasive curriculum outcomes are seeded idempotently.
-- [ ] A persuasive session can start, advance, submit, and receive feedback over HTTP.
-- [ ] Rubric scores persist for a persuasive graded attempt.
+- [x] Persuasive curriculum outcomes are seeded idempotently.
+- [x] A persuasive session can start, advance, submit, and receive feedback over HTTP.
+- [x] Rubric scores persist for a persuasive graded attempt.
 
 ### Implementation notes
 - Likely files or components: backend/app/seed.py, backend/app/sessions/interactive.py, backend/app/api/routes.py, backend/tests/test_api_daily_loop.py.
 - Constraints: keep analytical Year 8 loop unchanged; unsupported combos fail clearly.
 
 ### Verification
-- [ ] `cd backend && uv run pytest tests/test_seed.py tests/test_api_daily_loop.py`
-- [ ] `cd backend && uv run pytest`
+- [x] `cd backend && uv run pytest tests/test_seed.py tests/test_api_daily_loop.py` — 18 passed.
+- [x] `cd backend && uv run pytest` — 161 passed, 4 skipped (was 159/4; +2 new tests).
+- [x] `cd backend && uv run ruff check .` — clean; `uv run mypy app tests` — 29 errors in the same 4 unrelated test files as the ISS-005 baseline (test_config, test_delete_student, test_interaction_log, test_session_time); changed files clean.
 
 ### Completion evidence
-- Pending
+- `app/seed.py` generalised from analytical-only to `(year_level, text_type, outcomes)` triples: the three analytical sets are unchanged (codes/descriptors byte-identical), and three persuasive sets are seeded idempotently — `YEAR_8_PERSUASIVE_OUTCOMES` (QCAA-Y8-PER-01..04: hook/contention/one-reason-per-paragraph/call-to-action, develop-one-reason with support, audience-adapted voice, sustained position — traced to reaserch.md Year 8 marking criteria + NAPLAN persuasive criteria + the ISS-004 year-8 criteria bank), `YEAR_9_PERSUASIVE_OUTCOMES` (QCAA-Y9-PER-01..04: escalating viewpoint, substantiating evidence, deliberate rhetoric/format-fit voice, counterargument + rebuttal — traced to reaserch.md Year 9 marking criteria + the year-9-10 criteria bank), `YEAR_10_PERSUASIVE_OUTCOMES` (QCAA-Y10-PER-01..04, derived one band up per Q-001). `backend/seed.py` print updated.
+- No loop code changed: `InteractiveLoop._resolve_text_type` already resolves `focus_text_types[0]` on every stage (P6.2), so a student with `focus_text_types=["persuasive"]` runs the persuasive loop end-to-end today — proven by the new HTTP test.
+- Tests: new `test_seed_creates_persuasive_outcomes` (12 persuasive rows across Year 8-10, codes/curriculum, Year 8-9 band-shift descriptors, analytical sets untouched); two pre-existing seed tests now filter by `text_type="analytical"` (year-only filtering matched the new persuasive rows); new `test_persuasive_session_runs_loop_and_persists_scores` — full loop over HTTP with FakeProvider: diagnosis routes to `strengthen-argument`, 5 rubric scores persist with persuasive criterion names (Position & ideas C, Argument & evidence D), every pack-bearing prompt (criteria/independent/diagnosis/coach/feedback) cites the persuasive/year-8 packs, feedback prompt carries "Position & ideas", no degradation note on any tutor turn.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: 7.3; PRD: §4 daily-loop UX; ERD: session/attempt/rubric_score` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-20T03:33:08+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-20T03:39:21+10:00 - DONE. Persuasive outcomes seeded idempotently (12 outcomes across Year 8/9/10, QCAA-Y*-PER-* codes, traced to reaserch.md + ISS-004 packs, Q-001 derived note for Year 10); persuasive daily loop proven over HTTP with FakeProvider — strengthen-argument routing, persuasive pack citations on all pack-bearing prompts, 5 rubric scores persisted. Verification: targeted 18 passed; full suite 161 passed/4 skipped; ruff clean; mypy unchanged vs baseline. Unlocks ISS-007.
 
 ## ISS-007 - Imaginative reference packs for Year 8-10
 - Status: `READY`

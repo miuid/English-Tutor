@@ -147,6 +147,13 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 11. Session log
 
+### 2026-08-20 — ISS-006 done: persuasive daily loop seeded and proven
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-006 (P1, dep ISS-005 DONE).
+- **Shipped:** `app/seed.py` now idempotently seeds 24 QCAA outcomes — 12 analytical (unchanged) + 12 persuasive across Year 8/9/10 (`QCAA-Y*-PER-*` codes: Year 8 hook/contention/call-to-action + develop-one-reason traced to reaserch.md Year 8 criteria + NAPLAN persuasive criteria; Year 9 escalating viewpoint/substantiating evidence/deliberate rhetoric/rebuttal traced to Year 9 criteria; Year 10 derived one band up per Q-001).
+- **No loop code changed:** P6.2's `_resolve_text_type` (profile `focus_text_types[0]` wins on every stage) already wires text_type through the whole loop — the persuasive loop worked end-to-end on the first HTTP test run. Diagnosis routes to `strengthen-argument`, all pack-bearing prompts cite the persuasive/year-8 packs, 5 rubric scores persist with persuasive criterion names.
+- Verified: targeted 18 passed; full suite **161 passed/4 skipped** (+2 new tests); ruff clean; mypy 29 errors in the same 4 unrelated test files as baseline. Two pre-existing seed tests now filter by text_type (year-only filtering caught the new persuasive rows).
+- **Next pick-up:** ISS-007 — imaginative reference packs for Year 8-10.
+
 ### 2026-08-20 — ISS-005 done: ninth skill `strengthen-argument` shipped
 - Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-005 (P1, dep ISS-004 DONE).
 - **Shipped:** `skills/strengthen-argument/` — SKILL.md (chain-trace method: contention → reason → elaboration → evidence → link; ONE broken link per turn; model on a different topic; hand back with an "I can…" criterion), two persuasive reference packs (`argument-chains.md` × year-8/year-9-10: four break types — contention w/o reasons, reason w/o elaboration, decorative evidence, missing/token rebuttal — with priority rules + band calibration, Q-001 note for Year 10), and two golden fixtures (Year 8 speech, Year 9 letter to the editor).

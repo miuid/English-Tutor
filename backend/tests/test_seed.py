@@ -7,18 +7,33 @@ from app.models import CurriculumOutcome
 from app.seed import (
     RUBRIC_CRITERIA,
     YEAR_8_OUTCOMES,
+    YEAR_8_PERSUASIVE_OUTCOMES,
     YEAR_9_OUTCOMES,
+    YEAR_9_PERSUASIVE_OUTCOMES,
     YEAR_10_OUTCOMES,
+    YEAR_10_PERSUASIVE_OUTCOMES,
     seed,
 )
 
-ALL_OUTCOMES = YEAR_8_OUTCOMES + YEAR_9_OUTCOMES + YEAR_10_OUTCOMES
+ALL_OUTCOMES = (
+    YEAR_8_OUTCOMES
+    + YEAR_9_OUTCOMES
+    + YEAR_10_OUTCOMES
+    + YEAR_8_PERSUASIVE_OUTCOMES
+    + YEAR_9_PERSUASIVE_OUTCOMES
+    + YEAR_10_PERSUASIVE_OUTCOMES
+)
 
 
 def test_seed_creates_year_8_outcomes(db_session: SqlSession) -> None:
     seed(db_session)
     outcomes = (
-        db_session.execute(select(CurriculumOutcome).where(CurriculumOutcome.year_level == 8))
+        db_session.execute(
+            select(CurriculumOutcome).where(
+                CurriculumOutcome.year_level == 8,
+                CurriculumOutcome.text_type == "analytical",
+            )
+        )
         .scalars()
         .all()
     )
@@ -31,12 +46,22 @@ def test_seed_creates_year_8_outcomes(db_session: SqlSession) -> None:
 def test_seed_creates_year_9_10_outcomes(db_session: SqlSession) -> None:
     seed(db_session)
     year_9 = (
-        db_session.execute(select(CurriculumOutcome).where(CurriculumOutcome.year_level == 9))
+        db_session.execute(
+            select(CurriculumOutcome).where(
+                CurriculumOutcome.year_level == 9,
+                CurriculumOutcome.text_type == "analytical",
+            )
+        )
         .scalars()
         .all()
     )
     year_10 = (
-        db_session.execute(select(CurriculumOutcome).where(CurriculumOutcome.year_level == 10))
+        db_session.execute(
+            select(CurriculumOutcome).where(
+                CurriculumOutcome.year_level == 10,
+                CurriculumOutcome.text_type == "analytical",
+            )
+        )
         .scalars()
         .all()
     )
@@ -52,6 +77,45 @@ def test_seed_creates_year_9_10_outcomes(db_session: SqlSession) -> None:
     year_9_descriptors = " ".join(o.descriptor for o in year_9)
     assert "representation" in year_9_descriptors
     assert "positions the reader" in year_9_descriptors
+
+
+def test_seed_creates_persuasive_outcomes(db_session: SqlSession) -> None:
+    seed(db_session)
+    persuasive = (
+        db_session.execute(
+            select(CurriculumOutcome).where(CurriculumOutcome.text_type == "persuasive")
+        )
+        .scalars()
+        .all()
+    )
+    expected = (
+        YEAR_8_PERSUASIVE_OUTCOMES + YEAR_9_PERSUASIVE_OUTCOMES + YEAR_10_PERSUASIVE_OUTCOMES
+    )
+    assert len(persuasive) == len(expected)
+    assert {o.code for o in persuasive} == {o["code"] for o in expected}
+    for outcome in persuasive:
+        assert outcome.curriculum == "QCAA"
+    by_year = {year: [o for o in persuasive if o.year_level == year] for year in (8, 9, 10)}
+    assert all(len(rows) == 4 for rows in by_year.values())
+    # Year 9-10 band shift (reaserch.md: Year 9 marking criteria — substantiated
+    # viewpoints, rhetorical strategies): rebuttal and escalation replace Year 8's
+    # develop-one-reason focus.
+    year_9_descriptors = " ".join(o.descriptor for o in by_year[9])
+    assert "rebut" in year_9_descriptors
+    assert "rhetorical" in year_9_descriptors
+    year_8_descriptors = " ".join(o.descriptor for o in by_year[8])
+    assert "call to action" in year_8_descriptors
+    # Analytical outcomes are untouched by the persuasive seed pass.
+    analytical = (
+        db_session.execute(
+            select(CurriculumOutcome).where(CurriculumOutcome.text_type == "analytical")
+        )
+        .scalars()
+        .all()
+    )
+    assert {o.code for o in analytical} == {
+        o["code"] for o in YEAR_8_OUTCOMES + YEAR_9_OUTCOMES + YEAR_10_OUTCOMES
+    }
 
 
 def test_seed_is_idempotent(db_session: SqlSession) -> None:
