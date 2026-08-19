@@ -41,7 +41,7 @@ async def test_run_cases_returns_one_result_per_case() -> None:
     results = await run_cases(
         _cases(), SkillExecutionService(provider=provider), provider, judge=True
     )
-    assert len(results) == 8
+    assert len(results) == 16
     # "fake response" is not a parseable judge verdict: judge ERROR, not a pass.
     for result in results:
         assert result.status == ERROR
@@ -55,7 +55,7 @@ async def test_run_cases_all_pass_with_cooperative_fake() -> None:
     results = await run_cases(
         _cases(), SkillExecutionService(provider=provider), provider, judge=True
     )
-    assert len(results) == 8
+    assert len(results) == 16
     assert all(result.status == PASS for result in results)
 
 
@@ -91,7 +91,7 @@ def test_scorecard_renders_table_and_summary() -> None:
     card = render_scorecard(results)
     assert "skill" in card and "overall" in card
     assert "give-feedback" in card
-    assert summarize(results) == "Summary: 8 cases — 8 passed, 0 failed, 0 errors"
+    assert summarize(results) == "Summary: 16 cases — 16 passed, 0 failed, 0 errors"
 
 
 def test_scorecard_groups_results_by_skill_and_combo() -> None:
@@ -146,7 +146,7 @@ def test_main_runs_end_to_end_with_fake_provider(
     finally:
         get_settings.cache_clear()
     out = capsys.readouterr().out
-    assert "Summary: 8 cases" in out
+    assert "Summary: 16 cases" in out
     assert "give-feedback" in out
     assert "diagnose-errors" in out
     # FakeProvider's canned output fails checks, so the run must not pass.
@@ -166,7 +166,7 @@ def test_main_exit_zero_when_everything_passes(
     finally:
         get_settings.cache_clear()
     out = capsys.readouterr().out
-    assert "8 passed, 0 failed, 0 errors" in out
+    assert "16 passed, 0 failed, 0 errors" in out
     assert exit_code == 0
 
 
@@ -181,7 +181,7 @@ def test_main_skill_filter(
     finally:
         get_settings.cache_clear()
     out = capsys.readouterr().out
-    assert "Summary: 1 case" in out
+    assert "Summary: 2 cases" in out
     assert "give-feedback" in out
     assert "diagnose-errors" not in out
     assert exit_code == 1
@@ -198,5 +198,5 @@ def test_eval_smoke_real_llm(capsys: pytest.CaptureFixture[str]) -> None:
     finally:
         get_settings.cache_clear()
     out = capsys.readouterr().out
-    assert "Summary: 1 case" in out
+    assert "Summary: 2 cases" in out
     assert exit_code in (0, 1)

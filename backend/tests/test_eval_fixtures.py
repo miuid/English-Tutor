@@ -57,10 +57,10 @@ def test_discover_cases_finds_all_skill_examples() -> None:
     skills = load_skills(SKILLS_DIR)
     cases = discover_cases(skills)
     assert len(skills) == 8
-    assert len(cases) == 8
+    assert len(cases) == 16
     assert {case.skill.name for case in cases} == {skill.name for skill in skills}
     for case in cases:
-        assert case.example == "sample-01"
+        assert case.example in {"sample-01", "sample-02"}
         assert case.inputs
         assert case.expected.strip()
 
@@ -120,10 +120,24 @@ def test_parse_sample_bare_student_text_fallback() -> None:
 
 def test_existing_fixtures_get_default_analytical_year_8_tags() -> None:
     cases = discover_cases(load_skills(SKILLS_DIR))
-    assert cases
-    for case in cases:
+    year_8_cases = [case for case in cases if case.example == "sample-01"]
+    assert year_8_cases
+    for case in year_8_cases:
         assert case.tags == {"text_type": "analytical", "year_band": "year-8"}
         assert case.combo == "analytical/year-8"
+
+
+def test_each_core_skill_has_a_year_9_10_analytical_fixture() -> None:
+    cases = discover_cases(load_skills(SKILLS_DIR))
+    band_cases = [case for case in cases if case.combo == "analytical/year-9-10"]
+    assert {case.skill.name for case in band_cases} == {
+        skill.name for skill in load_skills(SKILLS_DIR)
+    }
+    for case in band_cases:
+        assert case.tags == {"text_type": "analytical", "year_band": "year-9-10"}
+        assert case.inputs["year_level"] == "9"
+        assert "year_band" not in case.inputs
+        assert case.expected.strip()
 
 
 def test_discover_cases_supports_multiple_tagged_fixtures_per_skill(tmp_path: Path) -> None:

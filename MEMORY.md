@@ -147,6 +147,14 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 11. Session log
 
+### 2026-08-19 — ISS-002 done: Year 9-10 analytical reference packs + fixtures
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-002 (P0, dep ISS-001 DONE).
+- **Shipped:** six `references/analytical/year-9-10/` packs (check-structure, diagnose-errors, elevate-vocabulary, give-feedback, independent-task, set-success-criteria) + one year-9-10 golden fixture per core skill (8 × sample-02/expected-02, `year_level: 9`, Macbeth thread — public domain).
+- Band shifts encoded (traced to `reaserch.md`): explanation → **critical analysis** (representation/context/reader-positioning); 600–800 words / 90 min + 10 planning; formal academic register transition; higher Tier 2/3 vocabulary ceiling. Every pack carries a Q-001 provenance note: Year 10 descriptors are **derived** from Year 9 elaborations, not verbatim QCAA text.
+- Executor/loader needed zero code changes — the P6.1 pack architecture picked the new packs up by convention. Tests: +3 new (year-9-10 pack loading, per-skill year-9-10 fixture coverage, exact-pack execution without degradation note); eval count/tag assertions updated 8→16; fallback-note test retargeted to year-11-12.
+- Verified: targeted 61 passed/2 skipped; full suite 150 passed/4 skipped; ruff clean; mypy 29 errors in 4 unrelated test files — stash-verified identical to pre-change baseline. Year-8 prompt byte-identical regression passes (Year 8 behaviour untouched). `python -m app.eval --no-judge` (fake) runs 16 cases with per-skill `analytical/year-9-10` combo rows.
+- **Next pick-up:** ISS-003 — seed Year 9-10 QCAA analytical outcomes and run a year_level=9 loop with FakeProvider.
+
 ### 2026-08-19 — ISS-001 done: eval fixture matrix (first autonomous `/develop` ticket)
 - First cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-001 (P0, no deps).
 - **Shipped:** a skill can now ship multiple golden fixtures as an eval matrix — `EvalCase.tags` (`text_type` + `year_band`) from fixture header, optional `year_band:` frontmatter tag (discovery metadata only, stripped from executor inputs; defaults to the band implied by `year_level` via `year_band_for`). Scorecard gained `render_combo_breakdown()`: pass/fail grouped by skill then `text_type/year_band` combo. `skills/README.md` examples convention documented.

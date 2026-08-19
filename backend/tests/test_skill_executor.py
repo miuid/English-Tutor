@@ -144,16 +144,30 @@ async def test_execute_appends_degradation_note_on_band_fallback() -> None:
     skill = load_skill(SKILLS_DIR / "check-structure")
     fake = FakeProvider(canned_responses=["feedback"])
     service = SkillExecutionService(provider=fake)
-    inputs = {"year_level": "10", "text_type": "analytical", "student_text": "Text."}
+    inputs = {"year_level": "12", "text_type": "analytical", "student_text": "Text."}
 
     response = await service.execute(skill, inputs)
 
     assert "rubric.md" in fake.calls[0][0]  # nearest analytical band still included
     assert response.startswith("feedback")
     assert response.endswith(
-        "_Note: no dedicated references for analytical/year-9-10; "
+        "_Note: no dedicated references for analytical/year-11-12; "
         "coached from the analytical/year-8 pack._"
     )
+
+
+@pytest.mark.asyncio
+async def test_execute_year_9_10_uses_exact_pack_without_degradation_note() -> None:
+    skill = load_skill(SKILLS_DIR / "check-structure")
+    fake = FakeProvider(canned_responses=["feedback"])
+    service = SkillExecutionService(provider=fake)
+    inputs = {"year_level": "9", "text_type": "analytical", "student_text": "Text."}
+
+    response = await service.execute(skill, inputs)
+
+    assert "rubric.md" in fake.calls[0][0]
+    assert "representation" in fake.calls[0][0]  # year-9-10 pack content
+    assert response == "feedback"  # exact pack exists: no degradation note
 
 
 @pytest.mark.asyncio

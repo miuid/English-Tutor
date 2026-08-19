@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-19T16:17:19+10:00`
+- Last evaluated: `2026-08-19T18:40:46+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -37,7 +37,7 @@ This document is the canonical delivery state for autonomous development. Detail
 | ID | Title | Status | Priority | Depends on | Blocked by |
 |---|---|---|---|---|---|
 | ISS-001 | Eval fixture matrix by year band and text type | `DONE` | `P0` | `None` | `None` |
-| ISS-002 | Year 9-10 analytical reference packs | `READY` | `P0` | `ISS-001` | `None` |
+| ISS-002 | Year 9-10 analytical reference packs | `DONE` | `P0` | `ISS-001` | `None` |
 | ISS-003 | Seed and evaluate Year 9-10 analytical loop | `READY` | `P0` | `ISS-002` | `None` |
 | ISS-004 | Persuasive reference packs for Year 8-10 | `READY` | `P1` | `ISS-003` | `None` |
 | ISS-005 | New skill strengthen-argument | `READY` | `P1` | `ISS-004` | `None` |
@@ -105,7 +105,7 @@ Extend the eval harness so one skill can ship multiple golden fixtures tagged by
 - 2026-08-19T16:17:19+10:00 - DONE. Eval fixture matrix shipped: multiple tagged fixtures per skill + scorecard combo breakdown. Verification: targeted eval tests 32 passed/1 skipped; full suite 147 passed/4 skipped; ruff/mypy clean; `python -m app.eval --no-judge` runs and groups by combo. Unlocks ISS-002.
 
 ## ISS-002 - Year 9-10 analytical reference packs
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P0`
 - Type: `research`
 - Depends on: `ISS-001`
@@ -114,32 +114,37 @@ Extend the eval harness so one skill can ship multiple golden fixtures tagged by
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: 9.1; PRD: §9 FR-GA-003; ERD: curriculum_outcome`
 - Effort: `M`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
+- Attempt: `1`
+- Started: `2026-08-19T18:26:00+10:00`
+- Completed: `2026-08-19T18:40:46+10:00`
 - Commit: `None`
 
 ### Outcome and scope
 Add analytical reference packs for year-9-10 across the existing skills, with band-adjusted rubric descriptors, vocabulary ceilings, task specs, and register transition.
 
 ### Acceptance criteria
-- [ ] references/analytical/year-9-10/ exists for the relevant skills.
-- [ ] Pack content traces to research files rather than intuition.
-- [ ] Each core skill gains at least one year-9-10 golden fixture.
+- [x] references/analytical/year-9-10/ exists for the relevant skills.
+- [x] Pack content traces to research files rather than intuition.
+- [x] Each core skill gains at least one year-9-10 golden fixture.
 
 ### Implementation notes
 - Likely files or components: skills/*/references/analytical/year-9-10/, skills/*/examples/, reaserch.md, Queensland English Tutoring Blueprint.md.
 - Constraints: keep skills generic; content depth lives in reference packs; do not change Year 8 analytical behaviour.
 
 ### Verification
-- [ ] `cd backend && uv run pytest tests/test_skill_loader.py tests/test_skill_executor.py`
-- [ ] `cd backend && uv run python -m app.eval --no-judge`
+- [x] `cd backend && uv run pytest tests/test_skill_loader.py tests/test_skill_executor.py` — pass (part of 61 passed, 2 skipped across the loader/executor/eval files).
+- [x] `cd backend && uv run python -m app.eval --no-judge` — with `LLM_PROVIDER=fake`: 16 cases, 12 passed / 4 failed (canned-fake rule failures on give-feedback + diagnose-errors, the expected no-judge baseline); combo breakdown prints `analytical/year-9-10` per skill; exit 1 as expected.
 
 ### Completion evidence
-- Pending
+- Six year-9-10 packs authored: `check-structure/rubric.md`, `diagnose-errors/taxonomy.md`, `elevate-vocabulary/tiers.md`, `give-feedback/rubric.md`, `independent-task/task-specs.md`, `set-success-criteria/criteria-bank.md`. Every pack cites `reaserch.md` sections (Year 9 assessment conditions, Year 9 A–E elaborations, analytical-essay objectives) and carries a Q-001 provenance note marking Year 10 descriptors as derived, not verbatim. Band shifts encoded: explanation → critical analysis (representation/context/positioning), 600–800 words / 90 min + 10 planning, formal register transition, higher Tier 2/3 ceiling.
+- Eight year-9-10 golden fixtures (sample-02/expected-02, `year_level: 9`, analytical, Macbeth thread — public domain) — one per core skill; discovered by the harness as combo `analytical/year-9-10`.
+- Tests: new `test_reference_files_load_into_analytical_year_9_10_pack`, `test_each_core_skill_has_a_year_9_10_analytical_fixture`, `test_execute_year_9_10_uses_exact_pack_without_degradation_note`; updated count/tag assertions in eval fixtures/runner tests; fallback-note test retargeted to year-11-12 (year-9-10 now has an exact pack). Full suite 150 passed, 4 skipped; ruff clean; mypy 29 errors in 4 unrelated test files — byte-identical to the pre-change baseline (stash-verified), changed files clean. Year-8 prompt byte-identical regression passes — Year 8 behaviour unchanged.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: 9.1; PRD: §9 FR-GA-003; ERD: curriculum_outcome` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-19T18:26:00+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-19T18:40:46+10:00 - DONE. Year 9-10 analytical reference packs shipped for all six pack-bearing skills + one year-9-10 golden fixture per core skill (8 fixtures, Macbeth thread). Content traces to reaserch.md with Q-001 derived-not-verbatim notes for Year 10. Verification: targeted loader/executor/eval tests 61 passed/2 skipped; full suite 150 passed/4 skipped; ruff clean; mypy unchanged vs baseline; `python -m app.eval --no-judge` (fake) 16 cases with per-skill `analytical/year-9-10` combo rows. Unlocks ISS-003.
 
 ## ISS-003 - Seed and evaluate Year 9-10 analytical loop
 - Status: `READY`
