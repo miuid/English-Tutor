@@ -335,7 +335,7 @@ Seed persuasive outcomes and run the full daily loop with text_type=persuasive, 
 - Attempt: `1`
 - Started: `2026-08-20T05:50:00+10:00`
 - Completed: `2026-08-20T06:10:00+10:00`
-- Commit: `<pending>`
+- Commit: `0ff1be9`
 
 ### Outcome and scope
 Create imaginative reference packs for narrative structure, character/setting/POV, show-don't-tell, sensory imagery, and QCAA imaginative descriptors.
