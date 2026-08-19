@@ -245,7 +245,7 @@ Create persuasive reference packs covering argument structure, rhetorical device
 - Attempt: `1`
 - Started: `2026-08-20T00:10:00+10:00`
 - Completed: `2026-08-20T00:40:00+10:00`
-- Commit: `<recorded post-commit>`
+- Commit: `2bb9791`
 
 ### Outcome and scope
 Add the ninth agent skill strengthen-argument to diagnose weak argument chains and coach the fix within the global guardrails.
