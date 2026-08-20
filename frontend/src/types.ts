@@ -120,3 +120,18 @@ export interface MotivationOut {
   goal_met: boolean
   last_activity_date: string | null
 }
+
+export interface LevelUpOut {
+  criterion_name: string
+  from_level: string
+  to_level: string
+  note: string | null // rubric note recorded with the new score — the improvement mechanism
+  scored_at: string
+  session_id: string
+  feedback_id: string
+}
+
+export interface LevelUpsOut {
+  student_id: string
+  level_ups: LevelUpOut[]
+}

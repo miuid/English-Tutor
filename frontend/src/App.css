@@ -416,6 +416,27 @@
   border-color: var(--accent);
 }
 
+.levelup-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  margin-bottom: 1.2rem;
+  box-shadow: var(--shadow);
+}
+
+.levelup-headline {
+  font-weight: 600;
+}
+
+.levelup-note {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
 .latest-chips {
   display: flex;
   flex-wrap: wrap;

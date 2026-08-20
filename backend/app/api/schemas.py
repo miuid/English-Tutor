@@ -167,3 +167,25 @@ class MotivationOut(BaseModel):
     sessions_this_week: int
     goal_met: bool
     last_activity_date: date | None
+
+
+class LevelUpOut(BaseModel):
+    """One observed personal-best band crossing for a criterion (ISS-017).
+
+    Derived from rubric_score history; ``note`` is the rubric note recorded
+    with the new score — the improvement mechanism the UI names, so the
+    celebration is never generic praise alone.
+    """
+
+    criterion_name: str
+    from_level: str
+    to_level: str
+    note: str | None
+    scored_at: datetime
+    session_id: uuid.UUID
+    feedback_id: uuid.UUID
+
+
+class LevelUpsOut(BaseModel):
+    student_id: uuid.UUID
+    level_ups: list[LevelUpOut]

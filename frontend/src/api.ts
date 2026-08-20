@@ -1,5 +1,6 @@
 import type {
   AdvanceOut,
+  LevelUpsOut,
   MockOut,
   MotivationOut,
   ProgressOut,
@@ -120,6 +121,10 @@ export function getProgress(studentId: string): Promise<ProgressOut> {
 
 export function getMotivation(studentId: string): Promise<MotivationOut> {
   return request<MotivationOut>(`/api/students/${studentId}/motivation`)
+}
+
+export function getLevelUps(studentId: string): Promise<LevelUpsOut> {
+  return request<LevelUpsOut>(`/api/students/${studentId}/level-ups`)
 }
 
 export function runMock(studentId: string, text: string): Promise<MockOut> {

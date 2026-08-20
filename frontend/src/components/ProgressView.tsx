@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ApiError, getMotivation, getProgress } from '../api'
-import type { MotivationOut, ProgressScoreOut } from '../types'
+import { ApiError, getLevelUps, getMotivation, getProgress } from '../api'
+import type { LevelUpOut, MotivationOut, ProgressScoreOut } from '../types'
 
 // Okabe–Ito colorblind-friendly palette.
 const SERIES_COLORS = ['#0072B2', '#E69F00', '#009E73', '#D55E00', '#CC79A7', '#56B4E9']
@@ -42,6 +42,20 @@ interface ProgressViewProps {
   studentId: string | null
 }
 
+// The most recent level-up moment, named by the real criterion change and the
+// rubric note recorded with the new score (the improvement mechanism) —
+// specific praise, never generic praise alone (ISS-017).
+function LevelUpCard({ levelUp }: { levelUp: LevelUpOut }) {
+  return (
+    <div className="levelup-card" role="status" aria-label="Level up moment">
+      <span className="levelup-headline">
+        🎉 Level up — {levelUp.criterion_name}: {levelUp.from_level} → {levelUp.to_level}
+      </span>
+      {levelUp.note ? <span className="levelup-note">{levelUp.note}</span> : null}
+    </div>
+  )
+}
+
 function MotivationStrip({ motivation }: { motivation: MotivationOut }) {
   return (
     <div className="motivation-strip" aria-label="Your practice streak and weekly goal">
@@ -69,12 +83,14 @@ function MotivationStrip({ motivation }: { motivation: MotivationOut }) {
 export default function ProgressView({ studentId }: ProgressViewProps) {
   const [scores, setScores] = useState<ProgressScoreOut[] | null>(null)
   const [motivation, setMotivation] = useState<MotivationOut | null>(null)
+  const [levelUps, setLevelUps] = useState<LevelUpOut[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!studentId) {
       setScores([])
       setMotivation(null)
+      setLevelUps([])
       return
     }
     let cancelled = false
@@ -97,6 +113,14 @@ export default function ProgressView({ studentId }: ProgressViewProps) {
       })
       .catch(() => {
         if (!cancelled) setMotivation(null)
+      })
+    // Level-up moments are also a gentle add-on.
+    getLevelUps(studentId)
+      .then((out) => {
+        if (!cancelled) setLevelUps(out.level_ups)
+      })
+      .catch(() => {
+        if (!cancelled) setLevelUps([])
       })
     return () => {
       cancelled = true
@@ -180,6 +204,8 @@ export default function ProgressView({ studentId }: ProgressViewProps) {
       <h2 className="progress-title">How you're tracking</h2>
 
       {motivation ? <MotivationStrip motivation={motivation} /> : null}
+
+      {levelUps.length > 0 ? <LevelUpCard levelUp={levelUps[levelUps.length - 1]} /> : null}
 
       <div className="latest-chips" aria-label="Latest level for each criterion">
         {series.map((s) => (

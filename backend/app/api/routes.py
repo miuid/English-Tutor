@@ -14,6 +14,8 @@ from app.api.schemas import (
     BaselineOut,
     BaselineRequest,
     FeedbackOut,
+    LevelUpOut,
+    LevelUpsOut,
     MockOut,
     MockRequest,
     MotivationOut,
@@ -29,6 +31,7 @@ from app.api.schemas import (
     SubmitRequest,
     TurnOut,
 )
+from app.level_ups import build_level_ups
 from app.models import Attempt, Feedback, RubricScore, Session, Student
 from app.motivation import build_motivation
 from app.sessions.interactive import InteractiveLoop, SessionNotFoundError, StageConflictError
@@ -465,4 +468,36 @@ async def student_motivation(
         sessions_this_week=summary.sessions_this_week,
         goal_met=summary.goal_met,
         last_activity_date=summary.last_activity_date,
+    )
+
+
+@router.get("/students/{student_id}/level-ups")
+async def student_level_ups(
+    student_id: uuid.UUID,
+    db: DBSession = Depends(get_db),
+) -> LevelUpsOut:
+    """Criterion band crossings derived from rubric_score history, oldest first.
+
+    A level-up fires when a criterion reaches a personal-best A–E band
+    (modifiers ignored); the event carries the rubric note recorded with the
+    new score so the celebration names the real improvement mechanism.
+    """
+    student = db.get(Student, student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    events = build_level_ups(db, student.id)
+    return LevelUpsOut(
+        student_id=student_id,
+        level_ups=[
+            LevelUpOut(
+                criterion_name=event.criterion_name,
+                from_level=event.from_level,
+                to_level=event.to_level,
+                note=event.note,
+                scored_at=event.scored_at,
+                session_id=event.session_id,
+                feedback_id=event.feedback_id,
+            )
+            for event in events
+        ],
     )

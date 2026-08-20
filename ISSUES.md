@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-21T04:55:00+10:00`
+- Last evaluated: `2026-08-21T07:12:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -51,8 +51,8 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-013 | New skill fix-mechanics | `DONE` | `P1` | `ISS-012` | `None` |
 | ISS-014 | New skill spaced-review and retrieval stage | `DONE` | `P1` | `ISS-013` | `None` |
 | ISS-015 | Weekly timed mock mode | `DONE` | `P1` | `ISS-014` | `None` |
-| ISS-016 | Streaks and weekly goal | `READY` | `P2` | `ISS-015` | `None` |
-| ISS-017 | Criterion level-up celebration | `READY` | `P2` | `ISS-016` | `None` |
+| ISS-016 | Streaks and weekly goal | `DONE` | `P2` | `ISS-015` | `None` |
+| ISS-017 | Criterion level-up celebration | `DONE` | `P2` | `ISS-016` | `None` |
 | ISS-018 | Coach persona tone setting | `READY` | `P2` | `ISS-017` | `None` |
 | ISS-019 | Weekly parent report with privacy boundary | `READY` | `P2` | `ISS-018` | `None` |
 | ISS-020 | Shared parent-student goal setting | `READY` | `P2` | `ISS-019` | `None` |
@@ -786,7 +786,7 @@ Add a gentle streak counter and default weekly goal of four sessions, with recov
 - 2026-08-21T04:55:00+10:00 - DONE. Streaks + weekly goal shipped: `weekly_goal` persisted on Student (default 4, 1–14, patchable, export/import round-trip), streak derived from session history (Mon–Sun week, sessions-not-days, yesterday grace), `GET /students/{id}/motivation`, MotivationStrip with recovery-not-penalty copy in ProgressView, goal editor in ProfileView. Verification: full suite 200 passed/4 skipped (+12 new); ruff clean; mypy unchanged vs baseline; frontend build + oxlint clean; HTTP smoke green (cold start → streak 1 → goal_met on patch; 404/422). Unlocks ISS-017.
 
 ## ISS-017 - Criterion level-up celebration
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P2`
 - Type: `feature`
 - Depends on: `ISS-016`
@@ -795,32 +795,40 @@ Add a gentle streak counter and default weekly goal of four sessions, with recov
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: B4.2; PRD: §5 North Star metric; ERD: rubric_score`
 - Effort: `S`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
+- Attempt: `1`
+- Started: `2026-08-21T07:10:00+10:00`
+- Completed: `2026-08-21T07:12:00+10:00`
 - Commit: `None`
 
 ### Outcome and scope
 Detect when a rubric criterion crosses a band and trigger specific praise naming the real improvement.
 
 ### Acceptance criteria
-- [ ] A criterion band crossing is persisted as an event or derived reliably from rubric_score history.
-- [ ] UI shows a level-up moment tied to the actual criterion change.
-- [ ] Message references the improvement mechanism, not generic praise only.
+- [x] A criterion band crossing is persisted as an event or derived reliably from rubric_score history.
+- [x] UI shows a level-up moment tied to the actual criterion change.
+- [x] Message references the improvement mechanism, not generic praise only.
 
 ### Implementation notes
 - Likely files or components: backend/app/api/routes.py, backend/app/models.py, frontend/src/components/ProgressView.tsx.
 - Constraints: do not invent progress; only celebrate observed rubric_score changes.
 
 ### Verification
-- [ ] `cd backend && uv run pytest`
-- [ ] `cd frontend && npm run build`
+- [x] `cd backend && uv run pytest` — 212 passed, 4 skipped (was 200/4; +12 new in tests/test_level_ups.py).
+- [x] `cd frontend && npm run build` — tsc + vite build clean (377.61 kB bundle); `npm run lint` (oxlint) 0 warnings, 0 errors.
 
 ### Completion evidence
-- Pending
+- New `backend/app/level_ups.py`: `build_level_ups(db, student_id)` derives band crossings from persisted `RubricScore` history — **derived, not stored**, mirroring the ISS-016 streak decision (one source of truth: the celebration can never disagree with the A–E record). Rule: a level-up fires when a criterion reaches a **personal-best band** (A–E letter; `+`/`-` modifiers ignored via `band_of`), so within-band moves (C → C+) and re-crossings after a dip (C → B → C → B) never re-celebrate — only observed, first-arrival progress counts. Each event carries criterion, from/to level strings, the rubric **note recorded with the new score** (the improvement mechanism), scored_at, session_id, feedback_id; events returned oldest first. Unparseable levels are skipped.
+- New route `GET /api/students/{id}/level-ups` → `LevelUpsOut` (404 on unknown student). No schema change, no migration.
+- Frontend: `LevelUpCard` in ProgressView (populated state, above the criterion chips) renders the most recent crossing — `🎉 Level up — <criterion>: <from> → <to>` plus the rubric note line, so the message names the real change and its mechanism rather than generic praise. `getLevelUps` client + `LevelUpOut`/`LevelUpsOut` types; a level-ups fetch failure never blocks the chart (same gentle add-on pattern as motivation). `.levelup-card` styles reuse existing tokens.
+- Tests (`backend/tests/test_level_ups.py`, 12 new): band normalisation incl. modifiers/unknown strings, cold start, single score is not a crossing, D→C event carries note + ids, C+→B– modifier crossing counts, C→C+ within-band does not, dip-and-recovery does not re-celebrate, unparseable levels skipped, per-criterion isolation with oldest-first order, HTTP cold-start shape, 404, and an endpoint test that writes a crossing to the app's own DB and asserts the served payload.
+- Verification detail: full suite 212 passed/4 skipped; `ruff check .` clean (one W292 fixed by `--fix`, suite re-run green after); `mypy app tests` — 29 errors in the same 4 unrelated baseline test files (test_config, test_delete_student, test_interaction_log, test_session_time), changed files clean; frontend tsc+vite build clean, oxlint 0/0. HTTP smoke against a real backend (FakeProvider, tmp SQLite, throwaway script): cold start empty → 404 unknown student → D→C crossing inserted into the same DB served with from/to + mechanism note.
+- Tracker hygiene this run: the Issue Index row for ISS-016 still said `READY` although its authoritative detail block (and MEMORY.md) recorded `DONE` at 2026-08-21T04:55; the index row was corrected to `DONE`.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: B4.2; PRD: §5 North Star metric; ERD: rubric_score` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-21T07:10:00+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-21T07:12:00+10:00 - DONE. Criterion level-up celebration shipped: `app/level_ups.py` derives personal-best band crossings from rubric_score history (modifiers ignored, no re-celebration after dips), `GET /students/{id}/level-ups`, LevelUpCard in ProgressView naming the criterion, from → to, and the rubric note (improvement mechanism). Verification: full suite 212 passed/4 skipped (+12 new); ruff clean; mypy unchanged vs baseline; frontend build + oxlint clean; HTTP smoke green (cold start → 404 → crossing served with note). Unlocks ISS-018.
 
 ## ISS-018 - Coach persona tone setting
 - Status: `READY`

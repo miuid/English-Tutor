@@ -2,7 +2,7 @@
 
 > Long-term memory for this project. It records the vision, every meaningful decision (with dates and rationale), what's been built, the roadmap, and open questions. **Update this file whenever a decision is made, a milestone is hit, or something important is discovered — and append a dated entry to the Session log (§11) at the end of each working session.** New sessions should read this first.
 
-Last updated: 2026-08-19
+Last updated: 2026-08-21
 
 ---
 
@@ -146,6 +146,13 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | `English Circulum.md` | Curriculum reference. |
 
 ## 11. Session log
+
+### 2026-08-21 — ISS-017 done: criterion level-up celebration (motivation layer B4.2)
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-017 (P2, dep ISS-016 DONE). Tracker hygiene: the ISSUES.md index row for ISS-016 still said `READY` although the authoritative detail block said DONE — index corrected.
+- **Shipped:** `backend/app/level_ups.py::build_level_ups` — **derived, never stored** (mirrors the ISS-016 streak decision): a level-up fires when a criterion reaches a personal-best A–E band (`+`/`-` ignored via `band_of`), so within-band moves (C → C+) and dip-recovery re-crossings never re-celebrate; only observed first-arrival progress counts. Events carry criterion, from → to, the rubric note recorded with the new score (the improvement mechanism), scored_at/session_id/feedback_id, oldest first. New `GET /api/students/{id}/level-ups` (404 on unknown student); no schema change.
+- **Frontend:** `LevelUpCard` in ProgressView renders the most recent crossing — 🎉 `Level up — <criterion>: <from> → <to>` + the rubric note line, so praise names the real change and its mechanism. `getLevelUps` client + types; fetch failure never blocks the chart.
+- Verified: full suite **212 passed/4 skipped** (+12 new in `test_level_ups.py`); ruff clean; mypy 29 errors in the same 4 unrelated baseline test files; frontend tsc+vite build + oxlint clean. HTTP smoke against a real backend (FakeProvider, tmp SQLite): cold start empty → 404 unknown student → D→C crossing served with from/to + mechanism note.
+- **Next pick-up:** ISS-018 — coach persona tone setting.
 
 ### 2026-08-21 — ISS-016 done: streaks + weekly goal (motivation layer B4.1)
 - Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-016 (P2, dep ISS-015 DONE).
