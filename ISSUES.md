@@ -467,7 +467,7 @@ Seed imaginative outcomes and run the full daily loop with text_type=imaginative
 - Attempt: `1`
 - Started: `2026-08-20T12:23:00+10:00`
 - Completed: `2026-08-20T12:35:00+10:00`
-- Commit: `None`
+- Commit: `804d7f1`
 
 ### Outcome and scope
 Polish clean-machine docker compose startup into a guided first run that creates a student profile, picks year level, and starts a first session quickly.
