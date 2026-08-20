@@ -753,7 +753,7 @@ Add a weekly-mock mode with QCAA-like conditions and summative A-E feedback, vis
 - Attempt: `1`
 - Started: `2026-08-21T04:35:00+10:00`
 - Completed: `2026-08-21T04:55:00+10:00`
-- Commit: `None`
+- Commit: `2eac2f4`
 
 ### Outcome and scope
 Add a gentle streak counter and default weekly goal of four sessions, with recovery rather than punishment after a break.
