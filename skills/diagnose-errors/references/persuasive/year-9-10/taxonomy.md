@@ -11,7 +11,7 @@ Used by `diagnose-errors`. Categories are ordered by leverage — fix higher cat
 | 3 | **Rhetorical control** | Devices formulaic or stacked without effect; no deliberate appeals; tone swings break the voice. | `elevate-vocabulary` (rhetorical register) |
 | 4 | **Structure / cohesion** | Reasons unordered (no escalation); missing links; conclusion summarises instead of synthesising with a final appeal. | `check-structure` (L / architecture) |
 | 5 | **Language / register** | Informal register in a formal format (letter to the editor, formal review); flat persuasive verbs; uncontrolled modality. | `elevate-vocabulary` |
-| 6 | **Mechanics** | Grammar, punctuation, spelling errors (only once higher levels are sound). | (future) `fix-mechanics` |
+| 6 | **Mechanics** | Grammar, punctuation, spelling errors (only once higher levels are sound). | `fix-mechanics` |
 
 Note: category 2 (the argument chain — substantiation, load-bearing evidence, rebuttal) routes to `strengthen-argument`; categories 1 and 4 stay with `check-structure` (viewpoint placement and response architecture).
 

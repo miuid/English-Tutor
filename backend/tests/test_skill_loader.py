@@ -8,9 +8,9 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 SKILLS_DIR = PROJECT_ROOT / "skills"
 
 
-def test_load_skills_returns_all_eleven() -> None:
+def test_load_skills_returns_all_twelve() -> None:
     skills = load_skills(SKILLS_DIR)
-    assert len(skills) == 11
+    assert len(skills) == 12
     names = {skill.name for skill in skills}
     assert names == {
         "set-success-criteria",
@@ -24,6 +24,7 @@ def test_load_skills_returns_all_eleven() -> None:
         "craft-voice",
         "give-feedback",
         "baseline-assessment",
+        "fix-mechanics",
     }
 
 
@@ -123,6 +124,20 @@ def test_baseline_assessment_loads_shared_guide_and_examples() -> None:
     assert "Understanding of text / ideas" in guide
     assert len(skill.examples) == 2
     assert "Per-criterion levels" in skill.output_contract
+
+
+def test_fix_mechanics_loads_shared_guide_and_examples() -> None:
+    skill = load_skill(SKILLS_DIR / "fix-mechanics")
+    assert skill.loop_stage == "coach"
+    assert list(skill.packs) == ["shared"]
+    assert list(skill.packs["shared"]) == ["mechanics-guide.md"]
+    guide = skill.packs["shared"]["mechanics-guide.md"]
+    # The guide must cover the coached error classes and the band ceilings.
+    assert "Comma splices" in guide
+    assert "Year 11–12" in guide
+    assert len(skill.examples) == 2
+    # Bounded feedback is the skill's hard limit: never more than 2 patterns.
+    assert "at most 2 patterns" in skill.success_criteria
 
 
 PACK_BEARING_SKILLS = {

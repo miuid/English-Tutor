@@ -9,7 +9,7 @@ Used by `diagnose-errors`. Categories are ordered by leverage — fix higher cat
 | 3 | **Structure / cohesion** | Scenes blur together; no paragraph breaks at time/place shifts; resolution abrupt ("then I woke up"). | `check-structure` (response-level) |
 | 4 | **Character / POV** | POV drifts between first and third person; characters act out of character; narrator voice inconsistent. | `craft-voice` |
 | 5 | **Language / vocabulary** | Flat verbs ("went", "said", "got"); vague adjectives ("nice", "good", "big"); no sensory detail. | `elevate-vocabulary` |
-| 6 | **Mechanics** | Grammar, punctuation, spelling errors (only once higher levels are sound). | (future) `fix-mechanics` |
+| 6 | **Mechanics** | Grammar, punctuation, spelling errors (only once higher levels are sound). | `fix-mechanics` |
 
 Note: categories 2 and 4 (telling-vs-showing, thin imagery, POV drift) route to `craft-voice`. Categories 1 and 3 stay with `check-structure` (arc and scene structure).
 

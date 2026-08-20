@@ -147,6 +147,14 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 11. Session log
 
+### 2026-08-20 — ISS-013 done: twelfth skill `fix-mechanics` shipped
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-013 (P1, dep ISS-012 DONE). (Note: the ISS-012 run landed the same day but left no session-log entry — see ISSUES.md ISS-012 for its evidence.)
+- **Shipped:** `skills/fix-mechanics/` per the authoring convention — SKILL.md (8 required sections; scan → group errors into *patterns* → coach top 1–2 by frequency × cost-to-reader → rule + quoted student sentence + modelled fix on an *invented* sentence → student repairs own text with instance counts) and one **shared-only** reference pack `mechanics-guide.md` (error classes, band ceilings year-8/9-10/11-12 with senior calibration marked derived per Q-001, errors-vs-stylistic-choices boundary, tone rules). Shared-only by design: mechanics coaching is text-type-agnostic, so no banded packs and no degradation note.
+- **Routing:** `diagnose-errors` now dispatches to `fix-mechanics` — SKILL.md route list + contract, plus all six taxonomy packs updated from "(future)" to live. Guard preserved: mechanics routes only when it's the primary major issue AND higher-leverage categories are sound. `DiagnosisRouter` needed no code change (validates against loaded skills); loader `LOOP_STAGES` gains `fix-mechanics: coach`.
+- **Fixtures:** sample-01 analytical/year-8 (comma splices + its/it's on a structurally sound paragraph), sample-02 imaginative/year-9-10 (dialogue punctuation + apostrophes; the deliberate fragment "Nothing." must NOT be flagged — that's a fail condition).
+- Verified: targeted 23 passed; full suite **182 passed/4 skipped** (+2 tests: loader shared-guide, router mechanics route); ruff clean; mypy 29 errors in the same 4 unrelated test files as baseline; skill eval 2/2 PASS; full no-judge eval 24 cases, 20 passed/4 failed — unchanged canned-fake baseline.
+- **Next pick-up:** ISS-014 — new skill `spaced-review` + retrieval stage.
+
 ### 2026-08-20 — ISS-011 done: student data export and restore
 - Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-011 (P1, dep ISS-010 DONE).
 - **Shipped:** `backend/app/student_transfer.py` — versioned JSON export (`english-tutor-student-export` v1: profile + sessions + success criteria + attempts with feedback/rubric scores + interaction logs, ISO timestamps) and validated import that restores as a NEW student (fresh UUIDs everywhere, references remapped, timestamps preserved so A–E trends survive; skill/outcome FKs kept only when resolvable locally, else NULL). Routes: `GET /api/students/{id}/export` (attachment download) + `POST /api/students/import` (declared before `/students/{student_id}`).

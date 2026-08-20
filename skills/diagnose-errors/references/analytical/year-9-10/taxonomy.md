@@ -8,7 +8,7 @@ Used by `diagnose-errors`. Categories are ordered by leverage — fix higher cat
 | 2 | **Analysis / evidence** | Explains a technique's effect but never evaluates it (no representation/context/positioning move); quote-dumping; asserts without proof. | `check-structure` (E1/E2) |
 | 3 | **Structure / cohesion** | Elements out of order; paragraphs don't advance the thesis; weak links; conclusion repeats rather than synthesises. | `check-structure` (L / essay-level) |
 | 4 | **Language / vocabulary** | Informal register ("kind of", "really", "you"); flat/repeated analytical verbs; missing band-appropriate metalanguage. | `elevate-vocabulary` |
-| 5 | **Mechanics** | Grammar, punctuation, spelling errors (only once higher levels are sound). | (future) `fix-mechanics` |
+| 5 | **Mechanics** | Grammar, punctuation, spelling errors (only once higher levels are sound). | `fix-mechanics` |
 
 ## Priority rule
 Choose the primary issue as the **lowest-numbered category rated "major"**. Rationale: a strong vocabulary can't rescue a response with no argument, so fix the argument first. Mechanics is last — don't polish sentences that have no point.

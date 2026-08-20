@@ -102,3 +102,33 @@ async def test_diagnosis_router_routes_imaginative_to_craft_voice() -> None:
     # The coaching prompt must carry the imaginative year-8 voice-craft pack.
     assert "voice-craft.md" in fake.calls[1][0]
     assert "Voice craft (Year 8 imaginative)" in fake.calls[1][0]
+
+@pytest.mark.asyncio
+async def test_diagnosis_router_routes_mechanics_to_fix_mechanics() -> None:
+    skills = {s.name: s for s in load_skills(SKILLS_DIR)}
+    fake = FakeProvider(
+        canned_responses=["Route to: fix-mechanics", "mechanics coaching output"]
+    )
+    executor = SkillExecutionService(provider=fake)
+    router = DiagnosisRouter(executor=executor, skills=list(skills.values()))
+
+    diagnosis, coaching, route = await router.coach(
+        {
+            "student_text": "The opening positions the reader, this is clear early. Its effective.",
+            "text_type": "analytical",
+            "year_level": "8",
+        }
+    )
+
+    assert route == "fix-mechanics"
+    assert coaching == "mechanics coaching output"
+    assert len(fake.calls) == 2
+    assert "# diagnose-errors" in fake.calls[0][0]
+    # The diagnosis prompt must offer fix-mechanics as a valid route.
+    assert "fix-mechanics" in fake.calls[0][0]
+    assert "# fix-mechanics" in fake.calls[1][0]
+    # The coaching prompt must carry the shared mechanics guide.
+    assert "mechanics-guide.md" in fake.calls[1][0]
+    assert "Mechanics guide (all text types, all bands)" in fake.calls[1][0]
+    # Shared-only skills are combo-agnostic: no degradation note appended.
+    assert "no dedicated references" not in coaching

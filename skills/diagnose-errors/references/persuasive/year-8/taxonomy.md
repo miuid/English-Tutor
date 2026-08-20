@@ -9,7 +9,7 @@ Used by `diagnose-errors`. Categories are ordered by leverage — fix higher cat
 | 3 | **Structure / cohesion** | Reasons not separated per paragraph; missing links; conclusion repeats instead of reinforcing with a call to action. | `check-structure` (L / response-level) |
 | 4 | **Audience / voice** | Voice doesn't fit the stated audience (too casual for a formal speech, too stiff for a peer audience); no direct address where the format calls for it. | `elevate-vocabulary` (register) |
 | 5 | **Language / vocabulary** | Flat persuasive verbs ("is good/bad"); no modality control; vague intensifiers ("very", "really"). | `elevate-vocabulary` |
-| 6 | **Mechanics** | Grammar, punctuation, spelling errors (only once higher levels are sound). | (future) `fix-mechanics` |
+| 6 | **Mechanics** | Grammar, punctuation, spelling errors (only once higher levels are sound). | `fix-mechanics` |
 
 Note: category 2 (the argument chain — elaboration, load-bearing support, rebuttal) routes to `strengthen-argument`; categories 1 and 3 stay with `check-structure` (contention placement and response architecture).
 

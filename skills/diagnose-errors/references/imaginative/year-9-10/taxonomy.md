@@ -11,7 +11,7 @@ Used by `diagnose-errors`. Categories are ordered by leverage — fix higher cat
 | 3 | **Showing / immediacy** | Key turning points told in summary; emotions named; imagery thin or clichéd. | `craft-voice` |
 | 4 | **Voice / POV / tone** | POV shifts unsignalled (drift, not design); tone whiplash; monologue voice that doesn't carry. | `craft-voice` |
 | 5 | **Language / vocabulary** | Serviceable but unremarkable word choice; figurative language formulaic rather than chosen for effect. | `elevate-vocabulary` |
-| 6 | **Mechanics** | Grammar, punctuation, spelling errors (only once higher levels are sound). | (future) `fix-mechanics` |
+| 6 | **Mechanics** | Grammar, punctuation, spelling errors (only once higher levels are sound). | `fix-mechanics` |
 
 Note: categories 3 and 4 (telling-vs-showing, voice/POV/tone control) route to `craft-voice`. Categories 1 and 2 stay with `check-structure` (structural control and plot).
 

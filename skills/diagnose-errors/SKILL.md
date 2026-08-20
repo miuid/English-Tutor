@@ -8,7 +8,7 @@ Read a student's response and classify what's holding it back by *error type* �
 
 - On any submitted response, before deciding what feedback/coaching to give.
 - When multiple things are weak and the tutor must choose where to start.
-- As the router that dispatches to `check-structure`, `strengthen-argument`, `craft-voice`, `elevate-vocabulary`, or `give-feedback`.
+- As the router that dispatches to `check-structure`, `strengthen-argument`, `craft-voice`, `elevate-vocabulary`, `fix-mechanics`, or `give-feedback`.
 
 ## Inputs
 
@@ -41,12 +41,14 @@ Diagnosis:
   Language/vocabulary: <ok | minor | major>
   Mechanics:           <ok | minor | major>
 Primary issue: <one category> — <one-line why>
-Route to: <check-structure | strengthen-argument | craft-voice | elevate-vocabulary | give-feedback | guided-practice>
+Route to: <check-structure | strengthen-argument | craft-voice | elevate-vocabulary | fix-mechanics | give-feedback | guided-practice>
 ```
 
 For persuasive submissions, route argument/substantiation problems (asserted reasons, decorative evidence, missing rebuttal) to `strengthen-argument`; route contention placement and paragraph/response architecture to `check-structure`.
 
 For imaginative submissions, route telling-vs-showing, key-moment, and voice/POV/tone problems to `craft-voice`; route plot arc, complication, and scene/structural control to `check-structure`.
+
+For any text type, route to `fix-mechanics` only when mechanics is the primary major issue AND every higher-leverage category is sound — never polish sentences that have no point yet.
 
 ## Success criteria (drives eval)
 

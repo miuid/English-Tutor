@@ -52,6 +52,7 @@ LOOP_STAGES: dict[str, str] = {
     "craft-voice": "coach",
     "give-feedback": "end",
     "baseline-assessment": "baseline",
+    "fix-mechanics": "coach",
 }
 
 

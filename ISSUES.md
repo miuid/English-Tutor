@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-20T17:10:00+10:00`
+- Last evaluated: `2026-08-20T19:30:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -48,7 +48,7 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-010 | Beta first-run wizard and profile UX | `DONE` | `P1` | `ISS-009` | `None` |
 | ISS-011 | Student data export and restore | `DONE` | `P1` | `ISS-010` | `None` |
 | ISS-012 | New skill baseline-assessment | `DONE` | `P1` | `ISS-011` | `None` |
-| ISS-013 | New skill fix-mechanics | `READY` | `P1` | `ISS-012` | `None` |
+| ISS-013 | New skill fix-mechanics | `DONE` | `P1` | `ISS-012` | `None` |
 | ISS-014 | New skill spaced-review and retrieval stage | `READY` | `P1` | `ISS-013` | `None` |
 | ISS-015 | Weekly timed mock mode | `READY` | `P1` | `ISS-014` | `None` |
 | ISS-016 | Streaks and weekly goal | `READY` | `P2` | `ISS-015` | `None` |
@@ -598,7 +598,7 @@ Add the eleventh agent skill baseline-assessment: one timed write produces a rub
 - 2026-08-20T17:10:00+10:00 - DONE. Eleventh skill baseline-assessment shipped: SKILL.md + shared baseline guide + two golden fixtures (analytical/year-8, imaginative/year-9-10); `POST /api/students/{id}/baseline` runs the skill over one timed write and persists day-0 rubric scores (verified identical via the progress endpoint); report recommends ranked weaknesses (max 3) + one starting focus loop. Executor no longer appends degradation notes for shared-only skills. Verification: targeted 27 passed; full suite 180 passed/4 skipped; ruff clean; mypy unchanged vs baseline; skill eval 2/2 PASS; full no-judge eval 22 cases, 18 passed/4 failed — unchanged canned-fake baseline. Unlocks ISS-013.
 
 ## ISS-013 - New skill fix-mechanics
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P1`
 - Type: `feature`
 - Depends on: `ISS-012`
@@ -607,32 +607,43 @@ Add the eleventh agent skill baseline-assessment: one timed write produces a rub
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: B3.1; PRD: §3 bounded feedback; ERD: skill registry`
 - Effort: `M`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
+- Attempt: `1`
+- Started: `2026-08-20T19:15:00+10:00`
+- Completed: `2026-08-20T19:30:00+10:00`
 - Commit: `None`
 
 ### Outcome and scope
 Add the twelfth agent skill fix-mechanics for grammar, spelling, and punctuation coaching as a third diagnose-errors route.
 
 ### Acceptance criteria
-- [ ] skills/fix-mechanics/ follows skills/README.md convention.
-- [ ] Golden examples exist and are discovered by the eval harness.
-- [ ] diagnose-errors can route mechanics-dominant submissions to fix-mechanics while staying bounded.
+- [x] skills/fix-mechanics/ follows skills/README.md convention.
+- [x] Golden examples exist and are discovered by the eval harness.
+- [x] diagnose-errors can route mechanics-dominant submissions to fix-mechanics while staying bounded.
 
 ### Implementation notes
 - Likely files or components: skills/fix-mechanics/, backend/app/skills/router.py, backend/tests/test_diagnosis_router.py.
 - Constraints: mechanics feedback must not flatten the feedback into a laundry list; max 1-2 next steps.
 
 ### Verification
-- [ ] `cd backend && uv run pytest tests/test_diagnosis_router.py tests/test_skill_loader.py`
-- [ ] `cd backend && uv run python -m app.eval --skill fix-mechanics --no-judge`
+- [x] `cd backend && uv run pytest tests/test_diagnosis_router.py tests/test_skill_loader.py` — 23 passed.
+- [x] `cd backend && LLM_PROVIDER=fake uv run python -m app.eval --skill fix-mechanics --no-judge` — 2 cases, 2 passed (analytical/year-8 + imaginative/year-9-10 combo rows).
+- [x] `cd backend && uv run pytest` — 182 passed, 4 skipped (was 180/4; +2 new tests).
+- [x] `cd backend && uv run ruff check .` — clean; `uv run mypy app tests` — 29 errors in the same 4 unrelated test files as the ISS-011/ISS-012 baseline (test_config, test_delete_student, test_interaction_log, test_session_time); changed files clean.
+- [x] `cd backend && LLM_PROVIDER=fake uv run python -m app.eval --no-judge` — 24 cases, 20 passed / 4 failed (the same canned-fake give-feedback + diagnose-errors baseline as ISS-004 through ISS-012, unchanged); fix-mechanics 2/2 PASS.
 
 ### Completion evidence
-- Pending
+- `skills/fix-mechanics/` authored per the convention: SKILL.md with all 8 required sections (scan → group into patterns → pick top 1–2 by frequency × cost-to-reader → teach rule + quote student sentence + model fix on an *invented* sentence → hand back with instance counts → one line of genuine noticing); output contract carries literal `## What I noticed` / `## Pattern 1:` (max two pattern sections) / `## Keep it up`. One shared reference pack (`references/shared/mechanics-guide.md`): error classes, pattern selection rule, band calibration for year-8 / year-9-10 / year-11-12 (senior calibration marked derived per Q-001), errors-vs-stylistic-choices boundary (deliberate fragments are craft, not error), the four-step teaching move, tone rules — traced to Blueprint (AERO SWIF explicit instruction, cognitive load, GRR), teacher-skills.md (HITS feedback), reaserch.md (A–E standards, NAPLAN conventions). Shared-only by design: mechanics coaching is text-type-agnostic, so no banded packs and no degradation note.
+- Two golden fixtures: sample-01 (Year 8 analytical — comma splices ×3 + its/it's, ideas/structure sound so mechanics is the rightful route) and sample-02 (Year 9 imaginative — dialogue punctuation + apostrophes; the deliberate fragment "Nothing." must NOT be flagged), discovered as analytical/year-8 and imaginative/year-9-10.
+- diagnose-errors wiring: SKILL.md dispatch list and `Route to:` contract now include `fix-mechanics`, with the explicit rule that mechanics routes only when it is the primary major issue AND higher-leverage categories are sound; all six taxonomy packs updated from "(future) `fix-mechanics`" to `fix-mechanics`. `DiagnosisRouter` needed no code change — `parse_route` already validates against loaded skills.
+- Backend: loader `LOOP_STAGES` gains `fix-mechanics: coach`.
+- Tests (2 new): `test_fix_mechanics_loads_shared_guide_and_examples` (loader: coach stage, shared guide, error classes + senior ceiling present, 2 fixtures, bounded "at most 2 patterns" criterion); `test_diagnosis_router_routes_mechanics_to_fix_mechanics` (route lands, diagnosis prompt offers the route, coaching prompt carries mechanics-guide.md, no degradation note for the shared-only skill). Count updates 11→12 skills / 22→24 cases in loader/sync/fixtures/runner tests.
+- Live LLM judge eval was not run (no valid API credential in this environment); consistent with ISS-005/ISS-008/ISS-012, the no-judge harness above is this ticket's declared verification.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: B3.1; PRD: §3 bounded feedback; ERD: skill registry` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-20T19:15:00+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-20T19:30:00+10:00 - DONE. Twelfth skill fix-mechanics shipped: SKILL.md + shared mechanics guide + two golden fixtures (analytical/year-8, imaginative/year-9-10); diagnose-errors routes mechanics-dominant submissions to it across all six taxonomy packs with the leverage guard intact. Verification: targeted 23 passed; full suite 182 passed/4 skipped; ruff clean; mypy unchanged vs baseline; skill eval 2/2 PASS; full no-judge eval 24 cases, 20 passed/4 failed — unchanged canned-fake baseline. Unlocks ISS-014.
 
 ## ISS-014 - New skill spaced-review and retrieval stage
 - Status: `READY`
