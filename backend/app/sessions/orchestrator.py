@@ -6,7 +6,14 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DBSession
 
-from app.models import Attempt, Feedback, RubricScore, Session, Student
+from app.models import (
+    DEFAULT_COACH_TONE,
+    Attempt,
+    Feedback,
+    RubricScore,
+    Session,
+    Student,
+)
 from app.models import Skill as SkillRow
 from app.sessions.review import build_review_history
 from app.skills.executor import SkillExecutionService
@@ -44,6 +51,7 @@ class SessionOrchestrator:
         base_inputs = {
             "year_level": year_level,
             "text_type": text_type,
+            "coach_tone": student.coach_tone or DEFAULT_COACH_TONE,
             "task_prompt": task_prompt,
             "student_text": "",
         }
@@ -103,6 +111,7 @@ class SessionOrchestrator:
         coach_inputs = {
             "year_level": year_level,
             "text_type": text_type,
+            "coach_tone": student.coach_tone or DEFAULT_COACH_TONE,
             "task_prompt": task_for_student,
             "student_text": student_text,
         }

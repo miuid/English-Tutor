@@ -13,6 +13,12 @@ import {
 
 const TEXT_TYPES = ['analytical', 'persuasive', 'imaginative']
 
+const COACH_TONES = [
+  { value: 'warm', label: 'Warm', hint: 'Encouraging — effort first, gentle correction' },
+  { value: 'strict', label: 'Strict', hint: 'Direct — names the problem, holds the standard' },
+  { value: 'humorous', label: 'Humorous', hint: 'Playful — light jokes, clear teaching point' },
+] as const
+
 type Mode = 'loading' | 'empty' | 'edit' | 'saved'
 
 interface ProfileViewProps {
@@ -28,6 +34,7 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
   const [curriculum, setCurriculum] = useState('QCAA')
   const [focusTextTypes, setFocusTextTypes] = useState<string[]>([])
   const [weeklyGoal, setWeeklyGoal] = useState(4)
+  const [coachTone, setCoachTone] = useState('warm')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -70,6 +77,7 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
     setFocusTextTypes(s.focus_text_types ?? [])
     // Cached profiles from before the weekly goal shipped may lack the field.
     setWeeklyGoal(s.weekly_goal ?? 4)
+    setCoachTone(s.coach_tone ?? 'warm')
   }
 
   function toggleTextType(type: string) {
@@ -91,6 +99,7 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
           curriculum,
           focus_text_types: focus,
           weekly_goal: weeklyGoal,
+          coach_tone: coachTone,
         })
         finishSave(updated)
       } else {
@@ -100,6 +109,7 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
           curriculum,
           focus_text_types: focus,
           weekly_goal: weeklyGoal,
+          coach_tone: coachTone,
         })
         finishSave(created)
       }
@@ -142,6 +152,7 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
     setCurriculum('QCAA')
     setFocusTextTypes([])
     setWeeklyGoal(4)
+    setCoachTone('warm')
     setMode('empty')
     // Return the app to the first-run wizard so another profile can be
     // selected or created (e.g. a sibling on a shared family device).
@@ -185,6 +196,13 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
             <div>
               <dt>Weekly goal</dt>
               <dd>{student.weekly_goal ?? 4} sessions / week</dd>
+            </div>
+            <div>
+              <dt>Coach tone</dt>
+              <dd>
+                {COACH_TONES.find((t) => t.value === (student.coach_tone ?? 'warm'))?.label ??
+                  'Warm'}
+              </dd>
             </div>
           </dl>
           <div className="profile-actions">
@@ -301,6 +319,24 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
           </select>
           <p className="muted small">
             A gentle target — missing a day never costs you anything.
+          </p>
+
+          <span className="field-label">Coach tone</span>
+          <div className="chip-group" role="group" aria-label="Coach tone">
+            {COACH_TONES.map((tone) => (
+              <button
+                key={tone.value}
+                type="button"
+                className={`chip${coachTone === tone.value ? ' active' : ''}`}
+                title={tone.hint}
+                onClick={() => setCoachTone(tone.value)}
+              >
+                {tone.label}
+              </button>
+            ))}
+          </div>
+          <p className="muted small">
+            How your tutor sounds — never what it teaches. Feedback stays the same either way.
           </p>
 
           <button type="submit" className="btn primary wide" disabled={busy || !name.trim()}>

@@ -20,6 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session as DBSession
 
 from app.models import (
+    DEFAULT_COACH_TONE,
     Attempt,
     Feedback,
     InteractionLog,
@@ -168,6 +169,7 @@ class InteractiveLoop:
 
         resolved_text_type = self._resolve_text_type(student, text_type)
         resolved_year_level = str(student.year_level)
+        coach_tone = student.coach_tone or DEFAULT_COACH_TONE
 
         review = await self._execute_and_log(
             session,
@@ -175,6 +177,7 @@ class InteractiveLoop:
             {
                 "year_level": resolved_year_level,
                 "text_type": resolved_text_type,
+                "coach_tone": coach_tone,
                 "task_prompt": task_prompt or DEFAULT_TASK_PROMPT,
                 "context": context or "",
                 "student_text": "",
@@ -198,6 +201,7 @@ class InteractiveLoop:
             {
                 "year_level": resolved_year_level,
                 "text_type": resolved_text_type,
+                "coach_tone": coach_tone,
                 "task_prompt": task_prompt or DEFAULT_TASK_PROMPT,
                 "context": context or "",
                 "student_text": "",
@@ -417,6 +421,7 @@ class InteractiveLoop:
             {
                 "year_level": str(student.year_level),
                 "text_type": resolved_text_type,
+                "coach_tone": student.coach_tone or DEFAULT_COACH_TONE,
                 "task_prompt": task_prompt,
                 "context": "First use — baseline timed write, no help.",
                 "student_text": text,
@@ -502,6 +507,7 @@ class InteractiveLoop:
             {
                 "year_level": str(student.year_level),
                 "text_type": resolved_text_type,
+                "coach_tone": student.coach_tone or DEFAULT_COACH_TONE,
                 "task_prompt": task_prompt,
                 "context": (
                     "Weekly timed mock written under QCAA-like exam "
@@ -749,12 +755,15 @@ class InteractiveLoop:
         if student is not None:
             year_level = str(student.year_level)
             text_type = self._resolve_text_type(student, DEFAULT_TEXT_TYPE)
+            coach_tone = student.coach_tone or DEFAULT_COACH_TONE
         else:
             year_level = "8"
             text_type = DEFAULT_TEXT_TYPE
+            coach_tone = DEFAULT_COACH_TONE
         return {
             "year_level": year_level,
             "text_type": text_type,
+            "coach_tone": coach_tone,
             "task_prompt": task_prompt if task_prompt is not None else self._task_prompt(session),
             "student_text": student_text,
         }

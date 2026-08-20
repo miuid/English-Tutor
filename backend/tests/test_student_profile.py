@@ -303,3 +303,50 @@ def test_baseline_unknown_student_returns_404(baseline_client: ApiClient) -> Non
         json={"text": "Some writing."},
     )
     assert response.status_code == 404
+
+
+def test_create_student_defaults_coach_tone_to_warm(api_client: ApiClient) -> None:
+    client, _ = api_client
+    response = client.post("/api/students", json={"name": "Kai", "year_level": 8})
+
+    assert response.status_code == 201
+    assert response.json()["coach_tone"] == "warm"
+
+
+def test_create_and_update_coach_tone(api_client: ApiClient) -> None:
+    client, _ = api_client
+    created = client.post(
+        "/api/students",
+        json={"name": "Kai", "year_level": 8, "coach_tone": "strict"},
+    )
+    assert created.status_code == 201
+    assert created.json()["coach_tone"] == "strict"
+
+    updated = client.patch(
+        f"/api/students/{created.json()['id']}",
+        json={"coach_tone": "humorous"},
+    )
+    assert updated.status_code == 200
+    data = updated.json()
+    assert data["coach_tone"] == "humorous"
+    assert data["name"] == "Kai"  # untouched fields preserved
+
+    fetched = client.get(f"/api/students/{data['id']}")
+    assert fetched.json()["coach_tone"] == "humorous"
+
+
+def test_coach_tone_rejects_invalid_value(api_client: ApiClient) -> None:
+    client, _ = api_client
+    created = client.post(
+        "/api/students",
+        json={"name": "Kai", "year_level": 8, "coach_tone": "sassy"},
+    )
+    assert created.status_code == 422
+
+    valid = client.post("/api/students", json={"name": "Kai", "year_level": 8})
+    assert valid.status_code == 201
+    updated = client.patch(
+        f"/api/students/{valid.json()['id']}",
+        json={"coach_tone": "sassy"},
+    )
+    assert updated.status_code == 422

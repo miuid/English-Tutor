@@ -247,3 +247,58 @@ def test_import_minimal_profile_only(client: TestClient) -> None:
     assert res.status_code == 201
     assert res.json()["name"] == "Sam"
     assert res.json()["year_level"] == 9
+
+
+def test_export_import_round_trip_preserves_coach_tone(client: TestClient) -> None:
+    created = client.post(
+        "/api/students",
+        json={"name": "Rae", "year_level": 8, "coach_tone": "humorous"},
+    )
+    assert created.status_code == 201
+    student_id = created.json()["id"]
+
+    doc = client.get(f"/api/students/{student_id}/export").json()
+    assert doc["student"]["coach_tone"] == "humorous"
+
+    imported = client.post("/api/students/import", json=doc)
+    assert imported.status_code == 201
+    assert imported.json()["coach_tone"] == "humorous"
+
+
+def test_import_older_export_without_coach_tone_defaults_warm(client: TestClient) -> None:
+    """Exports from before ISS-018 carry no coach_tone; import must default."""
+    res = client.post(
+        "/api/students/import",
+        json={
+            "format": "english-tutor-student-export",
+            "version": 1,
+            "student": {
+                "name": "Sam",
+                "year_level": 9,
+                "curriculum": "QCAA",
+                "focus_text_types": [],
+                "created_at": None,
+            },
+            "sessions": [],
+        },
+    )
+    assert res.status_code == 201
+    assert res.json()["coach_tone"] == "warm"
+
+
+def test_import_rejects_invalid_coach_tone(client: TestClient) -> None:
+    res = client.post(
+        "/api/students/import",
+        json={
+            "format": "english-tutor-student-export",
+            "version": 1,
+            "student": {
+                "name": "Sam",
+                "year_level": 9,
+                "curriculum": "QCAA",
+                "coach_tone": "sassy",
+            },
+            "sessions": [],
+        },
+    )
+    assert res.status_code == 400

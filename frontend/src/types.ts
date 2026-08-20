@@ -7,6 +7,7 @@ export interface StudentOut {
   curriculum: string
   focus_text_types: string[]
   weekly_goal: number
+  coach_tone: string
   created_at: string
 }
 
@@ -16,6 +17,7 @@ export interface StudentCreate {
   curriculum?: string
   focus_text_types?: string[]
   weekly_goal?: number
+  coach_tone?: string
 }
 
 export interface StudentUpdate {
@@ -24,6 +26,7 @@ export interface StudentUpdate {
   curriculum?: string
   focus_text_types?: string[]
   weekly_goal?: number
+  coach_tone?: string
 }
 
 export interface TurnOut {

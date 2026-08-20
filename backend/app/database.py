@@ -47,6 +47,7 @@ def init_db() -> None:
     _ensure_session_time_columns(engine)
     _ensure_student_focus_text_types_column(engine)
     _ensure_student_weekly_goal_column(engine)
+    _ensure_student_coach_tone_column(engine)
 
 
 # (column name, DDL type) pairs added after the original schema shipped.
@@ -98,4 +99,19 @@ def _ensure_student_weekly_goal_column(engine: Engine) -> None:
             conn.exec_driver_sql(
                 'ALTER TABLE "student" ADD COLUMN weekly_goal '
                 "INTEGER NOT NULL DEFAULT 4"
+            )
+
+
+def _ensure_student_coach_tone_column(engine: Engine) -> None:
+    """Idempotently add student.coach_tone (SQLite only)."""
+    if not engine.url.get_backend_name().startswith("sqlite"):
+        return
+    with engine.begin() as conn:
+        existing = {
+            row[1] for row in conn.exec_driver_sql('PRAGMA table_info("student")')
+        }
+        if "coach_tone" not in existing:
+            conn.exec_driver_sql(
+                'ALTER TABLE "student" ADD COLUMN coach_tone '
+                "VARCHAR(20) NOT NULL DEFAULT 'warm'"
             )

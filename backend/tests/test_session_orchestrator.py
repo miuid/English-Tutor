@@ -220,3 +220,74 @@ async def test_run_daily_loop_year_9_cites_year_9_descriptors(
     by_name = {score.criterion_name: score for score in scores}
     assert by_name["Analysis (how techniques create meaning)"].level == "D"
     assert by_name["Structure & cohesion"].level == "D+"
+
+
+@pytest.mark.asyncio
+async def test_run_daily_loop_strict_tone_changes_prompt_not_contract(
+    db_session: SqlSession,
+) -> None:
+    """A strict-tone student gets strict-tone prompts; the teaching contract
+    (rubric criteria, levels, bounded next steps) is identical to the default."""
+    sync_skills(db_session)
+
+    student = Student(
+        name="Strict Tone Student",
+        year_level=8,
+        curriculum="QCAA",
+        coach_tone="strict",
+    )
+    db_session.add(student)
+    db_session.flush()
+
+    skills = {s.name: s for s in load_skills(SKILLS_DIR)}
+    fake = FakeProvider(
+        canned_responses=[
+            "retrieval output",
+            "criteria output",
+            "model output",
+            "guided output",
+            "independent task",
+            "Route to: check-structure",
+            "coaching output",
+            FEEDBACK_WITH_LEVELS,
+        ]
+    )
+    executor = SkillExecutionService(provider=fake)
+    orchestrator = SessionOrchestrator(db_session, executor, skills)
+
+    session = await orchestrator.run_daily_loop(
+        student_id=student.id,
+        year_level="8",
+        text_type="analytical",
+        task_prompt="How does the poet present war?",
+        student_text="War is bad.",
+    )
+
+    assert session.ended_at is not None
+
+    # Every tutor turn ran with the strict tone directive in the system
+    # prompt, and none leaked the tone into the user message.
+    assert len(fake.calls) == 8
+    for system_prompt, messages in fake.calls:
+        assert "--- Coach tone ---" in system_prompt
+        assert "direct, no-nonsense tone" in system_prompt
+        assert "never what you teach" in system_prompt
+        assert "coach_tone" not in messages[0]["content"]
+
+    # The output contract is tone-invariant: the same canned feedback parses
+    # into the same five rubric scores as the default-tone loop.
+    feedback = db_session.execute(
+        select(Feedback).join(Attempt).where(Attempt.session_id == session.id)
+    ).scalar_one()
+    scores = (
+        db_session.execute(select(RubricScore).where(RubricScore.feedback_id == feedback.id))
+        .scalars()
+        .all()
+    )
+    assert len(scores) == 5
+    by_name = {score.criterion_name: score for score in scores}
+    assert by_name["Understanding of text / ideas"].level == "C"
+    assert by_name["Analysis (how techniques create meaning)"].level == "D"
+    assert by_name["Use of evidence"].level == "C-"  # en dash normalised
+    assert by_name["Structure & cohesion"].level == "D+"
+    assert by_name["Language & vocabulary"].note == "clear but flat."

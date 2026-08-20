@@ -94,6 +94,7 @@ def _student_out(student: Student) -> StudentOut:
         curriculum=student.curriculum,
         focus_text_types=student.focus_text_types or [],
         weekly_goal=student.weekly_goal,
+        coach_tone=student.coach_tone,
         created_at=student.created_at,
     )
 
@@ -110,6 +111,7 @@ async def create_student(
         curriculum=payload.curriculum,
         focus_text_types=payload.focus_text_types,
         weekly_goal=payload.weekly_goal,
+        coach_tone=payload.coach_tone,
     )
     db.add(student)
     db.commit()
@@ -175,6 +177,8 @@ async def update_student(
         student.focus_text_types = payload.focus_text_types
     if payload.weekly_goal is not None:
         student.weekly_goal = payload.weekly_goal
+    if payload.coach_tone is not None:
+        student.coach_tone = payload.coach_tone
     db.commit()
     db.refresh(student)
     return _student_out(student)

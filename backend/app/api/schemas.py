@@ -5,7 +5,12 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
-from app.models import DEFAULT_WEEKLY_GOAL, MAX_WEEKLY_GOAL
+from app.models import (
+    DEFAULT_COACH_TONE,
+    DEFAULT_WEEKLY_GOAL,
+    MAX_WEEKLY_GOAL,
+    CoachTone,
+)
 
 
 class StudentCreate(BaseModel):
@@ -16,6 +21,7 @@ class StudentCreate(BaseModel):
     curriculum: str = Field(default="QCAA", min_length=1)
     focus_text_types: list[str] = Field(default_factory=list)
     weekly_goal: int = Field(default=DEFAULT_WEEKLY_GOAL, ge=1, le=MAX_WEEKLY_GOAL)
+    coach_tone: CoachTone = DEFAULT_COACH_TONE
 
 
 class StudentUpdate(BaseModel):
@@ -26,6 +32,7 @@ class StudentUpdate(BaseModel):
     curriculum: str | None = Field(default=None, min_length=1)
     focus_text_types: list[str] | None = None
     weekly_goal: int | None = Field(default=None, ge=1, le=MAX_WEEKLY_GOAL)
+    coach_tone: CoachTone | None = None
 
 
 class StudentOut(BaseModel):
@@ -35,6 +42,7 @@ class StudentOut(BaseModel):
     curriculum: str
     focus_text_types: list[str]
     weekly_goal: int
+    coach_tone: str
     created_at: datetime
 
 

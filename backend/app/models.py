@@ -3,7 +3,7 @@
 import json
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal
 
 import sqlalchemy as sa
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -47,6 +47,13 @@ def _now() -> datetime:
 DEFAULT_WEEKLY_GOAL = 4
 MAX_WEEKLY_GOAL = 14
 
+# Coach persona tone (ISS-018). Prompt-level only: the tone changes how the
+# coach sounds, never what it teaches — rubric levels, bounded next steps,
+# and every skill's output contract are tone-invariant.
+CoachTone = Literal["warm", "strict", "humorous"]
+COACH_TONES: tuple[CoachTone, ...] = ("warm", "strict", "humorous")
+DEFAULT_COACH_TONE: CoachTone = "warm"
+
 
 class Student(Base):
     __tablename__ = "student"
@@ -69,6 +76,11 @@ class Student(Base):
     # Weekly practice goal in sessions (ISS-016). Gentle motivation only —
     # no points, shops, leaderboards, or punitive mechanics.
     weekly_goal: Mapped[int] = mapped_column(sa.Integer, default=DEFAULT_WEEKLY_GOAL)
+    # Coach persona tone (ISS-018): warm / strict / humorous. Injected into
+    # the system prompt only; teaching contracts never change.
+    coach_tone: Mapped[str] = mapped_column(
+        sa.String(20), default=DEFAULT_COACH_TONE
+    )
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         default=_now,

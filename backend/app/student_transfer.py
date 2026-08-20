@@ -23,6 +23,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session as DBSession
 
 from app.models import (
+    COACH_TONES,
+    DEFAULT_COACH_TONE,
     DEFAULT_WEEKLY_GOAL,
     MAX_WEEKLY_GOAL,
     Attempt,
@@ -175,6 +177,7 @@ def export_student(db: DBSession, student: Student) -> dict[str, Any]:
             "curriculum": student.curriculum,
             "focus_text_types": list(student.focus_text_types or []),
             "weekly_goal": student.weekly_goal,
+            "coach_tone": student.coach_tone,
             "created_at": _iso(student.created_at),
         },
         "sessions": session_docs,
@@ -232,6 +235,10 @@ def import_student(db: DBSession, payload: Any) -> Student:
         or not 1 <= weekly_goal <= MAX_WEEKLY_GOAL
     ):
         raise ExportImportError("Student profile has an invalid weekly goal.")
+    # Older exports predate the coach tone; fall back to the default.
+    coach_tone = student_doc.get("coach_tone", DEFAULT_COACH_TONE)
+    if coach_tone not in COACH_TONES:
+        raise ExportImportError("Student profile has an invalid coach tone.")
     sessions_doc = payload.get("sessions")
     if not isinstance(sessions_doc, list):
         raise ExportImportError("Export is missing the sessions list.")
@@ -242,6 +249,7 @@ def import_student(db: DBSession, payload: Any) -> Student:
         curriculum=curriculum,
         focus_text_types=focus,
         weekly_goal=weekly_goal,
+        coach_tone=coach_tone,
         created_at=_parse_dt(student_doc.get("created_at"), "student.created_at")
         or datetime.now(UTC),
     )

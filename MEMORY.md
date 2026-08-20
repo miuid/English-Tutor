@@ -147,6 +147,13 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 11. Session log
 
+### 2026-08-21 — ISS-018 done: coach persona tone setting (B4.3)
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-018 (P2, dep ISS-017 DONE).
+- **Shipped:** per-profile `coach_tone` (`warm`/`strict`/`humorous`, default `warm`; `CoachTone` Literal in `models.py` as the single source of truth) + idempotent SQLite column patcher. Executor appends a `--- Coach tone ---` section (directive + "never what you teach" contract note) to the **system prompt** only when a `coach_tone` input is present — opt-in, so eval fixtures and the year-8 byte-identical regression guard are untouched; unknown tones fall back to warm. Wired through every tutor turn in both loops (`InteractiveLoop` incl. baseline/mock, `SessionOrchestrator`). API validates (422), export/import round-trips (400 on invalid, legacy exports default warm). ProfileView tone chips; FirstRunWizard untouched (defaults warm).
+- **Design call:** tone is an opt-in executor input rather than an always-on default section — this keeps prompt bytes stable for every caller that hasn't opted in (eval harness), which the byte-identical regression test enforces.
+- Verified: declared tests 46 passed/1 skipped; full suite **225 passed/4 skipped** (+13 new); ruff clean; mypy 29 errors in the same 4 unrelated baseline files; frontend tsc+vite+oxlint clean; no-judge eval 26 cases 22/4 — unchanged canned-fake baseline. Live tone-perception check deferred with the other pre-beta live-eval follow-ups (no API credential in this env).
+- **Next pick-up:** ISS-019 — weekly parent report with privacy boundary.
+
 ### 2026-08-21 — ISS-017 done: criterion level-up celebration (motivation layer B4.2)
 - Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-017 (P2, dep ISS-016 DONE). Tracker hygiene: the ISSUES.md index row for ISS-016 still said `READY` although the authoritative detail block said DONE — index corrected.
 - **Shipped:** `backend/app/level_ups.py::build_level_ups` — **derived, never stored** (mirrors the ISS-016 streak decision): a level-up fires when a criterion reaches a personal-best A–E band (`+`/`-` ignored via `band_of`), so within-band moves (C → C+) and dip-recovery re-crossings never re-celebrate; only observed first-arrival progress counts. Events carry criterion, from → to, the rubric note recorded with the new score (the improvement mechanism), scored_at/session_id/feedback_id, oldest first. New `GET /api/students/{id}/level-ups` (404 on unknown student); no schema change.

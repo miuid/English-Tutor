@@ -9,7 +9,12 @@ import pytest
 from app.config import Settings
 from app.llm import FakeProvider, create_llm_provider
 from app.skills import load_skill
-from app.skills.executor import SkillExecutionService, select_packs, year_band_for
+from app.skills.executor import (
+    COACH_TONE_DIRECTIVES,
+    SkillExecutionService,
+    select_packs,
+    year_band_for,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 SKILLS_DIR = PROJECT_ROOT / "skills"
@@ -290,6 +295,91 @@ async def test_execute_shared_only_skill_adds_no_degradation_note() -> None:
     assert response == "baseline report"
     # The shared guide still lands in the system prompt.
     assert "baseline-guide.md" in fake.calls[0][0]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("tone", ["warm", "strict", "humorous"])
+async def test_execute_injects_coach_tone_directive_into_system_prompt(tone: str) -> None:
+    """A coach_tone input adds the tone directive to the system prompt only."""
+    skill = load_skill(SKILLS_DIR / "check-structure")
+    fake = FakeProvider(canned_responses=["ok"])
+    service = SkillExecutionService(provider=fake)
+    inputs = {
+        "year_level": "8",
+        "text_type": "analytical",
+        "coach_tone": tone,
+        "student_text": "Text.",
+    }
+
+    response = await service.execute(skill, inputs)
+
+    assert response == "ok"
+    system_prompt, messages = fake.calls[0]
+    assert "--- Coach tone ---" in system_prompt
+    assert COACH_TONE_DIRECTIVES[tone] in system_prompt
+    # The contract reminder pins tone to style, never teaching content.
+    assert "never what you teach" in system_prompt
+    # Tone is prompt-level only: it never leaks into the user message.
+    assert "coach_tone" not in messages[0]["content"]
+
+
+@pytest.mark.asyncio
+async def test_execute_same_input_yields_different_tone_identical_contract() -> None:
+    """Same input + different tones: system prompts differ, outputs do not."""
+    skill = load_skill(SKILLS_DIR / "check-structure")
+    prompts: dict[str, str] = {}
+    for tone in ("warm", "strict", "humorous"):
+        fake = FakeProvider(canned_responses=["identical contract output"])
+        service = SkillExecutionService(provider=fake)
+        response = await service.execute(
+            skill,
+            {
+                "year_level": "8",
+                "text_type": "analytical",
+                "coach_tone": tone,
+                "student_text": "Text.",
+            },
+        )
+        # The skill output contract is tone-invariant.
+        assert response == "identical contract output"
+        prompts[tone] = fake.calls[0][0]
+    # Each tone produces a perceptibly different system prompt.
+    assert len(set(prompts.values())) == 3
+
+
+@pytest.mark.asyncio
+async def test_execute_unknown_coach_tone_falls_back_to_warm() -> None:
+    skill = load_skill(SKILLS_DIR / "check-structure")
+    fake = FakeProvider(canned_responses=["ok"])
+    service = SkillExecutionService(provider=fake)
+
+    await service.execute(
+        skill,
+        {
+            "year_level": "8",
+            "text_type": "analytical",
+            "coach_tone": "sassy",
+            "student_text": "T.",
+        },
+    )
+
+    system_prompt = fake.calls[0][0]
+    assert COACH_TONE_DIRECTIVES["warm"] in system_prompt
+    assert "sassy" not in system_prompt
+
+
+@pytest.mark.asyncio
+async def test_execute_without_coach_tone_adds_no_tone_section() -> None:
+    """No coach_tone input -> no tone section (byte-identical legacy prompts)."""
+    skill = load_skill(SKILLS_DIR / "check-structure")
+    fake = FakeProvider(canned_responses=["ok"])
+    service = SkillExecutionService(provider=fake)
+
+    await service.execute(
+        skill, {"year_level": "8", "text_type": "analytical", "student_text": "Text."}
+    )
+
+    assert "--- Coach tone ---" not in fake.calls[0][0]
 
 
 @pytest.mark.skipif(

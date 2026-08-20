@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-21T07:12:00+10:00`
+- Last evaluated: `2026-08-21T09:45:49+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -53,7 +53,7 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-015 | Weekly timed mock mode | `DONE` | `P1` | `ISS-014` | `None` |
 | ISS-016 | Streaks and weekly goal | `DONE` | `P2` | `ISS-015` | `None` |
 | ISS-017 | Criterion level-up celebration | `DONE` | `P2` | `ISS-016` | `None` |
-| ISS-018 | Coach persona tone setting | `READY` | `P2` | `ISS-017` | `None` |
+| ISS-018 | Coach persona tone setting | `DONE` | `P2` | `ISS-017` | `None` |
 | ISS-019 | Weekly parent report with privacy boundary | `READY` | `P2` | `ISS-018` | `None` |
 | ISS-020 | Shared parent-student goal setting | `READY` | `P2` | `ISS-019` | `None` |
 | ISS-021 | Per-stage model routing | `READY` | `P2` | `ISS-020` | `None` |
@@ -831,7 +831,7 @@ Detect when a rubric criterion crosses a band and trigger specific praise naming
 - 2026-08-21T07:12:00+10:00 - DONE. Criterion level-up celebration shipped: `app/level_ups.py` derives personal-best band crossings from rubric_score history (modifiers ignored, no re-celebration after dips), `GET /students/{id}/level-ups`, LevelUpCard in ProgressView naming the criterion, from → to, and the rubric note (improvement mechanism). Verification: full suite 212 passed/4 skipped (+12 new); ruff clean; mypy unchanged vs baseline; frontend build + oxlint clean; HTTP smoke green (cold start → 404 → crossing served with note). Unlocks ISS-018.
 
 ## ISS-018 - Coach persona tone setting
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P2`
 - Type: `feature`
 - Depends on: `ISS-017`
@@ -840,32 +840,44 @@ Detect when a rubric criterion crosses a band and trigger specific praise naming
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: B4.3; PRD: §9 GA profile direction; ERD: student`
 - Effort: `S`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
+- Attempt: `1`
+- Started: `2026-08-21T09:22:39+10:00`
+- Completed: `2026-08-21T09:45:49+10:00`
 - Commit: `None`
 
 ### Outcome and scope
 Add a per-profile coach tone setting that changes system-prompt tone without changing teaching output contracts.
 
 ### Acceptance criteria
-- [ ] Profile supports a tone setting such as warm, strict, or humorous.
-- [ ] Same input yields perceptibly different tone while preserving skill output contract.
-- [ ] Tests assert contract fields remain present.
+- [x] Profile supports a tone setting such as warm, strict, or humorous.
+- [x] Same input yields perceptibly different tone while preserving skill output contract.
+- [x] Tests assert contract fields remain present.
 
 ### Implementation notes
 - Likely files or components: backend/app/models.py, backend/app/skills/executor.py, frontend/src/components/ProfileView.tsx.
 - Constraints: tone is prompt-level only; never changes rubric levels, next-step bounds, or guardrails.
 
 ### Verification
-- [ ] `cd backend && uv run pytest tests/test_student_profile.py tests/test_skill_executor.py`
-- [ ] `cd frontend && npm run build`
+- [x] `cd backend && uv run pytest tests/test_student_profile.py tests/test_skill_executor.py` — 46 passed, 1 skipped.
+- [x] `cd frontend && npm run build` — tsc + vite build clean (378.56 kB bundle); `npm run lint` (oxlint) 0 warnings, 0 errors.
+- [x] `cd backend && uv run pytest` — 225 passed, 4 skipped (was 212/4 at ISS-017; +13 new tests).
+- [x] `cd backend && uv run ruff check .` — clean; `uv run mypy app tests` — 29 errors in the same 4 unrelated test files as the ISS-017 baseline (test_config, test_delete_student, test_interaction_log, test_session_time); changed files clean.
+- [x] `cd backend && LLM_PROVIDER=fake uv run python -m app.eval --no-judge` — 26 cases, 22 passed / 4 failed (the same canned-fake diagnose-errors route-line ×2 + give-feedback metacognitive-prompt ×2 baseline; unchanged).
 
 ### Completion evidence
-- Pending
+- `Student.coach_tone` column (`warm`/`strict`/`humorous`, default `warm`; `CoachTone` Literal in models.py is the single source of truth, imported by schemas) plus idempotent `_ensure_student_coach_tone_column` SQLite patch for existing DBs (same pattern as `weekly_goal`). `StudentCreate`/`StudentUpdate` validate the tone (422 on invalid); `StudentOut` exposes it.
+- Executor: `COACH_TONE_DIRECTIVES` + a contract note ("never what you teach: rubric levels, the bounded next-step count, and every output-contract field… stay exactly as specified"). A `coach_tone` input appends a `--- Coach tone ---` section to the **system prompt** and is popped from the user message. Opt-in by design: no `coach_tone` input → no tone section, so eval fixtures and the year-8 analytical byte-identical regression guard stay byte-identical. Unknown tones fall back to warm.
+- Loop wiring: `InteractiveLoop._base_inputs`/`start()`/`run_baseline`/`run_weekly_mock` and `SessionOrchestrator.run_daily_loop` (base + coach inputs) all pass the student's tone, so every tutor turn — retrieval, criteria, model, guided, independent, diagnosis, coach, feedback, baseline, mock — runs in the profile's tone.
+- Export/import: export carries `coach_tone`; import validates it (400 on invalid) and defaults pre-ISS-018 exports to warm.
+- Frontend: ProfileView gains a Coach tone chip group (Warm/Strict/Humorous with one-line hints) in create/edit and shows the tone in the saved view; types updated. FirstRunWizard intentionally unchanged — wizard-created profiles default to warm and can change tone any time in Profile.
+- Tests (+13): executor — directive injection per tone, same-input/different-tone identical output contract, unknown→warm fallback, no-tone→no-tone-section; profile API — default warm, create+update round-trip, 422 on invalid; orchestrator — strict-tone loop: every turn's system prompt carries the strict directive + contract note, tone never leaks into the user message, and the same 5 rubric criterion names/levels persist as the default-tone loop (contract fields present); transfer — round-trip preserves tone, older export defaults warm, invalid rejected.
+- Live LLM tone perception was not run (no API credential in this environment); "perceptibly different tone" is evidenced by per-tone distinct system prompts (test asserts 3 distinct prompts) and the unchanged contract at the loop level. A live tone check is a pre-beta follow-up alongside the existing live-eval follow-ups.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: B4.3; PRD: §9 GA profile direction; ERD: student` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-21T09:22:39+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-21T09:45:49+10:00 - DONE. Coach persona tone shipped: per-profile warm/strict/humorous setting injected into the system prompt only (opt-in input → byte-identical legacy/eval prompts), wired through every tutor turn in both loops, validated end-to-end (422/400 on invalid), export/import round-trip safe, ProfileView tone picker. Verification: declared tests 46 passed/1 skipped; full suite 225 passed/4 skipped (+13); ruff clean; mypy unchanged vs baseline; frontend build + oxlint clean; no-judge eval 26 cases 22/4 — unchanged canned-fake baseline. Unlocks ISS-019.
 
 ## ISS-019 - Weekly parent report with privacy boundary
 - Status: `READY`
