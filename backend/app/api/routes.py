@@ -1,8 +1,10 @@
 """HTTP API for the interactive daily loop."""
 
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DBSession
 
@@ -24,6 +26,7 @@ from app.api.schemas import (
 )
 from app.models import Attempt, Feedback, RubricScore, Session, Student
 from app.sessions.interactive import InteractiveLoop, SessionNotFoundError, StageConflictError
+from app.student_transfer import ExportImportError, export_student, import_student
 
 router = APIRouter(prefix="/api")
 
@@ -108,6 +111,26 @@ async def list_students(db: DBSession = Depends(get_db)) -> list[StudentOut]:
     """List all students (Beta: per-family install has few profiles)."""
     rows = db.execute(select(Student).order_by(Student.created_at)).scalars().all()
     return [_student_out(s) for s in rows]
+
+
+# NOTE: /students/import is declared before /students/{student_id} so the
+# literal path wins over the UUID path parameter.
+@router.post("/students/import", status_code=201)
+async def import_student_data(
+    payload: dict[str, Any],
+    db: DBSession = Depends(get_db),
+) -> StudentOut:
+    """Restore a student export file as a new profile with all its data.
+
+    The restore always creates fresh IDs (never overwrites an existing
+    profile) and preserves timestamps so progress trends survive the
+    round-trip. The payload is sensitive minor data and stays local.
+    """
+    try:
+        student = import_student(db, payload)
+    except ExportImportError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from None
+    return _student_out(student)
 
 
 @router.get("/students/{student_id}")
@@ -282,6 +305,34 @@ async def delete_student(
         raise HTTPException(status_code=404, detail="Student not found")
     db.delete(student)
     db.commit()
+
+
+@router.get("/students/{student_id}/export")
+async def export_student_data(
+    student_id: uuid.UUID,
+    db: DBSession = Depends(get_db),
+) -> JSONResponse:
+    """Download the student's full data as one local JSON file.
+
+    Includes the profile, sessions, attempts, feedback, rubric scores,
+    success criteria, and interaction logs. This is sensitive minor data:
+    it is only ever served to the local app as a file download.
+    """
+    student = db.get(Student, student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    document = export_student(db, student)
+    safe_name = "".join(
+        ch if ch.isalnum() else "-" for ch in student.name.strip().lower()
+    ).strip("-") or "student"
+    return JSONResponse(
+        content=document,
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="english-tutor-export-{safe_name}.json"'
+            )
+        },
+    )
 
 
 @router.get("/students/{student_id}/progress")

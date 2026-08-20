@@ -117,6 +117,17 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
     setMode('edit')
   }
 
+  function handleExport() {
+    if (!student) return
+    // Local JSON download of everything the tutor holds about this student.
+    const a = document.createElement('a')
+    a.href = `/api/students/${student.id}/export`
+    a.rel = 'noopener'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  }
+
   function handleClear() {
     clearStudentProfile()
     clearStudentId()
@@ -170,10 +181,17 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
             <button type="button" className="btn primary" onClick={handleEdit}>
               Edit profile
             </button>
+            <button type="button" className="btn ghost" onClick={handleExport}>
+              Export my data
+            </button>
             <button type="button" className="btn ghost" onClick={handleClear}>
               Clear
             </button>
           </div>
+          <p className="muted small">
+            Export downloads one JSON file with your profile, sessions, writing,
+            and progress. Keep it somewhere safe — it's private.
+          </p>
         </section>
       </div>
     )

@@ -115,3 +115,10 @@ export function resumeSession(sessionId: string): Promise<SessionOut> {
 export function getProgress(studentId: string): Promise<ProgressOut> {
   return request<ProgressOut>(`/api/students/${studentId}/progress`)
 }
+
+export function importStudent(payload: unknown): Promise<StudentOut> {
+  return request<StudentOut>('/api/students/import', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}

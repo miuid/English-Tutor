@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
-import { createStudent, listStudents } from '../api'
+import { useEffect, useRef, useState } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
+import { createStudent, importStudent, listStudents } from '../api'
 import { saveStudentId, saveStudentProfile } from '../storage'
 import type { StudentOut } from '../types'
 
@@ -24,6 +24,7 @@ export default function FirstRunWizard({ onStudent }: FirstRunWizardProps) {
   const [focusTextTypes, setFocusTextTypes] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const fileInput = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -70,6 +71,33 @@ export default function FirstRunWizard({ onStudent }: FirstRunWizardProps) {
       finish(created)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not create the profile.')
+      setBusy(false)
+    }
+  }
+
+  // Restore a previously exported JSON backup as a new profile (fresh IDs,
+  // progress preserved). This is how a family moves a student to a new
+  // machine or recovers after a reset — no account, no cloud sync.
+  async function handleRestoreFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setBusy(true)
+    setError(null)
+    try {
+      const text = await file.text()
+      let payload: unknown
+      try {
+        payload = JSON.parse(text)
+      } catch {
+        throw new Error('That file is not valid JSON.')
+      }
+      const restored = await importStudent(payload)
+      finish(restored)
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Could not restore that backup file.',
+      )
       setBusy(false)
     }
   }
@@ -207,6 +235,22 @@ export default function FirstRunWizard({ onStudent }: FirstRunWizardProps) {
             ) : null}
           </form>
         )}
+
+        <input
+          ref={fileInput}
+          type="file"
+          accept="application/json,.json"
+          hidden
+          onChange={handleRestoreFile}
+        />
+        <button
+          type="button"
+          className="btn ghost wide"
+          disabled={busy}
+          onClick={() => fileInput.current?.click()}
+        >
+          Restore from a backup file
+        </button>
       </section>
     </div>
   )

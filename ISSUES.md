@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-20T12:35:00+10:00`
+- Last evaluated: `2026-08-20T15:05:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -503,7 +503,7 @@ Polish clean-machine docker compose startup into a guided first run that creates
 - 2026-08-20T12:35:00+10:00 - DONE. First-run wizard shipped: `FirstRunWizard` (select existing profile via `listStudents` or create new) gated on `studentId === null` in App; profile edit unchanged in the Profile tab; Clear unlinks the browser and returns to the wizard; README + DEPLOYMENT first-run guidance added. Verification: frontend build + oxlint clean; backend student-profile tests 9 passed; full backend suite 169 passed/4 skipped with ruff clean (backend untouched); HTTP smoke of the wizard's exact API chain (list → create → list) green against a real backend with FakeProvider. Unlocks ISS-011.
 
 ## ISS-011 - Student data export and restore
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P1`
 - Type: `feature`
 - Depends on: `ISS-010`
@@ -512,32 +512,41 @@ Polish clean-machine docker compose startup into a guided first run that creates
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: B1.2; PRD: §6 privacy; ERD: Privacy & retention`
 - Effort: `S`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
+- Attempt: `1`
+- Started: `2026-08-20T14:37:00+10:00`
+- Completed: `2026-08-20T15:05:00+10:00`
 - Commit: `None`
 
 ### Outcome and scope
 Add one-click local JSON export of a student's full data and an import path that restores progress.
 
 ### Acceptance criteria
-- [ ] Export includes profile, sessions, attempts, feedback, rubric scores, and relevant logs.
-- [ ] Export → delete → import round-trip preserves progress.
-- [ ] Tests cover the round-trip.
+- [x] Export includes profile, sessions, attempts, feedback, rubric scores, and relevant logs.
+- [x] Export → delete → import round-trip preserves progress.
+- [x] Tests cover the round-trip.
 
 ### Implementation notes
 - Likely files or components: backend/app/api/routes.py, backend/app/models.py, backend/app/database.py, frontend/src/components/ProfileView.tsx.
 - Constraints: export stays local; do not add cloud sync; treat exported content as sensitive minor data.
 
 ### Verification
-- [ ] `cd backend && uv run pytest tests/test_delete_student.py tests/test_student_profile.py`
-- [ ] `cd backend && uv run pytest`
+- [x] `cd backend && uv run pytest tests/test_student_transfer.py tests/test_delete_student.py tests/test_student_profile.py` — 17 passed.
+- [x] `cd backend && uv run pytest` — 175 passed, 4 skipped (was 169/4; +6 new tests).
+- [x] `cd backend && uv run ruff check .` — clean; `uv run mypy app tests` — 29 errors in the same 4 unrelated test files as the ISS-010 baseline (test_config, test_delete_student, test_interaction_log, test_session_time); changed files clean.
+- [x] `cd frontend && npm run build` — tsc + vite build clean (372.02 kB bundle); `npm run lint` (oxlint) — 0 warnings, 0 errors.
 
 ### Completion evidence
-- Pending
+- New `backend/app/student_transfer.py`: `export_student()` serialises the profile plus every session (success criteria, attempts with feedback + rubric scores, interaction logs) into one versioned JSON document (`format: english-tutor-student-export`, `version: 1`, ISO datetimes); `import_student()` validates the document (`ExportImportError` → HTTP 400 on wrong format/version/missing profile/invalid year level) and restores it as a NEW student — fresh UUIDs for every student-owned row, references remapped, timestamps preserved so A–E progress trends survive. Skill/curriculum-outcome FKs are global registry data: kept only when the target row exists locally, else NULL (matching ON DELETE SET NULL semantics).
+- Routes: `GET /api/students/{id}/export` (JSONResponse with `Content-Disposition: attachment; filename="english-tutor-export-<name>.json"`, 404 on unknown student) and `POST /api/students/import` (201 → StudentOut; declared before `/students/{student_id}` so the literal path wins). Import never overwrites an existing profile — restoring a backup while the original still exists creates a second profile (covered by test).
+- Frontend: ProfileView saved card gains **Export my data** (one-click download via the attachment endpoint) with a privacy hint; FirstRunWizard gains **Restore from a backup file** (file picker → `importStudent` → lands on the Today tab as the restored profile), so the export → delete → import round-trip is reachable in the real UX on a clean browser. No cloud sync; the file stays local (PRD §6).
+- Tests (`backend/tests/test_student_transfer.py`, 6 new): export document shape (profile/sessions/attempts incl. student writing/feedback with 5 rubric scores/interaction logs, content-disposition filename), export 404, export→delete→import round-trip asserting the progress endpoint returns the identical `(criterion, level, scored_at)` sequence under the new id, restore-alongside-original without collision, malformed-payload 400s, minimal profile-only import.
+- Discovery during the run: the interactive loop never persists `SuccessCriterion` rows, so exported `success_criteria` is legitimately empty for loop sessions; the field is still exported/imported for completeness.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: B1.2; PRD: §6 privacy; ERD: Privacy & retention` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-20T14:37:00+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-20T15:05:00+10:00 - DONE. Student data export/restore shipped: versioned JSON export endpoint + import-as-new-profile restore (fresh UUIDs, timestamps preserved, registry FKs resolved-or-NULL), one-click export in ProfileView, restore-from-backup in the first-run wizard. Verification: targeted 17 passed; full suite 175 passed/4 skipped; ruff clean; mypy unchanged vs baseline; frontend build + oxlint clean. Round-trip test proves identical rubric progress after export → delete → import. Unlocks ISS-012.
 
 ## ISS-012 - New skill baseline-assessment
 - Status: `READY`

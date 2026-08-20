@@ -147,6 +147,15 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 11. Session log
 
+### 2026-08-20 — ISS-011 done: student data export and restore
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-011 (P1, dep ISS-010 DONE).
+- **Shipped:** `backend/app/student_transfer.py` — versioned JSON export (`english-tutor-student-export` v1: profile + sessions + success criteria + attempts with feedback/rubric scores + interaction logs, ISO timestamps) and validated import that restores as a NEW student (fresh UUIDs everywhere, references remapped, timestamps preserved so A–E trends survive; skill/outcome FKs kept only when resolvable locally, else NULL). Routes: `GET /api/students/{id}/export` (attachment download) + `POST /api/students/import` (declared before `/students/{student_id}`).
+- **Frontend:** ProfileView saved card gains **Export my data** (one-click download + privacy hint); FirstRunWizard gains **Restore from a backup file** so the export → delete → import round-trip works on a clean browser. No cloud sync — file stays local (PRD §6).
+- **Design decision:** import always creates a fresh profile (never overwrites) — restoring while the original exists yields a second profile, no PK collisions.
+- **Discovery:** the interactive loop never persists `SuccessCriterion` rows, so exported `success_criteria` is legitimately empty for loop sessions; field still round-trips.
+- Verified: targeted 17 passed (6 new round-trip/export tests); full suite **175 passed/4 skipped**; ruff clean; mypy 29 errors in the same 4 unrelated test files as baseline; `npm run build` + oxlint clean.
+- **Next pick-up:** ISS-012 — new skill `baseline-assessment`.
+
 ### 2026-08-20 — ISS-010 done: beta first-run wizard + profile UX
 - Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-010 (P1, dep ISS-009 DONE). First frontend-facing ticket of the ISSUES queue.
 - **Shipped:** `FirstRunWizard.tsx` — gated in `App.tsx` on `studentId === null`, so a fresh browser always hits the wizard before the tabbed UI. Wizard lists existing server profiles (`GET /api/students`, pick one — shared family server / new device) or creates a new one (name, year 8–12, QCAA/NESA, optional focus text types); on success it persists id + profile and lands on the Today tab. App now also hydrates `student` from the cached profile on load, so the start card greets by name immediately.
