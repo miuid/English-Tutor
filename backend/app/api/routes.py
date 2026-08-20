@@ -14,6 +14,8 @@ from app.api.schemas import (
     BaselineOut,
     BaselineRequest,
     FeedbackOut,
+    MockOut,
+    MockRequest,
     ProgressOut,
     ProgressScoreOut,
     RubricScoreOut,
@@ -322,6 +324,36 @@ async def run_baseline_assessment(
     )
 
 
+@router.post("/students/{student_id}/mock", status_code=201)
+async def run_weekly_mock(
+    student_id: uuid.UUID,
+    payload: MockRequest,
+    loop: InteractiveLoop = Depends(get_loop),
+) -> MockOut:
+    """Run a weekly timed mock from one exam-conditions write.
+
+    Persists a short ended session holding the submission
+    (``attempt.mode='assessment'``) and the summative give-feedback turn
+    (overall A–E attached), writes the rubric scores (surfaced by the
+    progress endpoint, distinguished from daily practice points), and
+    returns the bounded summative feedback: per-criterion levels, one
+    strength, and 1–2 next steps.
+    """
+    try:
+        result = await loop.run_mock(
+            student_id=student_id,
+            text=payload.text,
+            text_type=payload.text_type,
+        )
+    except SessionNotFoundError:
+        raise HTTPException(status_code=404, detail="Student not found") from None
+    return MockOut(
+        session_id=result.session.id,
+        feedback=_feedback_out(result.feedback),
+        report=result.feedback_turn.student_text,
+    )
+
+
 @router.delete("/students/{student_id}", status_code=204)
 async def delete_student(
     student_id: uuid.UUID,
@@ -378,7 +410,7 @@ async def student_progress(
         raise HTTPException(status_code=404, detail="Student not found")
     rows = (
         db.execute(
-            select(RubricScore, Attempt.session_id)
+            select(RubricScore, Attempt.session_id, Attempt.mode)
             .join(Feedback, RubricScore.feedback_id == Feedback.id)
             .join(Attempt, Feedback.attempt_id == Attempt.id)
             .where(Attempt.student_id == student_id)
@@ -396,7 +428,8 @@ async def student_progress(
                 scored_at=score.scored_at,
                 session_id=session_id_for_score,
                 feedback_id=score.feedback_id,
+                mode=attempt_mode,
             )
-            for score, session_id_for_score in rows
+            for score, session_id_for_score, attempt_mode in rows
         ],
     )

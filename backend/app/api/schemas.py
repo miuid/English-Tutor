@@ -52,6 +52,13 @@ class BaselineRequest(BaseModel):
     text_type: str | None = Field(default=None, min_length=1)
 
 
+class MockRequest(BaseModel):
+    """One exam-conditions write for the weekly timed mock."""
+
+    text: str = Field(min_length=1)
+    text_type: str | None = Field(default=None, min_length=1)
+
+
 class TurnOut(BaseModel):
     """One conversation turn: a tutor skill output or a student submission."""
 
@@ -108,6 +115,14 @@ class BaselineOut(BaseModel):
     report: str
 
 
+class MockOut(BaseModel):
+    """The persisted weekly mock: session and the summative A–E feedback."""
+
+    session_id: uuid.UUID
+    feedback: FeedbackOut
+    report: str
+
+
 class SubmitOut(BaseModel):
     session_id: uuid.UUID
     stage: str
@@ -125,6 +140,7 @@ class ProgressScoreOut(BaseModel):
     scored_at: datetime
     session_id: uuid.UUID
     feedback_id: uuid.UUID
+    mode: str  # attempt mode: daily loop stage, "baseline", or "assessment" (weekly mock)
 
 
 class ProgressOut(BaseModel):

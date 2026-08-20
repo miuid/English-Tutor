@@ -632,3 +632,180 @@ def test_retrieval_uses_rubric_and_coach_history(api_client: ApiClient) -> None:
     assert "- Structure & cohesion: D+" in retrieval_message
     # The first loop's coach turn (check-structure) is the recent coaching.
     assert "Recently coached: check-structure" in retrieval_message
+
+
+# ---------------------------------------------------------------------------
+# Weekly timed mock (ISS-015)
+# ---------------------------------------------------------------------------
+
+MOCK_SUMMATIVE_FEEDBACK = """## Per-criterion levels
+- Understanding of text / ideas: **B** — clear reading of the stimulus.
+- Analysis (how techniques create meaning): **C** — some effect explained, some asserted.
+- Use of evidence: **C** — relevant quotes, mostly integrated.
+- Structure & cohesion: **B-** — paragraphs link back to the thesis.
+- Language & vocabulary: **C+** — formal register held, occasional flat word.
+
+(Overall: **C+**)
+Strength: Your introduction sets up a line of argument, not just a topic.
+Your 1–2 next steps to level up:
+  1. Explain how each technique positions the reader — it lifts Analysis toward B.
+  2. Embed one shorter quote per paragraph — tighter evidence lifts Use of evidence.
+Self-check: which criterion would you give yourself, and why?
+"""
+
+# A full daily loop (9 calls) followed by one mock call (give-feedback only).
+LOOP_THEN_MOCK_RESPONSES = [*FULL_LOOP_RESPONSES, MOCK_SUMMATIVE_FEEDBACK]
+
+
+@pytest.fixture
+def mock_client(monkeypatch: pytest.MonkeyPatch) -> Generator[ApiClient, None, None]:
+    """Boot the app with a canned summative give-feedback report for the mock."""
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{path}")
+    monkeypatch.setenv("LLM_PROVIDER", "fake")
+    monkeypatch.setenv("LLM_API_KEY", "")
+    get_settings.cache_clear()
+    get_engine.cache_clear()
+
+    fake = FakeProvider(canned_responses=[MOCK_SUMMATIVE_FEEDBACK])
+    app.dependency_overrides[get_provider] = lambda: fake
+    try:
+        with TestClient(app) as client:
+            yield client, fake
+    finally:
+        app.dependency_overrides.clear()
+        get_engine().dispose()
+        os.unlink(path)
+
+
+@pytest.fixture
+def loop_then_mock_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> Generator[ApiClient, None, None]:
+    """Boot the app with canned responses for one daily loop then one mock."""
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{path}")
+    monkeypatch.setenv("LLM_PROVIDER", "fake")
+    monkeypatch.setenv("LLM_API_KEY", "")
+    get_settings.cache_clear()
+    get_engine.cache_clear()
+
+    fake = FakeProvider(canned_responses=list(LOOP_THEN_MOCK_RESPONSES))
+    app.dependency_overrides[get_provider] = lambda: fake
+    try:
+        with TestClient(app) as client:
+            yield client, fake
+    finally:
+        app.dependency_overrides.clear()
+        get_engine().dispose()
+        os.unlink(path)
+
+
+def _run_daily_loop(client: TestClient, student_id: str) -> None:
+    """Drive one full loop for the student without asserting turn contents."""
+    started = client.post(
+        "/api/sessions",
+        json={"task_prompt": "How does the poet present war?", "student_id": student_id},
+    )
+    assert started.status_code == 201
+    session_id = started.json()["id"]
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    guided = client.post(
+        f"/api/sessions/{session_id}/submit", json={"text": "My guided attempt."}
+    )
+    assert guided.status_code == 200
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    final = client.post(
+        f"/api/sessions/{session_id}/submit", json={"text": "War is bad."}
+    )
+    assert final.status_code == 200
+    assert final.json()["ended"] is True
+
+
+def test_mock_stores_assessment_mode_and_summative_scores(
+    mock_client: ApiClient,
+) -> None:
+    """POST /mock runs exam-conditions feedback and persists assessment rows."""
+    client, fake = mock_client
+    student = client.post(
+        "/api/students",
+        json={"name": "Mock sitter", "year_level": 8},
+    ).json()
+
+    response = client.post(
+        f"/api/students/{student['id']}/mock",
+        json={"text": "The poet presents war as a waste of young lives..."},
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["session_id"]
+
+    # Bounded summative report: per-criterion levels + overall + next steps.
+    assert "## Per-criterion levels" in data["report"]
+    assert "(Overall: **C+**)" in data["report"]
+    assert "next steps" in data["report"]
+    scores = data["feedback"]["rubric_scores"]
+    assert len(scores) == 5
+    assert scores[0]["criterion_name"] == "Understanding of text / ideas"
+    assert scores[0]["level"] == "B"
+
+    # The single LLM call is give-feedback in summative mode, citing the
+    # year-8 analytical rubric pack — no coaching or scaffolding skills ran.
+    assert len(fake.calls) == 1
+    system_prompt, messages = fake.calls[0]
+    assert "rubric.md" in system_prompt
+    user_message = messages[0]["content"]
+    assert "mode: summative" in user_message
+    assert "exam conditions" in user_message
+
+    # The mock session is already ended, holds an assessment-mode submission,
+    # and consumed no daily practice time.
+    session = client.get(f"/api/sessions/{data['session_id']}").json()
+    assert session["ended"] is True
+    assert session["time_spent_seconds"] == 0
+    submission = next(t for t in session["turns"] if t["kind"] == "student")
+    assert submission["mode"] == "assessment"
+    feedback_turn = next(t for t in session["turns"] if t["skill"] == "give-feedback")
+    assert feedback_turn["mode"] == "assessment"
+
+    # Rubric scores surface in progress tagged as assessment (mock) points.
+    progress = client.get(f"/api/students/{student['id']}/progress").json()
+    assert len(progress["scores"]) == 5
+    assert {s["mode"] for s in progress["scores"]} == {"assessment"}
+
+
+def test_mock_points_distinguished_from_daily_practice(
+    loop_then_mock_client: ApiClient,
+) -> None:
+    """Progress returns daily-practice and weekly-mock points with distinct modes."""
+    client, _ = loop_then_mock_client
+    student = client.post(
+        "/api/students",
+        json={"name": "Mixed modes", "year_level": 8},
+    ).json()
+
+    _run_daily_loop(client, student["id"])
+    mock = client.post(
+        f"/api/students/{student['id']}/mock",
+        json={"text": "Exam-conditions response..."},
+    )
+    assert mock.status_code == 201
+
+    progress = client.get(f"/api/students/{student['id']}/progress").json()
+    modes = [s["mode"] for s in progress["scores"]]
+    assert modes.count("assessment") == 5  # the weekly mock
+    assert len(modes) == 10
+    assert set(modes) == {"end", "assessment"}  # daily practice vs mock
+
+
+def test_mock_unknown_student_returns_404(mock_client: ApiClient) -> None:
+    client, _ = mock_client
+    missing = uuid.uuid4()
+    response = client.post(
+        f"/api/students/{missing}/mock",
+        json={"text": "Nobody's essay."},
+    )
+    assert response.status_code == 404

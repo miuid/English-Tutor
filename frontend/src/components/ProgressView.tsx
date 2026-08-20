@@ -28,6 +28,7 @@ interface SeriesPoint {
   value: number
   level: string
   note: string | null
+  mode: string // "assessment" marks a weekly timed mock point
 }
 
 interface Series {
@@ -87,6 +88,7 @@ export default function ProgressView({ studentId }: ProgressViewProps) {
           value: levelValue(row.level),
           level: row.level,
           note: row.note,
+          mode: row.mode,
         })),
         latest: sorted[sorted.length - 1].level,
       }
@@ -198,21 +200,37 @@ export default function ProgressView({ studentId }: ProgressViewProps) {
                   points={s.points.map((p) => `${xFor(p.day)},${yFor(p.value)}`).join(' ')}
                 />
               ) : null}
-              {s.points.map((p, i) => (
-                <circle
-                  key={`${p.day}-${i}`}
-                  cx={xFor(p.day)}
-                  cy={yFor(p.value)}
-                  r={5}
-                  fill={s.color}
-                  stroke="#fff"
-                  strokeWidth={1.5}
-                >
-                  <title>
-                    {`${s.name}: ${p.level} — ${formatDate(p.day)}${p.note ? `\n${p.note}` : ''}`}
-                  </title>
-                </circle>
-              ))}
+              {s.points.map((p, i) =>
+                p.mode === 'assessment' ? (
+                  // Weekly timed mock: a diamond, visually distinct from
+                  // daily practice circles (exam-conditions checkpoint).
+                  <polygon
+                    key={`${p.day}-${i}`}
+                    points={`${xFor(p.day)},${yFor(p.value) - 7} ${xFor(p.day) + 7},${yFor(p.value)} ${xFor(p.day)},${yFor(p.value) + 7} ${xFor(p.day) - 7},${yFor(p.value)}`}
+                    fill={s.color}
+                    stroke="#fff"
+                    strokeWidth={1.5}
+                  >
+                    <title>
+                      {`Weekly mock — ${s.name}: ${p.level} — ${formatDate(p.day)}${p.note ? `\n${p.note}` : ''}`}
+                    </title>
+                  </polygon>
+                ) : (
+                  <circle
+                    key={`${p.day}-${i}`}
+                    cx={xFor(p.day)}
+                    cy={yFor(p.value)}
+                    r={5}
+                    fill={s.color}
+                    stroke="#fff"
+                    strokeWidth={1.5}
+                  >
+                    <title>
+                      {`${s.name}: ${p.level} — ${formatDate(p.day)}${p.note ? `\n${p.note}` : ''}`}
+                    </title>
+                  </circle>
+                ),
+              )}
             </g>
           ))}
         </svg>
@@ -225,6 +243,11 @@ export default function ProgressView({ studentId }: ProgressViewProps) {
             </li>
           ))}
         </ul>
+        {series.some((s) => s.points.some((p) => p.mode === 'assessment')) ? (
+          <p className="chart-note muted">
+            ◆ Weekly timed mock (exam conditions) · ● Daily practice
+          </p>
+        ) : null}
       </div>
     </div>
   )

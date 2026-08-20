@@ -788,3 +788,23 @@
   width: 100%;
 }
 
+/* Weekly timed mock (ISS-015) ------------------------------------------------ */
+
+.mock-entry {
+  margin: 1rem 0 0;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.mock-report {
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.chart-note {
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+  text-align: center;
+}
+

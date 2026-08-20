@@ -19,9 +19,10 @@ import {
   saveStudentId,
 } from '../storage'
 import Markdown from './Markdown'
+import MockView from './MockView'
 import type { FeedbackOut, SessionOut, StudentOut, TurnOut } from '../types'
 
-type Phase = 'loading' | 'start' | 'active'
+type Phase = 'loading' | 'start' | 'active' | 'mock'
 
 interface ActiveSession {
   id: string
@@ -351,9 +352,21 @@ export default function ChatView({ student }: ChatViewProps) {
               {busy ? 'Starting…' : "Start today's session"}
             </button>
           </form>
+          {student ? (
+            <p className="mock-entry">
+              Feeling exam-ready?{' '}
+              <button type="button" className="btn ghost small" onClick={() => setPhase('mock')}>
+                Sit this week's timed mock
+              </button>
+            </p>
+          ) : null}
         </section>
       </div>
     )
+  }
+
+  if (phase === 'mock') {
+    return student ? <MockView student={student} onBack={() => setPhase('start')} /> : null
   }
 
   const studentTurn =

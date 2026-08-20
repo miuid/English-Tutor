@@ -100,6 +100,16 @@ class BaselineResult:
     feedback: Feedback
 
 
+@dataclass(frozen=True)
+class MockResult:
+    """What a run_mock() call persisted, in creation order."""
+
+    session: Session
+    submission: Attempt
+    feedback_turn: Attempt
+    feedback: Feedback
+
+
 class InteractiveLoop:
     """Drive one Session through the daily loop one interactive step at a time.
 
@@ -435,6 +445,95 @@ class InteractiveLoop:
             session=session,
             submission=submission,
             report_turn=report_turn,
+            feedback=feedback,
+        )
+
+    async def run_mock(
+        self,
+        *,
+        student_id: uuid.UUID,
+        text: str,
+        text_type: str | None = None,
+    ) -> MockResult:
+        """Run a weekly timed mock: one exam-conditions write -> summative A-E.
+
+        Creates a short, already-ended mock session holding the student's
+        submission (``mode="assessment"``) and a summative give-feedback
+        turn (``mode: summative`` input, so the overall A-E level is
+        attached), then parses the per-criterion levels into RubricScore
+        rows. Unlike the daily loop there is no retrieval, modelling, or
+        coaching — QCAA-like conditions mean no scaffolds — but the
+        summative feedback stays bounded (one strength, 1-2 next steps).
+        """
+        student = self._resolve_student(student_id=student_id, year_level="8")
+        resolved_text_type = self._resolve_text_type(
+            student, text_type or DEFAULT_TEXT_TYPE
+        )
+        task_prompt = (
+            f"Weekly timed mock (QCAA exam conditions, {resolved_text_type})"
+        )
+
+        session = Session(
+            student_id=student.id,
+            learning_intention=task_prompt,
+            stage=ENDED,
+            started_at=self._now(),
+            ended_at=self._now(),
+            last_activity_at=self._now(),
+        )
+        self.db.add(session)
+        self.db.flush()
+
+        submission = Attempt(
+            session_id=session.id,
+            student_id=student.id,
+            skill_id=None,
+            task_type="submission",
+            mode="assessment",
+            task_prompt=task_prompt,
+            student_text=text,
+        )
+        self.db.add(submission)
+        self.db.flush()
+
+        feedback_output = await self._execute_and_log(
+            session,
+            self.skills["give-feedback"],
+            {
+                "year_level": str(student.year_level),
+                "text_type": resolved_text_type,
+                "task_prompt": task_prompt,
+                "context": (
+                    "Weekly timed mock written under QCAA-like exam "
+                    "conditions — one timed sitting, no coaching or scaffolds."
+                ),
+                "mode": "summative",
+                "student_text": text,
+            },
+        )
+        feedback_turn = self._save_tutor_turn(
+            session, "give-feedback", "feedback", "assessment", task_prompt, feedback_output
+        )
+
+        feedback = Feedback(
+            attempt_id=feedback_turn.id,
+            strength="see feedback output",
+            next_steps="see feedback output",
+        )
+        for parsed in parse_rubric_levels(feedback_output):
+            feedback.rubric_scores.append(
+                RubricScore(
+                    criterion_name=parsed.criterion_name,
+                    level=parsed.level,
+                    note=parsed.note,
+                )
+            )
+        self.db.add(feedback)
+        self.db.commit()
+        return MockResult(
+            session=session,
+            submission=submission,
+            feedback_turn=feedback_turn,
             feedback=feedback,
         )
 

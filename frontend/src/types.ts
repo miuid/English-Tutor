@@ -94,9 +94,16 @@ export interface ProgressScoreOut {
   scored_at: string
   session_id: string
   feedback_id: string
+  mode: string // attempt mode: daily loop stage, "baseline", or "assessment" (weekly mock)
 }
 
 export interface ProgressOut {
   student_id: string
   scores: ProgressScoreOut[]
+}
+
+export interface MockOut {
+  session_id: string
+  feedback: FeedbackOut
+  report: string
 }

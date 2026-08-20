@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-20T21:51:36+10:00`
+- Last evaluated: `2026-08-21T02:35:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -50,7 +50,7 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-012 | New skill baseline-assessment | `DONE` | `P1` | `ISS-011` | `None` |
 | ISS-013 | New skill fix-mechanics | `DONE` | `P1` | `ISS-012` | `None` |
 | ISS-014 | New skill spaced-review and retrieval stage | `DONE` | `P1` | `ISS-013` | `None` |
-| ISS-015 | Weekly timed mock mode | `READY` | `P1` | `ISS-014` | `None` |
+| ISS-015 | Weekly timed mock mode | `DONE` | `P1` | `ISS-014` | `None` |
 | ISS-016 | Streaks and weekly goal | `READY` | `P2` | `ISS-015` | `None` |
 | ISS-017 | Criterion level-up celebration | `READY` | `P2` | `ISS-016` | `None` |
 | ISS-018 | Coach persona tone setting | `READY` | `P2` | `ISS-017` | `None` |
@@ -694,7 +694,7 @@ Add the thirteenth agent skill spaced-review and make retrieval the first stage 
 - 2026-08-20T21:51:36+10:00 - DONE. Thirteenth skill spaced-review shipped: SKILL.md + shared retrieval guide + two golden fixtures (analytical/year-8 with digest, imaginative/year-9-10 cold start); retrieval is now loop step 1 in both the interactive loop and the scripted orchestrator, fed by `build_review_history` (rubric_score weakest-first levels + recent coaching + days-since). Verification: targeted 19 passed; full suite 185 passed/4 skipped; ruff clean; mypy unchanged vs baseline; skill eval 2/2 PASS; full no-judge eval 26 cases, 22 passed/4 failed — unchanged canned-fake baseline; frontend build + lint clean. Unlocks ISS-015.
 
 ## ISS-015 - Weekly timed mock mode
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P1`
 - Type: `feature`
 - Depends on: `ISS-014`
@@ -703,32 +703,42 @@ Add the thirteenth agent skill spaced-review and make retrieval the first stage 
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: B3.3; PRD: §3 weekly timed practice; ERD: attempt.mode/rubric_score`
 - Effort: `M`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
+- Attempt: `1`
+- Started: `2026-08-21T02:06:00+10:00`
+- Completed: `2026-08-21T02:35:00+10:00`
 - Commit: `None`
 
 ### Outcome and scope
 Add a weekly-mock mode with QCAA-like conditions and summative A-E feedback, visually distinct in the progress trend.
 
 ### Acceptance criteria
-- [ ] A mock session completes end-to-end and stores attempt.mode='assessment'.
-- [ ] Progress view distinguishes daily practice points from weekly mock points.
-- [ ] Summative feedback remains bounded and references rubric criteria.
+- [x] A mock session completes end-to-end and stores attempt.mode='assessment'.
+- [x] Progress view distinguishes daily practice points from weekly mock points.
+- [x] Summative feedback remains bounded and references rubric criteria.
 
 ### Implementation notes
 - Likely files or components: backend/app/sessions/interactive.py, backend/app/api/schemas.py, frontend/src/components/ProgressView.tsx, backend/tests/test_api_daily_loop.py.
 - Constraints: mock mode is periodic; do not disrupt the daily 15-20 minute loop.
 
 ### Verification
-- [ ] `cd backend && uv run pytest tests/test_api_daily_loop.py tests/test_session_time.py`
-- [ ] `cd frontend && npm run build`
+- [x] `cd backend && uv run pytest tests/test_api_daily_loop.py tests/test_session_time.py` — 33 passed (+3 new mock tests).
+- [x] `cd frontend && npm run build` — tsc + vite build clean (375.36 kB bundle); `npm run lint` (oxlint) — 0 warnings, 0 errors.
+- [x] `cd backend && uv run pytest` — 188 passed, 4 skipped (was 185/4; +3 new tests).
+- [x] `cd backend && uv run ruff check .` — clean; `uv run mypy app tests` — 29 errors in the same 4 unrelated test files as the ISS-014 baseline (test_config, test_delete_student, test_interaction_log, test_session_time); changed files clean.
+- [x] HTTP smoke against a real backend (`LLM_PROVIDER=fake`, tmp SQLite): create student → `POST /api/students/{id}/mock` → 201 (session ended, `time_spent_seconds: 0`, submission `mode: "assessment"`, give-feedback tutor turn) → progress endpoint green.
 
 ### Completion evidence
-- Pending
+- `InteractiveLoop.run_mock()` (adopted from the interrupted prior attempt, then reviewed and tested): one exam-conditions write creates an already-ended mock session holding the submission (`Attempt.mode="assessment"`) and a summative give-feedback turn (`mode: summative` input, so the overall A–E is attached per the skill contract); per-criterion levels are parsed into RubricScore rows. No retrieval/modelling/coaching run — QCAA-like conditions mean no scaffolds — while the feedback stays bounded (one strength, 1–2 next steps) and cites the exact combo rubric pack.
+- Route `POST /api/students/{student_id}/mock` (201 → `MockOut` with session id, feedback, and the full report text; 404 on unknown student via `SessionNotFoundError`). `MockOut.report` added this run so the summative report is renderable without a second fetch (mirrors `BaselineOut.report`). The progress endpoint now returns `mode` per score (`ProgressScoreOut.mode`).
+- Frontend: ProgressView renders `mode === 'assessment'` points as ◆ diamonds (daily practice stays ● circles) with a "Weekly mock — …" tooltip and a conditional legend note (`◆ Weekly timed mock · ● Daily practice`). ChatView start card gains a "Sit this week's timed mock" entry (student-linked only) → new `MockView` component: exam-conditions explainer → paste the timed piece → level badges (reusing `level-badge` styles) + the Markdown report + back link. `runMock` API client and `MockOut` / `ProgressScoreOut.mode` types added.
+- Tests (3 new in `test_api_daily_loop.py`): `test_mock_stores_assessment_mode_and_summative_scores` (201, 5 parsed scores, bounded report sections incl. `(Overall: **C+**)`, exactly one LLM call = give-feedback with `mode: summative` + year-8 rubric pack citation, session ended with zero practice time, submission + feedback turns carry `assessment` mode, progress rows all `assessment`); `test_mock_points_distinguished_from_daily_practice` (full daily loop then a mock → progress returns 5 `end` + 5 `assessment` rows); `test_mock_unknown_student_returns_404`.
+- Live LLM judge eval was not run (no valid API credential in this environment); consistent with ISS-005 through ISS-014, this ticket's declared verification is the no-judge harness above.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: B3.3; PRD: §3 weekly timed practice; ERD: attempt.mode/rubric_score` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-21T02:06:00+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions. On entry the tree held uncommitted edits (`interactive.py` `run_mock`, `/mock` route, `MockRequest`/`MockOut`, progress `mode`) matching this ticket's implementation notes, dated ~00:02+10 — consistent with a prior cron attempt interrupted before tests/tracker update (midnight local, exact ticket scope). Adopted rather than discarded after verifying the tree green (185 passed/4 skipped); no user work overwritten.
+- 2026-08-21T02:35:00+10:00 - DONE. Weekly timed mock mode shipped: `run_mock` (ended mock session, submission `attempt.mode='assessment'`, summative give-feedback with overall A–E, bounded 1–2 next steps), `POST /api/students/{id}/mock` (MockOut + report), progress endpoint returns per-score `mode`; frontend ProgressView ◆ diamonds vs ● circles with legend note, ChatView "Sit this week's timed mock" entry → new MockView. Verification: declared `pytest tests/test_api_daily_loop.py tests/test_session_time.py` 33 passed; full suite 188 passed/4 skipped; ruff clean; mypy unchanged vs baseline; frontend build + oxlint clean; HTTP smoke green (mock 201, ended session, assessment mode, zero practice time). Unlocks ISS-016.
 
 ## ISS-016 - Streaks and weekly goal
 - Status: `READY`
