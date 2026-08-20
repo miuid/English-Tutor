@@ -658,7 +658,7 @@ Add the twelfth agent skill fix-mechanics for grammar, spelling, and punctuation
 - Attempt: `1`
 - Started: `2026-08-20T21:33:15+10:00`
 - Completed: `2026-08-20T21:51:36+10:00`
-- Commit: `None`
+- Commit: `8009267`
 
 ### Outcome and scope
 Add the thirteenth agent skill spaced-review and make retrieval the first stage of the daily loop using interaction_log and rubric_score history.
