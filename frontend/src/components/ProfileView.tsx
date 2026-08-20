@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { ApiError, createStudent, getStudent, updateStudent } from '../api'
 import type { StudentOut } from '../types'
 import {
+  clearStudentId,
   clearStudentProfile,
   loadStudentId,
   loadStudentProfile,
@@ -16,9 +17,10 @@ type Mode = 'loading' | 'empty' | 'edit' | 'saved'
 
 interface ProfileViewProps {
   onStudent: (student: StudentOut) => void
+  onClear?: () => void
 }
 
-export default function ProfileView({ onStudent }: ProfileViewProps) {
+export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
   const [mode, setMode] = useState<Mode>('loading')
   const [student, setStudent] = useState<StudentOut | null>(null)
   const [name, setName] = useState('')
@@ -117,12 +119,16 @@ export default function ProfileView({ onStudent }: ProfileViewProps) {
 
   function handleClear() {
     clearStudentProfile()
+    clearStudentId()
     setStudent(null)
     setName('')
     setYearLevel(8)
     setCurriculum('QCAA')
     setFocusTextTypes([])
     setMode('empty')
+    // Return the app to the first-run wizard so another profile can be
+    // selected or created (e.g. a sibling on a shared family device).
+    onClear?.()
   }
 
   if (mode === 'loading') {

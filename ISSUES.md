@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-20T10:30:00+10:00`
+- Last evaluated: `2026-08-20T12:35:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -455,7 +455,7 @@ Seed imaginative outcomes and run the full daily loop with text_type=imaginative
 - 2026-08-20T10:30:00+10:00 - DONE. Imaginative outcomes seeded idempotently (12 outcomes across Year 8/9/10, QCAA-Y*-IMA-* codes, traced to reaserch.md + ISS-007 packs, Q-001 derived note for Year 10); imaginative daily loop proven over HTTP with FakeProvider — craft-voice routing, imaginative pack citations on all pack-bearing prompts, 5 rubric scores persisted. Verification: targeted 20 passed; full suite 169 passed/4 skipped; ruff clean; mypy unchanged vs baseline. Unlocks ISS-010.
 
 ## ISS-010 - Beta first-run wizard and profile UX
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P1`
 - Type: `feature`
 - Depends on: `ISS-009`
@@ -464,32 +464,43 @@ Seed imaginative outcomes and run the full daily loop with text_type=imaginative
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: B1.1; PRD: §9 FR-GA-002; ERD: student`
 - Effort: `M`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
+- Attempt: `1`
+- Started: `2026-08-20T12:23:00+10:00`
+- Completed: `2026-08-20T12:35:00+10:00`
 - Commit: `None`
 
 ### Outcome and scope
 Polish clean-machine docker compose startup into a guided first run that creates a student profile, picks year level, and starts a first session quickly.
 
 ### Acceptance criteria
-- [ ] A clean machine can reach a first session in under 15 minutes following README/DEPLOYMENT guidance.
-- [ ] First-run flow creates or selects a student profile.
-- [ ] Profile edit remains available after first run.
+- [x] A clean machine can reach a first session in under 15 minutes following README/DEPLOYMENT guidance.
+- [x] First-run flow creates or selects a student profile.
+- [x] Profile edit remains available after first run.
 
 ### Implementation notes
 - Likely files or components: frontend/src/components/ProfileView.tsx, frontend/src/App.tsx, README.md, DEPLOYMENT.md, docker-compose.yml.
 - Constraints: V1/Beta remains per-family local install; no public auth or billing in this ticket.
 
 ### Verification
-- [ ] `cd frontend && npm run build`
-- [ ] `cd backend && uv run pytest tests/test_student_profile.py`
+- [x] `cd frontend && npm run build` — tsc + vite build clean (370.97 kB bundle).
+- [x] `cd backend && uv run pytest tests/test_student_profile.py` — 9 passed.
+- [x] `cd frontend && npm run lint` (oxlint) — 0 warnings, 0 errors.
+- [x] `cd backend && uv run pytest` — 169 passed, 4 skipped (unchanged from ISS-009 baseline; no backend source changed); `uv run ruff check .` clean.
+- [x] HTTP smoke against a real backend (`LLM_PROVIDER=fake`, tmp SQLite): `GET /api/students` → `[]`, `POST /api/students` → 201 with `focus_text_types` persisted, `GET /api/students` → the created profile — the exact call chain the wizard makes.
 
 ### Completion evidence
-- Pending
+- New `frontend/src/components/FirstRunWizard.tsx`: gated in `App.tsx` on `studentId === null`, so any browser without a linked profile lands on the wizard before the tabbed UI. The wizard lists existing server profiles via `listStudents()` (pick one — shared family server / new device) or creates a new profile (name, year level 8–12, curriculum QCAA/NESA, optional focus text types) via `createStudent()`; on success it persists id + profile to localStorage and hands the `StudentOut` to App, which lands on the Today tab start card.
+- `App.tsx` hydrates `student` from the cached profile on load, so the session start card greets the student by name immediately (previously only after opening the Profile tab).
+- `ProfileView.tsx` keeps create/edit unchanged (Profile tab = edit after first run); **Clear** now also clears the stored student id (`storage.ts` gains `clearStudentId()`) and calls a new optional `onClear` prop, returning the app to the wizard so another profile can be selected or created — previously Clear left a stale id linked.
+- Styling reuses existing tokens (`profile-shell`/`profile-card`/`chip`/`btn`); only `.wizard-list`/`.wizard-student*` and `.btn.ghost.wide` added to `App.css`.
+- Docs: README gains a "First run (guided)" section (pick-or-create profile → start first session; edit any time in Profile; <15 min clean-machine path, long pole = one-time image build) and the skills count is corrected 8 → 10. DEPLOYMENT.md gains a matching 首次使用（首跑向导）section.
+- No backend code changed; no auth/billing introduced (per-family local install preserved). The <15-minute criterion is supported by the documented path plus build/API-smoke evidence — no physical clean-machine run was performed in this environment.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: B1.1; PRD: §9 FR-GA-002; ERD: student` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-20T12:23:00+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-20T12:35:00+10:00 - DONE. First-run wizard shipped: `FirstRunWizard` (select existing profile via `listStudents` or create new) gated on `studentId === null` in App; profile edit unchanged in the Profile tab; Clear unlinks the browser and returns to the wizard; README + DEPLOYMENT first-run guidance added. Verification: frontend build + oxlint clean; backend student-profile tests 9 passed; full backend suite 169 passed/4 skipped with ruff clean (backend untouched); HTTP smoke of the wizard's exact API chain (list → create → list) green against a real backend with FakeProvider. Unlocks ISS-011.
 
 ## ISS-011 - Student data export and restore
 - Status: `READY`

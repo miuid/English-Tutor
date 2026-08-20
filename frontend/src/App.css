@@ -749,3 +749,42 @@
   font-size: 0.82rem;
 }
 
+/* First-run wizard ------------------------------------------------------------ */
+
+.wizard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.wizard-student {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  text-align: left;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 0.8rem 1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.wizard-student:hover {
+  border-color: var(--ink-soft);
+}
+
+.wizard-student-name {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.wizard-student-meta {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.btn.ghost.wide {
+  width: 100%;
+}
+

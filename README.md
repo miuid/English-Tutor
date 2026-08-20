@@ -26,6 +26,23 @@ to the backend container, so the whole app runs behind a single port (default 80
 override with `WEB_PORT=8080 docker compose up -d`). For deploying to a LAN server,
 see `DEPLOYMENT.md`.
 
+### First run (guided)
+
+The first time anyone opens the app in a browser, a short wizard runs before the
+main UI:
+
+1. **Pick or create a profile.** If the server already has student profiles (e.g.
+   a shared family server), pick one; otherwise create a new profile with name,
+   year level, curriculum, and optional focus text types.
+2. **Start your first session.** You land on the *Today* tab — paste a school
+   task if you have one (optional) and press **Start today's session**.
+
+From there the daily loop runs (goal → I do → we do → you do → feedback). The
+profile stays editable any time in the **Profile** tab; **Clear** there unlinks
+the browser and returns to the wizard (useful for siblings sharing a device).
+A clean machine following Option A should reach a first session in under 15
+minutes, most of which is the one-time image build.
+
 ### Option B: Local development
 
 **Backend:**
@@ -50,7 +67,7 @@ npm run dev   # starts Vite dev server + backend (via scripts/dev.mjs)
 - **Backend:** Python 3.12, FastAPI, SQLAlchemy 2.0, SQLite
 - **LLM:** Kimi K3 `kimi-k3` default (adapter-swappable; DeepSeek `deepseek-chat` and Anthropic Sonnet available)
 - **Frontend:** React + Vite + TypeScript
-- **Skills:** 8 portable Markdown coaching packages loaded at runtime
+- **Skills:** 10 portable Markdown coaching packages loaded at runtime
 
 ## Tests
 

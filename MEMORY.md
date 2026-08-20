@@ -147,6 +147,14 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 11. Session log
 
+### 2026-08-20 — ISS-010 done: beta first-run wizard + profile UX
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-010 (P1, dep ISS-009 DONE). First frontend-facing ticket of the ISSUES queue.
+- **Shipped:** `FirstRunWizard.tsx` — gated in `App.tsx` on `studentId === null`, so a fresh browser always hits the wizard before the tabbed UI. Wizard lists existing server profiles (`GET /api/students`, pick one — shared family server / new device) or creates a new one (name, year 8–12, QCAA/NESA, optional focus text types); on success it persists id + profile and lands on the Today tab. App now also hydrates `student` from the cached profile on load, so the start card greets by name immediately.
+- **Profile UX fix:** ProfileView **Clear** previously removed only the cached profile object and left a stale student id linked; it now clears the id too (`storage.ts` gains `clearStudentId()`) and calls a new `onClear` prop, returning the app to the wizard (siblings sharing a device). Edit-after-first-run unchanged in the Profile tab.
+- **Docs:** README "First run (guided)" section + DEPLOYMENT.md 首次使用（首跑向导）; README skills count corrected 8 → 10.
+- Verified: `npm run build` + oxlint clean; backend `test_student_profile.py` 9 passed; full backend suite **169 passed/4 skipped** + ruff clean (backend untouched); HTTP smoke of the wizard's exact call chain (list → create → list) green against a real backend with FakeProvider. No physical clean-machine run — the <15-min criterion rests on the documented path + build/API evidence.
+- **Next pick-up:** ISS-011 — student data export and restore.
+
 ### 2026-08-20 — ISS-009 done: imaginative daily loop seeded and proven
 - Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-009 (P1, dep ISS-008 DONE).
 - **Shipped:** `app/seed.py` now idempotently seeds 36 QCAA outcomes — 12 analytical + 12 persuasive (both unchanged) + 12 imaginative across Year 8/9/10 (`QCAA-Y*-IMA-*` codes: Year 8 one-complication/rising-tension + show-don't-tell + consistent POV traced to reaserch.md Year 8 criteria + NAPLAN narrative criteria + the ISS-007 year-8 criteria bank; Year 9 structural experimentation/distinct voice/motif traced to Year 9 criteria + the year-9-10 bank; Year 10 derived one band up per Q-001).
