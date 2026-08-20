@@ -843,7 +843,7 @@ Detect when a rubric criterion crosses a band and trigger specific praise naming
 - Attempt: `1`
 - Started: `2026-08-21T09:22:39+10:00`
 - Completed: `2026-08-21T09:45:49+10:00`
-- Commit: `None`
+- Commit: `6da6dbd`
 
 ### Outcome and scope
 Add a per-profile coach tone setting that changes system-prompt tone without changing teaching output contracts.
