@@ -424,7 +424,7 @@ Add the tenth agent skill craft-voice to diagnose telling-vs-showing, thin image
 - Attempt: `1`
 - Started: `2026-08-20T10:12:46+10:00`
 - Completed: `2026-08-20T10:30:00+10:00`
-- Commit: `None`
+- Commit: `9cc354f`
 
 ### Outcome and scope
 Seed imaginative outcomes and run the full daily loop with text_type=imaginative, persisting rubric scores.
