@@ -610,7 +610,7 @@ Add the eleventh agent skill baseline-assessment: one timed write produces a rub
 - Attempt: `1`
 - Started: `2026-08-20T19:15:00+10:00`
 - Completed: `2026-08-20T19:30:00+10:00`
-- Commit: `None`
+- Commit: `8794a46`
 
 ### Outcome and scope
 Add the twelfth agent skill fix-mechanics for grammar, spelling, and punctuation coaching as a third diagnose-errors route.
