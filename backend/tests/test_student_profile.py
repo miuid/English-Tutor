@@ -192,3 +192,113 @@ def test_openapi_schema_includes_student_routes(api_client: ApiClient) -> None:
         "/api/students/{student_id}",
     ):
         assert expected in paths
+
+
+BASELINE_REPORT = (
+    "## Per-criterion levels\n"
+    "- Understanding of text / ideas: **C** — sound literal understanding of the character.\n"
+    "- Analysis (how techniques create meaning): **D** — asserts bravery, never explains how.\n"
+    "- Use of evidence: **D** — one vague gesture at technique, no embedded quote.\n"
+    "- Structure & cohesion: **C** — functional intro/body/conclusion.\n"
+    "- Language & vocabulary: **C-** — clear but flat and repetitive.\n\n"
+    "Starting strength: He picked one genuine reason — bravery — and stayed on it.\n\n"
+    "## Ranked weaknesses\n"
+    "1. Thin analysis — says what, never how the writing does it.\n"
+    "2. Evidence is waved at, not used.\n\n"
+    "## Recommended focus loop\n"
+    "Start with: check-structure on analytical writing — the how is the fastest lever.\n"
+    "First session: tomorrow we'll watch how a strong paragraph explains a quote.\n"
+)
+
+
+@pytest.fixture
+def baseline_client(monkeypatch: pytest.MonkeyPatch) -> Generator[ApiClient, None, None]:
+    """Boot the app with a canned baseline-assessment report."""
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{path}")
+    monkeypatch.setenv("LLM_PROVIDER", "fake")
+    monkeypatch.setenv("LLM_API_KEY", "")
+    get_settings.cache_clear()
+    get_engine.cache_clear()
+
+    fake = FakeProvider(canned_responses=[BASELINE_REPORT])
+    app.dependency_overrides[get_provider] = lambda: fake
+    try:
+        with TestClient(app) as client:
+            yield client, fake
+    finally:
+        app.dependency_overrides.clear()
+        get_engine().dispose()
+        os.unlink(path)
+
+
+def test_baseline_writes_day0_rubric_scores(baseline_client: ApiClient) -> None:
+    """POST /baseline runs the skill and persists day-0 rubric scores."""
+    client, _ = baseline_client
+    student = client.post(
+        "/api/students",
+        json={"name": "New starter", "year_level": 8},
+    ).json()
+
+    response = client.post(
+        f"/api/students/{student['id']}/baseline",
+        json={"text": "Harry Potter is memorable because he is brave..."},
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["session_id"]
+    assert "Ranked weaknesses" in data["report"]
+    assert "Recommended focus loop" in data["report"]
+    assert "check-structure" in data["report"]
+
+    scores = data["feedback"]["rubric_scores"]
+    assert len(scores) == 5
+    assert scores[0]["criterion_name"] == "Understanding of text / ideas"
+    assert scores[0]["level"] == "C"
+    assert scores[1]["criterion_name"] == "Analysis (how techniques create meaning)"
+    assert scores[1]["level"] == "D"
+
+    # Day-0 rows are visible to the progress endpoint under the new student.
+    progress = client.get(f"/api/students/{student['id']}/progress").json()
+    assert len(progress["scores"]) == 5
+    assert [s["criterion_name"] for s in progress["scores"]] == [
+        s["criterion_name"] for s in scores
+    ]
+
+
+def test_baseline_uses_profile_and_shared_pack(baseline_client: ApiClient) -> None:
+    """The baseline prompt inherits the profile and cites the shared guide."""
+    client, fake = baseline_client
+    student = client.post(
+        "/api/students",
+        json={"name": "Year 9 starter", "year_level": 9, "focus_text_types": ["persuasive"]},
+    ).json()
+
+    response = client.post(
+        f"/api/students/{student['id']}/baseline",
+        json={"text": "School should start later because..."},
+    )
+    assert response.status_code == 201
+
+    system_prompt, messages = fake.calls[0]
+    assert "baseline-guide.md" in system_prompt
+    user_message = messages[0]["content"]
+    assert "year_level: 9" in user_message
+    assert "text_type: persuasive" in user_message  # profile focus wins
+
+    # The baseline session is a short, already-ended record — not a live loop.
+    session = client.get(f"/api/sessions/{response.json()['session_id']}").json()
+    assert session["ended"] is True
+    kinds = {(turn["kind"], turn["task_type"]) for turn in session["turns"]}
+    assert ("student", "submission") in kinds
+    assert ("tutor", "baseline") in kinds
+
+
+def test_baseline_unknown_student_returns_404(baseline_client: ApiClient) -> None:
+    client, _ = baseline_client
+    response = client.post(
+        f"/api/students/{uuid.uuid4()}/baseline",
+        json={"text": "Some writing."},
+    )
+    assert response.status_code == 404

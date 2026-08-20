@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-20T15:05:00+10:00`
+- Last evaluated: `2026-08-20T17:10:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -45,9 +45,9 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-007 | Imaginative reference packs for Year 8-10 | `DONE` | `P1` | `ISS-006` | `None` |
 | ISS-008 | New skill craft-voice | `DONE` | `P1` | `ISS-007` | `None` |
 | ISS-009 | Seed and wire imaginative daily loop | `DONE` | `P1` | `ISS-008` | `None` |
-| ISS-010 | Beta first-run wizard and profile UX | `READY` | `P1` | `ISS-009` | `None` |
-| ISS-011 | Student data export and restore | `READY` | `P1` | `ISS-010` | `None` |
-| ISS-012 | New skill baseline-assessment | `READY` | `P1` | `ISS-011` | `None` |
+| ISS-010 | Beta first-run wizard and profile UX | `DONE` | `P1` | `ISS-009` | `None` |
+| ISS-011 | Student data export and restore | `DONE` | `P1` | `ISS-010` | `None` |
+| ISS-012 | New skill baseline-assessment | `DONE` | `P1` | `ISS-011` | `None` |
 | ISS-013 | New skill fix-mechanics | `READY` | `P1` | `ISS-012` | `None` |
 | ISS-014 | New skill spaced-review and retrieval stage | `READY` | `P1` | `ISS-013` | `None` |
 | ISS-015 | Weekly timed mock mode | `READY` | `P1` | `ISS-014` | `None` |
@@ -549,7 +549,7 @@ Add one-click local JSON export of a student's full data and an import path that
 - 2026-08-20T15:05:00+10:00 - DONE. Student data export/restore shipped: versioned JSON export endpoint + import-as-new-profile restore (fresh UUIDs, timestamps preserved, registry FKs resolved-or-NULL), one-click export in ProfileView, restore-from-backup in the first-run wizard. Verification: targeted 17 passed; full suite 175 passed/4 skipped; ruff clean; mypy unchanged vs baseline; frontend build + oxlint clean. Round-trip test proves identical rubric progress after export → delete → import. Unlocks ISS-012.
 
 ## ISS-012 - New skill baseline-assessment
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P1`
 - Type: `feature`
 - Depends on: `ISS-011`
@@ -558,32 +558,44 @@ Add one-click local JSON export of a student's full data and an import path that
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: B2.1; PRD: §5 North Star metric; ERD: student/rubric_score`
 - Effort: `M`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
-- Commit: `None`
+- Attempt: `1`
+- Started: `2026-08-20T16:40:00+10:00`
+- Completed: `2026-08-20T17:10:00+10:00`
+- Commit: `<pending>`
 
 ### Outcome and scope
 Add the eleventh agent skill baseline-assessment: one timed write produces a rubric baseline and a recommended student focus profile.
 
 ### Acceptance criteria
-- [ ] skills/baseline-assessment/ follows skills/README.md convention.
-- [ ] A new student's first use can complete a baseline and write day-0 rubric_score rows.
-- [ ] The baseline recommends ranked weaknesses and a starting focus loop.
+- [x] skills/baseline-assessment/ follows skills/README.md convention.
+- [x] A new student's first use can complete a baseline and write day-0 rubric_score rows.
+- [x] The baseline recommends ranked weaknesses and a starting focus loop.
 
 ### Implementation notes
 - Likely files or components: skills/baseline-assessment/, backend/app/skills/router.py, backend/app/sessions/interactive.py, backend/tests/test_student_profile.py.
 - Constraints: baseline is coaching-oriented, not a high-stakes exam; avoid overwhelming the student with feedback.
 
 ### Verification
-- [ ] `cd backend && uv run pytest tests/test_skill_loader.py tests/test_student_profile.py`
-- [ ] `cd backend && uv run python -m app.eval --skill baseline-assessment --no-judge`
+- [x] `cd backend && uv run pytest tests/test_skill_loader.py tests/test_student_profile.py` — 27 passed.
+- [x] `cd backend && LLM_PROVIDER=fake uv run python -m app.eval --skill baseline-assessment --no-judge` — 2 cases, 2 passed (analytical/year-8 + imaginative/year-9-10 combo rows).
+- [x] `cd backend && uv run pytest` — 180 passed, 4 skipped (was 175/4; +5 new tests).
+- [x] `cd backend && uv run ruff check .` — clean; `uv run mypy app tests` — 29 errors in the same 4 unrelated test files as the ISS-011 baseline (test_config, test_delete_student, test_interaction_log, test_session_time); changed files clean.
+- [x] `cd backend && LLM_PROVIDER=fake uv run python -m app.eval --no-judge` — 22 cases, 18 passed / 4 failed (the same canned-fake give-feedback + diagnose-errors baseline as ISS-004 through ISS-011, unchanged); baseline-assessment 2/2 PASS.
 
 ### Completion evidence
-- Pending
+- `skills/baseline-assessment/` authored per the convention: SKILL.md with all 8 required sections (confirm read conditions → read generously at the ceiling → rank levers → report baseline → one specific strength → recommend ONE starting focus → close with the first step); output contract carries literal `## Per-criterion levels` (5 lines, exact criterion names per text type), `## Ranked weaknesses` (max 3), `## Recommended focus loop` (one skill + text type + plain reason). One shared reference pack (`references/shared/baseline-guide.md`): baseline conditions, the five exact criterion names per text type × band (matching the give-feedback rubrics so day-0 rows trend in the progress view), band calibration, leverage ranking, weakness→starting-focus map, tone rules — traced to reaserch.md (marking criteria, A–E elaborations, the Year 8 C→A lever, NAPLAN criteria), Blueprint (diagnostic-first), teacher-skills.md (AERO, HITS feedback), Q-001 derived note for seniors.
+- Two golden fixtures: sample-01 (Year 8 analytical first write — assertion-not-analysis C/D read, top lever = thin analysis → `check-structure`) and sample-02 (Year 9 imaginative — genuinely strong opening read honestly at B-ceiling, no A-inflation, stretch levers only), discovered as analytical/year-8 and imaginative/year-9-10.
+- Backend: `InteractiveLoop.run_baseline()` persists a short already-ended baseline session (submission attempt + baseline tutor turn + InteractionLog) and parses the report through `parse_rubric_levels` into day-0 RubricScore rows on a Feedback attached to the report turn — the existing progress endpoint surfaces them unchanged. New route `POST /api/students/{student_id}/baseline` (201 → BaselineOut with session id, feedback incl. rubric scores, and the full report; 404 on unknown student). The profile is never mutated by the recommendation.
+- Executor: shared-only skills (packs == {"shared"}) are combo-agnostic by design and no longer get a degradation note — the note would have been appended to every student-facing baseline report despite the guide covering all combos. Pack-bearing skills' fallback behaviour is unchanged (all fallback tests still pass).
+- Tests (5 new): `test_baseline_assessment_loads_shared_guide_and_examples` (loader: stage `baseline`, shared guide, criterion names, 2 fixtures); `test_execute_shared_only_skill_adds_no_degradation_note`; `test_baseline_writes_day0_rubric_scores` (HTTP: 201, 5 parsed scores, progress endpoint returns the identical rows); `test_baseline_uses_profile_and_shared_pack` (year 9 + persuasive focus inherited, baseline-guide.md cited in the system prompt, session ended with submission + baseline turns); `test_baseline_unknown_student_returns_404`. Count updates 10→11 skills / 20→22 cases in loader/sync/eval tests.
+- Live LLM judge eval was not run (no valid API credential in this environment); consistent with ISS-005/ISS-008, the no-judge harness above is this ticket's declared verification.
+- Intentional follow-up (not this ticket): wire the baseline into the first-run wizard UX (ISS-010 shipped the wizard; the baseline is currently API-only).
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: B2.1; PRD: §5 North Star metric; ERD: student/rubric_score` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-20T16:40:00+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-20T17:10:00+10:00 - DONE. Eleventh skill baseline-assessment shipped: SKILL.md + shared baseline guide + two golden fixtures (analytical/year-8, imaginative/year-9-10); `POST /api/students/{id}/baseline` runs the skill over one timed write and persists day-0 rubric scores (verified identical via the progress endpoint); report recommends ranked weaknesses (max 3) + one starting focus loop. Executor no longer appends degradation notes for shared-only skills. Verification: targeted 27 passed; full suite 180 passed/4 skipped; ruff clean; mypy unchanged vs baseline; skill eval 2/2 PASS; full no-judge eval 22 cases, 18 passed/4 failed — unchanged canned-fake baseline. Unlocks ISS-013.
 
 ## ISS-013 - New skill fix-mechanics
 - Status: `READY`

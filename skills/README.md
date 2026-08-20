@@ -51,10 +51,11 @@ Skills are authored to generalise across Year 8–12 and all text types (imagina
 
 ## Skill index
 
-Ten skills authored (8 v1 + `strengthen-argument`, `craft-voice`). Ordered by where they sit in a session loop.
+Eleven skills authored (8 v1 + `strengthen-argument`, `craft-voice`, `baseline-assessment`). Ordered by where they sit in a session loop.
 
 | Skill | Status | Loop stage | Targets |
 |---|---|---|---|
+| `baseline-assessment` | v1 | baseline | First-use timed write → day-0 A–E baseline + ranked weaknesses + starting focus |
 | `set-success-criteria` | v1 | start | Learning intention + "I can…" criteria |
 | `model-response` | v1 | I do | Think-aloud worked example on a *different* text |
 | `guided-practice` | v1 | we do | Scaffolded co-writing, fading support |
@@ -71,3 +72,5 @@ Ten skills authored (8 v1 + `strengthen-argument`, `craft-voice`). Ordered by wh
 `set-success-criteria` → `model-response` (I do) → `guided-practice` (we do) → `independent-task` (you do) → student submits → `diagnose-errors` (triage) routes to `check-structure` / `strengthen-argument` / `craft-voice` / `elevate-vocabulary` for coaching → `give-feedback` closes with an A–E judgement + self-check.
 
 `diagnose-errors` is the router: it never coaches itself, it decides which specialist skill acts.
+
+`baseline-assessment` sits outside the daily loop: it runs once on a new student's first use (or first use of a new text type) and writes the day-0 rubric scores the loop's progress view trends against.

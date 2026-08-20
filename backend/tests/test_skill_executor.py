@@ -277,6 +277,21 @@ async def test_execute_skill_without_packs_never_adds_note() -> None:
     assert response == "ok"
 
 
+@pytest.mark.asyncio
+async def test_execute_shared_only_skill_adds_no_degradation_note() -> None:
+    """Shared-only skills are combo-agnostic: no banded pack to degrade from."""
+    skill = load_skill(SKILLS_DIR / "baseline-assessment")
+    fake = FakeProvider(canned_responses=["baseline report"])
+    service = SkillExecutionService(provider=fake)
+    inputs = {"year_level": "9", "text_type": "imaginative", "student_text": "Text."}
+
+    response = await service.execute(skill, inputs)
+
+    assert response == "baseline report"
+    # The shared guide still lands in the system prompt.
+    assert "baseline-guide.md" in fake.calls[0][0]
+
+
 @pytest.mark.skipif(
     os.environ.get("LLM_PROVIDER") != "anthropic" or not os.environ.get("LLM_API_KEY"),
     reason="Real LLM test requires LLM_PROVIDER=anthropic and LLM_API_KEY",

@@ -8,9 +8,9 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 SKILLS_DIR = PROJECT_ROOT / "skills"
 
 
-def test_load_skills_returns_all_ten() -> None:
+def test_load_skills_returns_all_eleven() -> None:
     skills = load_skills(SKILLS_DIR)
-    assert len(skills) == 10
+    assert len(skills) == 11
     names = {skill.name for skill in skills}
     assert names == {
         "set-success-criteria",
@@ -23,6 +23,7 @@ def test_load_skills_returns_all_ten() -> None:
         "strengthen-argument",
         "craft-voice",
         "give-feedback",
+        "baseline-assessment",
     }
 
 
@@ -109,6 +110,19 @@ def test_craft_voice_loads_imaginative_packs_and_examples() -> None:
         assert skill.packs[pack_key]["voice-craft.md"].strip()
     assert len(skill.examples) == 2
     assert "POV" in skill.method
+
+
+def test_baseline_assessment_loads_shared_guide_and_examples() -> None:
+    skill = load_skill(SKILLS_DIR / "baseline-assessment")
+    assert skill.loop_stage == "baseline"
+    assert list(skill.packs) == ["shared"]
+    assert list(skill.packs["shared"]) == ["baseline-guide.md"]
+    guide = skill.packs["shared"]["baseline-guide.md"]
+    # The day-0 criterion names must match the loop's feedback rubric rows.
+    assert "Analysis (how techniques create meaning)" in guide
+    assert "Understanding of text / ideas" in guide
+    assert len(skill.examples) == 2
+    assert "Per-criterion levels" in skill.output_contract
 
 
 PACK_BEARING_SKILLS = {

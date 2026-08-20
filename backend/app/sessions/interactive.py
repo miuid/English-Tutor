@@ -88,6 +88,16 @@ class SubmitResult:
     time_up: bool = False
 
 
+@dataclass(frozen=True)
+class BaselineResult:
+    """What a run_baseline() call persisted, in creation order."""
+
+    session: Session
+    submission: Attempt
+    report_turn: Attempt
+    feedback: Feedback
+
+
 class InteractiveLoop:
     """Drive one Session through the daily loop one interactive step at a time.
 
@@ -317,6 +327,90 @@ class InteractiveLoop:
             tutor_turns=[diagnosis_turn, coach_turn, feedback_turn],
             feedback=feedback,
             time_up=self._time_up(session),
+        )
+
+    async def run_baseline(
+        self,
+        *,
+        student_id: uuid.UUID,
+        text: str,
+        text_type: str | None = None,
+    ) -> BaselineResult:
+        """Run a first-use baseline: one timed write -> day-0 rubric scores.
+
+        Creates a short, already-ended baseline session holding the student's
+        submission and the baseline-assessment report, parses the report's
+        per-criterion levels into RubricScore rows (the student's day-0
+        progress points), and returns everything persisted. The student
+        profile is never mutated — the report's recommended focus loop is a
+        suggestion for the first daily loops, not an autopilot.
+        """
+        student = self._resolve_student(student_id=student_id, year_level="8")
+        resolved_text_type = self._resolve_text_type(
+            student, text_type or DEFAULT_TEXT_TYPE
+        )
+        task_prompt = (
+            f"Baseline assessment (15-minute timed write, {resolved_text_type})"
+        )
+
+        session = Session(
+            student_id=student.id,
+            learning_intention=task_prompt,
+            stage=ENDED,
+            started_at=self._now(),
+            ended_at=self._now(),
+            last_activity_at=self._now(),
+        )
+        self.db.add(session)
+        self.db.flush()
+
+        submission = Attempt(
+            session_id=session.id,
+            student_id=student.id,
+            skill_id=None,
+            task_type="submission",
+            mode="baseline",
+            task_prompt=task_prompt,
+            student_text=text,
+        )
+        self.db.add(submission)
+        self.db.flush()
+
+        report = await self._execute_and_log(
+            session,
+            self.skills["baseline-assessment"],
+            {
+                "year_level": str(student.year_level),
+                "text_type": resolved_text_type,
+                "task_prompt": task_prompt,
+                "context": "First use — baseline timed write, no help.",
+                "student_text": text,
+            },
+        )
+        report_turn = self._save_tutor_turn(
+            session, "baseline-assessment", "baseline", "baseline", task_prompt, report
+        )
+
+        feedback = Feedback(
+            attempt_id=report_turn.id,
+            strength="see baseline report",
+            next_steps="see baseline report",
+        )
+        for parsed in parse_rubric_levels(report):
+            feedback.rubric_scores.append(
+                RubricScore(
+                    criterion_name=parsed.criterion_name,
+                    level=parsed.level,
+                    note=parsed.note,
+                )
+            )
+        self.db.add(feedback)
+        self.db.commit()
+        return BaselineResult(
+            session=session,
+            submission=submission,
+            report_turn=report_turn,
+            feedback=feedback,
         )
 
     def pause(self, session_id: uuid.UUID) -> Session:

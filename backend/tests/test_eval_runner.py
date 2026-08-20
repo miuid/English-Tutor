@@ -41,7 +41,7 @@ async def test_run_cases_returns_one_result_per_case() -> None:
     results = await run_cases(
         _cases(), SkillExecutionService(provider=provider), provider, judge=True
     )
-    assert len(results) == 20
+    assert len(results) == 22
     # "fake response" is not a parseable judge verdict: judge ERROR, not a pass.
     for result in results:
         assert result.status == ERROR
@@ -55,7 +55,7 @@ async def test_run_cases_all_pass_with_cooperative_fake() -> None:
     results = await run_cases(
         _cases(), SkillExecutionService(provider=provider), provider, judge=True
     )
-    assert len(results) == 20
+    assert len(results) == 22
     assert all(result.status == PASS for result in results)
 
 
@@ -91,7 +91,7 @@ def test_scorecard_renders_table_and_summary() -> None:
     card = render_scorecard(results)
     assert "skill" in card and "overall" in card
     assert "give-feedback" in card
-    assert summarize(results) == "Summary: 20 cases — 20 passed, 0 failed, 0 errors"
+    assert summarize(results) == "Summary: 22 cases — 22 passed, 0 failed, 0 errors"
 
 
 def test_scorecard_groups_results_by_skill_and_combo() -> None:
@@ -146,7 +146,7 @@ def test_main_runs_end_to_end_with_fake_provider(
     finally:
         get_settings.cache_clear()
     out = capsys.readouterr().out
-    assert "Summary: 20 cases" in out
+    assert "Summary: 22 cases" in out
     assert "give-feedback" in out
     assert "diagnose-errors" in out
     # FakeProvider's canned output fails checks, so the run must not pass.
@@ -166,7 +166,7 @@ def test_main_exit_zero_when_everything_passes(
     finally:
         get_settings.cache_clear()
     out = capsys.readouterr().out
-    assert "20 passed, 0 failed, 0 errors" in out
+    assert "22 passed, 0 failed, 0 errors" in out
     assert exit_code == 0
 
 

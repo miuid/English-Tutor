@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session as DBSession
 from app.api.deps import get_db, get_loop
 from app.api.schemas import (
     AdvanceOut,
+    BaselineOut,
+    BaselineRequest,
     FeedbackOut,
     ProgressOut,
     ProgressScoreOut,
@@ -288,6 +290,36 @@ async def resume_session(
     except StageConflictError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from None
     return _session_out(session, attempts, loop)
+
+
+@router.post("/students/{student_id}/baseline", status_code=201)
+async def run_baseline_assessment(
+    student_id: uuid.UUID,
+    payload: BaselineRequest,
+    loop: InteractiveLoop = Depends(get_loop),
+) -> BaselineOut:
+    """Run a first-use baseline from one timed write.
+
+    Persists a short ended session holding the submission and the
+    baseline-assessment report, writes the student's day-0 rubric scores
+    (surfaced by the progress endpoint), and returns the report, which
+    includes the ranked weaknesses and the recommended starting focus loop.
+    The report is coaching-oriented, not a grade; the profile is never
+    mutated by the recommendation.
+    """
+    try:
+        result = await loop.run_baseline(
+            student_id=student_id,
+            text=payload.text,
+            text_type=payload.text_type,
+        )
+    except SessionNotFoundError:
+        raise HTTPException(status_code=404, detail="Student not found") from None
+    return BaselineOut(
+        session_id=result.session.id,
+        feedback=_feedback_out(result.feedback),
+        report=result.report_turn.student_text,
+    )
 
 
 @router.delete("/students/{student_id}", status_code=204)

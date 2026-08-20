@@ -45,6 +45,13 @@ class SubmitRequest(BaseModel):
     text: str = Field(min_length=1)
 
 
+class BaselineRequest(BaseModel):
+    """One timed write to baseline a new (or new-to-this-text-type) student."""
+
+    text: str = Field(min_length=1)
+    text_type: str | None = Field(default=None, min_length=1)
+
+
 class TurnOut(BaseModel):
     """One conversation turn: a tutor skill output or a student submission."""
 
@@ -91,6 +98,14 @@ class FeedbackOut(BaseModel):
     strength: str
     next_steps: str
     rubric_scores: list[RubricScoreOut]
+
+
+class BaselineOut(BaseModel):
+    """The persisted baseline: session, day-0 rubric scores, and the report."""
+
+    session_id: uuid.UUID
+    feedback: FeedbackOut
+    report: str
 
 
 class SubmitOut(BaseModel):

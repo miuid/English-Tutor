@@ -89,6 +89,10 @@ class SkillExecutionService:
         exact_key = f"{text_type}/{year_band}"
         if not skill.packs or exact_key in skill.packs:
             return None
+        if set(skill.packs) == {"shared"}:
+            # Shared-only skills (e.g. baseline-assessment) are combo-agnostic
+            # by design — there is no banded pack to degrade from.
+            return None
         if used_key is not None:
             if "shared" in skill.packs:
                 used = f"shared references and the {used_key} pack"
