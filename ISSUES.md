@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-20T08:15:00+10:00`
+- Last evaluated: `2026-08-20T10:30:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -44,7 +44,7 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-006 | Seed and wire persuasive daily loop | `DONE` | `P1` | `ISS-005` | `None` |
 | ISS-007 | Imaginative reference packs for Year 8-10 | `DONE` | `P1` | `ISS-006` | `None` |
 | ISS-008 | New skill craft-voice | `DONE` | `P1` | `ISS-007` | `None` |
-| ISS-009 | Seed and wire imaginative daily loop | `READY` | `P1` | `ISS-008` | `None` |
+| ISS-009 | Seed and wire imaginative daily loop | `DONE` | `P1` | `ISS-008` | `None` |
 | ISS-010 | Beta first-run wizard and profile UX | `READY` | `P1` | `ISS-009` | `None` |
 | ISS-011 | Student data export and restore | `READY` | `P1` | `ISS-010` | `None` |
 | ISS-012 | New skill baseline-assessment | `READY` | `P1` | `ISS-011` | `None` |
@@ -412,7 +412,7 @@ Add the tenth agent skill craft-voice to diagnose telling-vs-showing, thin image
 - 2026-08-20T08:15:00+10:00 - DONE. Tenth skill craft-voice shipped: SKILL.md + two imaginative voice-craft packs (year-8, year-9-10) + two golden fixtures; diagnose-errors imaginative taxonomies route showing/immediacy and voice/POV/tone to it. Verification: targeted 22 passed; full suite 167 passed/4 skipped; ruff clean; mypy unchanged vs baseline (29 errors in the same 4 unrelated test files); skill eval 2/2 PASS (imaginative/year-8 + year-9-10 combos); full no-judge eval 20 cases, 16 passed/4 failed — unchanged canned-fake baseline. Unlocks ISS-009.
 
 ## ISS-009 - Seed and wire imaginative daily loop
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P1`
 - Type: `feature`
 - Depends on: `ISS-008`
@@ -421,32 +421,38 @@ Add the tenth agent skill craft-voice to diagnose telling-vs-showing, thin image
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: 8.3; PRD: §4 daily-loop UX; ERD: session/attempt/rubric_score`
 - Effort: `M`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
+- Attempt: `1`
+- Started: `2026-08-20T10:12:46+10:00`
+- Completed: `2026-08-20T10:30:00+10:00`
 - Commit: `None`
 
 ### Outcome and scope
 Seed imaginative outcomes and run the full daily loop with text_type=imaginative, persisting rubric scores.
 
 ### Acceptance criteria
-- [ ] Imaginative curriculum outcomes are seeded idempotently.
-- [ ] An imaginative session can start, advance, submit, and receive feedback over HTTP.
-- [ ] Rubric scores persist for an imaginative graded attempt.
+- [x] Imaginative curriculum outcomes are seeded idempotently.
+- [x] An imaginative session can start, advance, submit, and receive feedback over HTTP.
+- [x] Rubric scores persist for an imaginative graded attempt.
 
 ### Implementation notes
 - Likely files or components: backend/app/seed.py, backend/app/sessions/interactive.py, backend/app/api/routes.py, backend/tests/test_api_daily_loop.py.
 - Constraints: keep analytical and persuasive loops unchanged; unsupported combos fail clearly.
 
 ### Verification
-- [ ] `cd backend && uv run pytest tests/test_seed.py tests/test_api_daily_loop.py`
-- [ ] `cd backend && uv run pytest`
+- [x] `cd backend && uv run pytest tests/test_seed.py tests/test_api_daily_loop.py` — 20 passed.
+- [x] `cd backend && uv run pytest` — 169 passed, 4 skipped (was 167/4; +2 new tests).
+- [x] `cd backend && uv run ruff check .` — clean; `uv run mypy app tests` — 29 errors in the same 4 unrelated test files as the ISS-008 baseline (test_config, test_delete_student, test_interaction_log, test_session_time); changed files clean.
 
 ### Completion evidence
-- Pending
+- `app/seed.py` gains three imaginative outcome sets seeded idempotently via the existing `(year_level, text_type, outcomes)` triples — the six analytical/persuasive sets are unchanged (codes/descriptors byte-identical). `YEAR_8_IMAGINATIVE_OUTCOMES` (QCAA-Y8-IMA-01..04: one clear complication with rising tension, show-don't-tell with sensory detail, consistent POV/character, hook + format-fit sustained narrative — traced to reaserch.md Year 8 marking criteria + NAPLAN narrative criteria + the ISS-007 year-8 criteria bank), `YEAR_9_IMAGINATIVE_OUTCOMES` (QCAA-Y9-IMA-01..04: purposeful structural experimentation with reader orientation, distinct narrator voice with signalled tone/POV shifts, motif-level imagery, 600–800 word sustained complication — traced to reaserch.md Year 9 marking criteria + the year-9-10 criteria bank), `YEAR_10_IMAGINATIVE_OUTCOMES` (QCAA-Y10-IMA-01..04, derived one band up per Q-001). `backend/seed.py` print updated; module docstring records the imaginative provenance.
+- No loop code changed: `InteractiveLoop._resolve_text_type` already resolves `focus_text_types[0]` on every stage (P6.2), so a student with `focus_text_types=["imaginative"]` runs the imaginative loop end-to-end today — proven by the new HTTP test.
+- Tests: new `test_seed_creates_imaginative_outcomes` (12 imaginative rows across Year 8-10, codes/curriculum, Year 8-9 band-shift descriptors — experiment/motif at Year 9 vs complication at Year 8 — analytical + persuasive sets untouched); new `test_imaginative_session_runs_loop_and_persists_scores` — full loop over HTTP with FakeProvider: diagnosis routes to `craft-voice`, 5 rubric scores persist with imaginative criterion names (Story & tension C, Showing & voice D), every pack-bearing prompt (criteria/independent/diagnosis/coach/feedback) cites the imaginative/year-8 packs, feedback prompt carries "Story & tension", no degradation note on any tutor turn.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: 8.3; PRD: §4 daily-loop UX; ERD: session/attempt/rubric_score` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-20T10:12:46+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-20T10:30:00+10:00 - DONE. Imaginative outcomes seeded idempotently (12 outcomes across Year 8/9/10, QCAA-Y*-IMA-* codes, traced to reaserch.md + ISS-007 packs, Q-001 derived note for Year 10); imaginative daily loop proven over HTTP with FakeProvider — craft-voice routing, imaginative pack citations on all pack-bearing prompts, 5 rubric scores persisted. Verification: targeted 20 passed; full suite 169 passed/4 skipped; ruff clean; mypy unchanged vs baseline. Unlocks ISS-010.
 
 ## ISS-010 - Beta first-run wizard and profile UX
 - Status: `READY`

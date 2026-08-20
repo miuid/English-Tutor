@@ -147,6 +147,13 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 11. Session log
 
+### 2026-08-20 — ISS-009 done: imaginative daily loop seeded and proven
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-009 (P1, dep ISS-008 DONE).
+- **Shipped:** `app/seed.py` now idempotently seeds 36 QCAA outcomes — 12 analytical + 12 persuasive (both unchanged) + 12 imaginative across Year 8/9/10 (`QCAA-Y*-IMA-*` codes: Year 8 one-complication/rising-tension + show-don't-tell + consistent POV traced to reaserch.md Year 8 criteria + NAPLAN narrative criteria + the ISS-007 year-8 criteria bank; Year 9 structural experimentation/distinct voice/motif traced to Year 9 criteria + the year-9-10 bank; Year 10 derived one band up per Q-001).
+- **No loop code changed:** P6.2's `_resolve_text_type` (profile `focus_text_types[0]` wins on every stage) already wires text_type through the whole loop — the imaginative loop worked end-to-end on the first HTTP test run. Diagnosis routes to `craft-voice`, all pack-bearing prompts cite the imaginative/year-8 packs, 5 rubric scores persist with imaginative criterion names (Story & tension, Character & setting, Showing & voice, Language & vocabulary, Structure & cohesion).
+- Verified: targeted 20 passed; full suite **169 passed/4 skipped** (+2 new tests); ruff clean; mypy 29 errors in the same 4 unrelated test files as baseline. One ruff E501 (seed docstring) found and fixed during the run.
+- **Next pick-up:** ISS-010 — beta first-run wizard and profile UX.
+
 ### 2026-08-20 — ISS-008 done: tenth skill `craft-voice` shipped
 - Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-008 (P1, dep ISS-007 DONE).
 - **Shipped:** `skills/craft-voice/` — SKILL.md (three craft dials: key moment shown/told → emotion shown/named → narrator steady/drifting; ONE craft move per turn; model on a different scene; hand back with an "I can…" criterion), two imaginative reference packs (`voice-craft.md` × year-8/year-9-10: Year 8 types — summarised key moment / named emotions / POV drift; Year 9–10 adds thin-or-clichéd imagery at the key beat, the design-vs-drift POV rule, and tone whiplash — with priority rules + band calibration, Q-001 note for Year 10), and two golden fixtures (Year 8 bush story — noise-in-the-dark told in one sentence; Year 9 moving-away opening — shown beats inside the lens but unsignalled drift into Mum's head + third-person "Marcus").

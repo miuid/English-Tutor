@@ -11,7 +11,7 @@ def main() -> None:
         outcomes = seed(session)
     print(
         f"Seeded {len(outcomes)} QCAA curriculum outcomes "
-        "(analytical + persuasive, Year 8-10)."
+        "(analytical + persuasive + imaginative, Year 8-10)."
     )
 
 

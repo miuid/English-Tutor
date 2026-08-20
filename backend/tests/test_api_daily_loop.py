@@ -364,6 +364,110 @@ def test_persuasive_session_runs_loop_and_persists_scores(api_client: ApiClient)
         assert "_Note: no dedicated references" not in turn["text"]
 
 
+IMAGINATIVE_FEEDBACK_WITH_LEVELS = """## Per-criterion levels
+- Story & tension: **C** — a clear complication developed and resolved.
+- Character & setting: **C** — character and setting established.
+- Showing & voice: **D** — key moment told; emotions named.
+- Language & vocabulary: **C** — clear, mostly appropriate choices.
+- Structure & cohesion: **C** — functional beginning/middle/end.
+
+Strength: Your opening hooks the reader.
+Your 1–2 next steps to level up:
+  1. Slow down the key moment and show it — one scene, concrete detail.
+Self-check: how would you rate yourself against these criteria?
+"""
+
+# Imaginative loop: same shape as the persuasive loop, but the diagnosis
+# routes to the imaginative coaching skill (craft-voice, ISS-008).
+IMAGINATIVE_LOOP_RESPONSES = [
+    "criteria output",
+    "model output",
+    "guided output",
+    "guided coaching output",
+    "independent task output",
+    "Route to: craft-voice",
+    "voice coaching output",
+    IMAGINATIVE_FEEDBACK_WITH_LEVELS,
+]
+
+
+def test_imaginative_session_runs_loop_and_persists_scores(api_client: ApiClient) -> None:
+    """A student with an imaginative focus runs the full loop over HTTP.
+
+    The profile's focus_text_types[0] resolves text_type=imaginative on every
+    stage, so every pack-bearing prompt cites the imaginative/year-8 packs; the
+    diagnosis routes to craft-voice; rubric scores persist for the graded
+    imaginative attempt.
+    """
+    client, fake = api_client
+    fake.canned_responses = list(IMAGINATIVE_LOOP_RESPONSES)
+
+    created = client.post(
+        "/api/students",
+        json={
+            "name": "Imaginative Student",
+            "year_level": 8,
+            "curriculum": "QCAA",
+            "focus_text_types": ["imaginative"],
+        },
+    )
+    assert created.status_code == 201
+    student_id = created.json()["id"]
+
+    started = client.post(
+        "/api/sessions",
+        json={
+            "student_id": student_id,
+            "task_prompt": "Write the opening of a story about a noise in the dark.",
+        },
+    )
+    assert started.status_code == 201
+    session_id = started.json()["id"]
+
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    assert (
+        client.post(
+            f"/api/sessions/{session_id}/submit", json={"text": "My guided attempt."}
+        ).status_code
+        == 200
+    )
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    final = client.post(
+        f"/api/sessions/{session_id}/submit",
+        json={"text": "The noise was scary. I was very afraid."},
+    )
+    assert final.status_code == 200
+    body = final.json()
+    assert body["ended"] is True
+
+    # The imaginative diagnosis routed to the imaginative coaching skill.
+    skills = [turn["skill"] for turn in body["turns"]]
+    assert skills[1:] == ["diagnose-errors", "craft-voice", "give-feedback"]
+    assert body["turns"][2]["text"] == "voice coaching output"
+
+    # Rubric scores persist for the graded imaginative attempt.
+    feedback = body["feedback"]
+    assert feedback is not None
+    levels = {score["criterion_name"]: score["level"] for score in feedback["rubric_scores"]}
+    assert len(levels) == 5
+    assert levels["Story & tension"] == "C"
+    assert levels["Showing & voice"] == "D"
+
+    # The loop ran against the exact imaginative/year-8 packs: pack-bearing
+    # prompts (criteria, independent, diagnosis, coach, feedback) cite the
+    # imaginative references and the feedback prompt carries the imaginative
+    # rubric language; no degradation note was appended to any tutor turn.
+    assert len(fake.calls) == 8
+    for index in (0, 4, 5, 6, 7):
+        assert "imaginative" in fake.calls[index][0]
+    assert "Story & tension" in fake.calls[7][0]
+    state = client.get(f"/api/sessions/{session_id}").json()
+    tutor_turns = [turn for turn in state["turns"] if turn["kind"] == "tutor"]
+    for turn in tutor_turns:
+        assert "_Note: no dedicated references" not in turn["text"]
+
+
 def test_openapi_schema_renders(api_client: ApiClient) -> None:
     client, _ = api_client
     response = client.get("/openapi.json")
