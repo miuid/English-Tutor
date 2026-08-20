@@ -28,6 +28,7 @@ async def test_run_daily_loop_creates_session_with_attempts(db_session: SqlSessi
     skills = {s.name: s for s in load_skills(SKILLS_DIR)}
     fake = FakeProvider(
         canned_responses=[
+            "retrieval output",
             "criteria output",
             "model output",
             "guided output",
@@ -52,11 +53,18 @@ async def test_run_daily_loop_creates_session_with_attempts(db_session: SqlSessi
     assert session.ended_at is not None
 
     attempts = (
-        db_session.execute(select(Attempt).where(Attempt.session_id == session.id)).scalars().all()
+        db_session.execute(
+            select(Attempt)
+            .where(Attempt.session_id == session.id)
+            .order_by(Attempt.created_at)
+        )
+        .scalars()
+        .all()
     )
-    assert len(attempts) == 7
-    task_types = {a.task_type for a in attempts}
-    assert task_types == {
+    # The daily loop order is retrieval -> criteria -> I do -> we do -> you do
+    # -> diagnosis -> coach -> feedback.
+    assert [a.task_type for a in attempts] == [
+        "retrieval",
         "criteria",
         "model",
         "guided",
@@ -64,7 +72,7 @@ async def test_run_daily_loop_creates_session_with_attempts(db_session: SqlSessi
         "diagnosis",
         "coach",
         "feedback",
-    }
+    ]
 
     feedback = (
         db_session.execute(
@@ -101,6 +109,7 @@ async def test_run_daily_loop_persists_rubric_scores(db_session: SqlSession) -> 
     skills = {s.name: s for s in load_skills(SKILLS_DIR)}
     fake = FakeProvider(
         canned_responses=[
+            "retrieval output",
             "criteria output",
             "model output",
             "guided output",
@@ -141,11 +150,11 @@ async def test_run_daily_loop_persists_rubric_scores(db_session: SqlSession) -> 
         assert score.outcome_id is None
         assert score.scored_at is not None
 
-    # Existing behaviour is unchanged: 7 attempts, 1 feedback row.
+    # Existing behaviour is unchanged: 8 attempts, 1 feedback row.
     attempts = (
         db_session.execute(select(Attempt).where(Attempt.session_id == session.id)).scalars().all()
     )
-    assert len(attempts) == 7
+    assert len(attempts) == 8
 
 
 @pytest.mark.asyncio
@@ -162,6 +171,7 @@ async def test_run_daily_loop_year_9_cites_year_9_descriptors(
     skills = {s.name: s for s in load_skills(SKILLS_DIR)}
     fake = FakeProvider(
         canned_responses=[
+            "retrieval output",
             "criteria output",
             "model output",
             "guided output",
@@ -187,12 +197,13 @@ async def test_run_daily_loop_year_9_cites_year_9_descriptors(
     # Every pack-bearing tutor turn ran against the exact analytical/year-9-10
     # packs (packs mention "Year 9"); the feedback prompt cites the Year 9
     # descriptors ("discriminating thesis"), and no degradation note appears.
-    assert len(fake.calls) == 7
-    pack_bearing_calls = [0, 3, 4, 5, 6]  # criteria, independent, diagnosis, coach, feedback
+    # spaced-review (call 0) is shared-only by design, so it bears no pack.
+    assert len(fake.calls) == 8
+    pack_bearing_calls = [1, 4, 5, 6, 7]  # criteria, independent, diagnosis, coach, feedback
     for index in pack_bearing_calls:
         system_prompt = fake.calls[index][0]
         assert "Year 9" in system_prompt
-    assert "discriminating thesis" in fake.calls[6][0]  # give-feedback rubric
+    assert "discriminating thesis" in fake.calls[7][0]  # give-feedback rubric
     for attempt in session.attempts:
         assert "_Note: no dedicated references" not in attempt.student_text
 

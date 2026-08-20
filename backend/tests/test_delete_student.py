@@ -25,6 +25,7 @@ Self-check: how would you rate yourself against these criteria?
 """
 
 FULL_LOOP_RESPONSES = [
+    "retrieval warm-up output",
     "criteria output",
     "model output",
     "guided output",

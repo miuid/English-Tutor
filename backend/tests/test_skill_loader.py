@@ -8,11 +8,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 SKILLS_DIR = PROJECT_ROOT / "skills"
 
 
-def test_load_skills_returns_all_twelve() -> None:
+def test_load_skills_returns_all_thirteen() -> None:
     skills = load_skills(SKILLS_DIR)
-    assert len(skills) == 12
+    assert len(skills) == 13
     names = {skill.name for skill in skills}
     assert names == {
+        "spaced-review",
         "set-success-criteria",
         "model-response",
         "guided-practice",
@@ -138,6 +139,23 @@ def test_fix_mechanics_loads_shared_guide_and_examples() -> None:
     assert len(skill.examples) == 2
     # Bounded feedback is the skill's hard limit: never more than 2 patterns.
     assert "at most 2 patterns" in skill.success_criteria
+
+
+def test_spaced_review_loads_shared_guide_and_examples() -> None:
+    skill = load_skill(SKILLS_DIR / "spaced-review")
+    assert skill.loop_stage == "retrieval"
+    assert list(skill.packs) == ["shared"]
+    assert list(skill.packs["shared"]) == ["retrieval-guide.md"]
+    guide = skill.packs["shared"]["retrieval-guide.md"]
+    # The guide must cover the digest shape, the cold-start menu, and the
+    # band calibration; the skill input contract carries the history digest.
+    assert "review_history" in skill.inputs
+    assert "No prior sessions" in guide
+    assert "Cold-start menu" in guide
+    assert "Year 11–12" in guide
+    assert len(skill.examples) == 2
+    # The warm-up is bounded by design: 2–3 items, never a second lesson.
+    assert "2–3" in skill.success_criteria
 
 
 PACK_BEARING_SKILLS = {

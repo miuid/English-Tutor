@@ -41,6 +41,7 @@ REQUIRED_SECTIONS = [
 
 # Orchestration stage for each skill. This belongs in skill metadata long-term.
 LOOP_STAGES: dict[str, str] = {
+    "spaced-review": "retrieval",
     "set-success-criteria": "start",
     "model-response": "I do",
     "guided-practice": "we do",

@@ -35,6 +35,7 @@ interface ActiveSession {
 
 // Student-friendly labels for the loop stages / turn modes.
 const STAGE_LABELS: Record<string, string> = {
+  retrieval: 'Warm-up review',
   start: "Today's goal",
   'I do': "Watch how it's done",
   'we do': "Let's try together",

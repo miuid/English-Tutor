@@ -10,8 +10,9 @@ from app.skills.sync import sync_skills
 def test_sync_skills_creates_all_rows(db_session: SqlSession) -> None:
     sync_skills(db_session)
     skills = db_session.execute(select(Skill)).scalars().all()
-    assert len(skills) == 12
+    assert len(skills) == 13
     names = {s.name for s in skills}
+    assert "spaced-review" in names
     assert "check-structure" in names
     assert "elevate-vocabulary" in names
     assert "strengthen-argument" in names
@@ -24,4 +25,4 @@ def test_sync_skills_is_idempotent(db_session: SqlSession) -> None:
     first = db_session.execute(select(Skill)).scalars().all()
     sync_skills(db_session)
     second = db_session.execute(select(Skill)).scalars().all()
-    assert len(first) == len(second) == 12
+    assert len(first) == len(second) == 13

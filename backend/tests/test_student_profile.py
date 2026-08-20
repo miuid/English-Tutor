@@ -16,6 +16,7 @@ from app.llm import FakeProvider
 from app.main import app
 
 CANNED_RESPONSES = [
+    "retrieval warm-up output",
     "criteria output",
     "model output",
     "guided output",

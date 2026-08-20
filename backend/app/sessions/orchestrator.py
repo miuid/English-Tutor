@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session as DBSession
 
 from app.models import Attempt, Feedback, RubricScore, Session, Student
 from app.models import Skill as SkillRow
+from app.sessions.review import build_review_history
 from app.skills.executor import SkillExecutionService
 from app.skills.loader import Skill
 from app.skills.router import DiagnosisRouter
@@ -46,6 +47,21 @@ class SessionOrchestrator:
             "task_prompt": task_prompt,
             "student_text": "",
         }
+
+        # Stage 0: spaced retrieval warm-up (loop step 1)
+        review = await self.executor.execute(
+            self.skills["spaced-review"],
+            {**base_inputs, "review_history": build_review_history(self.db, student_id)},
+        )
+        self._save_attempt(
+            db_session.id,
+            student_id,
+            "spaced-review",
+            "retrieval",
+            "retrieval",
+            task_prompt,
+            review,
+        )
 
         # Stage 1: set success criteria
         criteria = await self.executor.execute(self.skills["set-success-criteria"], base_inputs)

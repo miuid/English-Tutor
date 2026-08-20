@@ -56,8 +56,8 @@ def _write_skill(skill_root: Path, name: str, fixtures: dict[str, str]) -> None:
 def test_discover_cases_finds_all_skill_examples() -> None:
     skills = load_skills(SKILLS_DIR)
     cases = discover_cases(skills)
-    assert len(skills) == 12
-    assert len(cases) == 24
+    assert len(skills) == 13
+    assert len(cases) == 26
     assert {case.skill.name for case in cases} == {skill.name for skill in skills}
     for case in cases:
         assert case.example in {"sample-01", "sample-02"}

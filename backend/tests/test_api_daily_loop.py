@@ -29,8 +29,10 @@ Self-check: how would you rate yourself against these criteria?
 """
 
 # One canned response per LLM call in a full loop:
-# criteria, model, guided, guided follow-up, independent, diagnosis, coach, feedback.
+# retrieval, criteria, model, guided, guided follow-up, independent, diagnosis,
+# coach, feedback.
 FULL_LOOP_RESPONSES = [
+    "retrieval warm-up output",
     "criteria output",
     "model output",
     "guided output",
@@ -79,11 +81,17 @@ def _drive_full_loop(client: TestClient) -> dict[str, Any]:
     started = _start(client)
     assert started["stage"] == "start"
     assert started["ended"] is False
-    assert len(started["turns"]) == 1
+    # Retrieval opens the loop (step 1), then success criteria.
+    assert len(started["turns"]) == 2
     opening_turn = started["turns"][0]
     assert opening_turn["kind"] == "tutor"
-    assert opening_turn["skill"] == "set-success-criteria"
-    assert opening_turn["text"] == "criteria output"
+    assert opening_turn["skill"] == "spaced-review"
+    assert opening_turn["task_type"] == "retrieval"
+    assert opening_turn["text"] == "retrieval warm-up output"
+    criteria_turn = started["turns"][1]
+    assert criteria_turn["kind"] == "tutor"
+    assert criteria_turn["skill"] == "set-success-criteria"
+    assert criteria_turn["text"] == "criteria output"
     session_id = started["id"]
 
     advance = client.post(f"/api/sessions/{session_id}/advance")
@@ -152,11 +160,12 @@ def test_get_session_rebuilds_conversation(api_client: ApiClient) -> None:
     state = response.json()
     assert state["stage"] == "ended"
     assert state["ended"] is True
-    # criteria, model, guided, guided submission, guided follow-up,
+    # retrieval, criteria, model, guided, guided submission, guided follow-up,
     # independent, independent submission, diagnosis, coach, feedback
-    assert len(state["turns"]) == 10
+    assert len(state["turns"]) == 11
     kinds = [turn["kind"] for turn in state["turns"]]
     assert kinds == [
+        "tutor",
         "tutor",
         "tutor",
         "tutor",
@@ -170,6 +179,7 @@ def test_get_session_rebuilds_conversation(api_client: ApiClient) -> None:
     ]
     task_types = [turn["task_type"] for turn in state["turns"]]
     assert task_types == [
+        "retrieval",
         "criteria",
         "model",
         "guided",
@@ -218,6 +228,7 @@ Self-check: how would you rate yourself against these criteria?
 # Persuasive loop: same shape as the analytical loop, but the diagnosis routes
 # to the persuasive coaching skill (strengthen-argument, ISS-005).
 PERSUASIVE_LOOP_RESPONSES = [
+    "retrieval warm-up output",
     "criteria output",
     "model output",
     "guided output",
@@ -277,10 +288,11 @@ def test_year_9_session_runs_loop_and_persists_scores(api_client: ApiClient) -> 
     # descriptors are cited in the pack-bearing prompts (criteria, independent,
     # diagnosis, coach, feedback) and the feedback prompt carries the Year 9
     # rubric language; no degradation note was appended to any tutor turn.
-    assert len(fake.calls) == 8
-    for index in (0, 4, 5, 6, 7):
+    # spaced-review (call 0) is shared-only by design, so it bears no pack.
+    assert len(fake.calls) == 9
+    for index in (1, 5, 6, 7, 8):
         assert "Year 9" in fake.calls[index][0]
-    assert "discriminating thesis" in fake.calls[7][0]
+    assert "discriminating thesis" in fake.calls[8][0]
     state = client.get(f"/api/sessions/{session_id}").json()
     tutor_turns = [turn for turn in state["turns"] if turn["kind"] == "tutor"]
     for turn in tutor_turns:
@@ -354,10 +366,11 @@ def test_persuasive_session_runs_loop_and_persists_scores(api_client: ApiClient)
     # prompts (criteria, independent, diagnosis, coach, feedback) cite the
     # persuasive references and the feedback prompt carries the persuasive
     # rubric language; no degradation note was appended to any tutor turn.
-    assert len(fake.calls) == 8
-    for index in (0, 4, 5, 6, 7):
+    # spaced-review (call 0) is shared-only by design, so it bears no pack.
+    assert len(fake.calls) == 9
+    for index in (1, 5, 6, 7, 8):
         assert "persuasive" in fake.calls[index][0]
-    assert "Position & ideas" in fake.calls[7][0]
+    assert "Position & ideas" in fake.calls[8][0]
     state = client.get(f"/api/sessions/{session_id}").json()
     tutor_turns = [turn for turn in state["turns"] if turn["kind"] == "tutor"]
     for turn in tutor_turns:
@@ -380,6 +393,7 @@ Self-check: how would you rate yourself against these criteria?
 # Imaginative loop: same shape as the persuasive loop, but the diagnosis
 # routes to the imaginative coaching skill (craft-voice, ISS-008).
 IMAGINATIVE_LOOP_RESPONSES = [
+    "retrieval warm-up output",
     "criteria output",
     "model output",
     "guided output",
@@ -458,10 +472,11 @@ def test_imaginative_session_runs_loop_and_persists_scores(api_client: ApiClient
     # prompts (criteria, independent, diagnosis, coach, feedback) cite the
     # imaginative references and the feedback prompt carries the imaginative
     # rubric language; no degradation note was appended to any tutor turn.
-    assert len(fake.calls) == 8
-    for index in (0, 4, 5, 6, 7):
+    # spaced-review (call 0) is shared-only by design, so it bears no pack.
+    assert len(fake.calls) == 9
+    for index in (1, 5, 6, 7, 8):
         assert "imaginative" in fake.calls[index][0]
-    assert "Story & tension" in fake.calls[7][0]
+    assert "Story & tension" in fake.calls[8][0]
     state = client.get(f"/api/sessions/{session_id}").json()
     tutor_turns = [turn for turn in state["turns"] if turn["kind"] == "tutor"]
     for turn in tutor_turns:
@@ -559,21 +574,61 @@ def test_start_session_without_task_prompt(api_client: ApiClient) -> None:
     assert data["stage"] == "start"
     assert data["ended"] is False
     assert data["learning_intention"] is None
-    assert len(data["turns"]) == 1
-    assert data["turns"][0]["skill"] == "set-success-criteria"
-    # The skill still received a usable fallback prompt.
-    user_message = fake.calls[0][1][0]["content"]
-    assert "task_prompt: General analytical writing practice" in user_message
+    assert len(data["turns"]) == 2
+    assert data["turns"][0]["skill"] == "spaced-review"
+    assert data["turns"][1]["skill"] == "set-success-criteria"
+    # Both opening skills still received a usable fallback prompt.
+    retrieval_message = fake.calls[0][1][0]["content"]
+    assert "task_prompt: General analytical writing practice" in retrieval_message
+    criteria_message = fake.calls[1][1][0]["content"]
+    assert "task_prompt: General analytical writing practice" in criteria_message
 
 
 def test_start_session_with_context(api_client: ApiClient) -> None:
-    """Optional context is threaded into the set-success-criteria skill inputs."""
+    """Optional context is threaded into the opening skill inputs."""
     client, fake = api_client
     response = client.post(
         "/api/sessions",
         json={"task_prompt": "Analyse a poem", "context": "Due Friday, one paragraph"},
     )
     assert response.status_code == 201
-    user_message = fake.calls[0][1][0]["content"]
-    assert "task_prompt: Analyse a poem" in user_message
-    assert "context: Due Friday, one paragraph" in user_message
+    retrieval_message = fake.calls[0][1][0]["content"]
+    assert "task_prompt: Analyse a poem" in retrieval_message
+    assert "context: Due Friday, one paragraph" in retrieval_message
+    criteria_message = fake.calls[1][1][0]["content"]
+    assert "task_prompt: Analyse a poem" in criteria_message
+    assert "context: Due Friday, one paragraph" in criteria_message
+
+
+def test_retrieval_cold_start_when_no_history(api_client: ApiClient) -> None:
+    """A first-ever session's retrieval call gets the cold-start digest."""
+    client, fake = api_client
+    started = _start(client)
+    assert started["turns"][0]["skill"] == "spaced-review"
+    retrieval_message = fake.calls[0][1][0]["content"]
+    assert "review_history:" in retrieval_message
+    assert "No prior sessions" in retrieval_message
+
+
+def test_retrieval_uses_rubric_and_coach_history(api_client: ApiClient) -> None:
+    """The next session's retrieval items are generated from real history.
+
+    After one full loop, the student's rubric_score and coaching history feed
+    the spaced-review digest: the retrieval call's user message carries the
+    weakest-first criterion levels, the days-since counter, and the recently
+    coached skill.
+    """
+    client, fake = api_client
+    _drive_full_loop(client)
+    calls_after_first_loop = len(fake.calls)
+
+    started = _start(client)
+    assert started["turns"][0]["skill"] == "spaced-review"
+
+    retrieval_message = fake.calls[calls_after_first_loop][1][0]["content"]
+    assert "review_history: Days since last session: 0" in retrieval_message
+    # Latest criterion levels from the first loop's feedback, weakest first.
+    assert "- Analysis (how techniques create meaning): D" in retrieval_message
+    assert "- Structure & cohesion: D+" in retrieval_message
+    # The first loop's coach turn (check-structure) is the recent coaching.
+    assert "Recently coached: check-structure" in retrieval_message

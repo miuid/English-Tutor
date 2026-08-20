@@ -34,20 +34,25 @@ def loop(db_session, skills):
 
 
 @pytest.mark.asyncio
-async def test_start_creates_one_interaction_log(loop, db_session):
-    """Starting a session runs one skill and writes one InteractionLog."""
+async def test_start_creates_interaction_logs(loop, db_session):
+    """Starting a session runs the two opening skills and logs both."""
     session = await loop.start(task_prompt="Test prompt", year_level="8", text_type="analytical")
 
-    logs = db_session.execute(
-        select(InteractionLog).where(InteractionLog.session_id == session.id)
-    ).scalars().all()
+    logs = (
+        db_session.execute(
+            select(InteractionLog)
+            .where(InteractionLog.session_id == session.id)
+            .order_by(InteractionLog.created_at)
+        )
+        .scalars()
+        .all()
+    )
 
-    assert len(logs) == 1
-    log = logs[0]
-    assert log.model == "fake-model"
-    assert log.skill is not None
-    assert log.skill.name == "set-success-criteria"
-    assert log.output == "fake response"
+    assert len(logs) == 2
+    assert [log.skill.name for log in logs] == ["spaced-review", "set-success-criteria"]
+    for log in logs:
+        assert log.model == "fake-model"
+        assert log.output == "fake response"
 
 
 @pytest.mark.asyncio
@@ -62,7 +67,7 @@ async def test_advance_creates_interaction_log(loop, db_session):
         select(InteractionLog).where(InteractionLog.session_id == session.id)
     ).scalars().all()
 
-    # start (set-success-criteria) + advance (model-response) = 2 logs
-    assert len(logs) == 2
+    # start (spaced-review + set-success-criteria) + advance (model-response)
+    assert len(logs) == 3
     log_names = {log.skill.name for log in logs}
-    assert log_names == {"set-success-criteria", "model-response"}
+    assert log_names == {"spaced-review", "set-success-criteria", "model-response"}

@@ -1,6 +1,7 @@
 """Interactive daily-loop service: a stage machine over the tutor stages.
 
-Stages reuse the GRR loop-stage vocabulary from ``app.skills.loader.LOOP_STAGES``:
+Retrieval (spaced-review) opens every session before the GRR stage vocabulary
+from ``app.skills.loader.LOOP_STAGES``:
 ``start`` -> ``I do`` -> ``we do`` -> ``you do`` -> ``ended``. The current stage
 is persisted on the Session row so any client can resume after a reload.
 
@@ -27,6 +28,7 @@ from app.models import (
     Student,
 )
 from app.models import Skill as SkillRow
+from app.sessions.review import build_review_history
 from app.skills.executor import SkillExecutionService
 from app.skills.loader import Skill
 from app.skills.router import DiagnosisRouter
@@ -156,6 +158,29 @@ class InteractiveLoop:
 
         resolved_text_type = self._resolve_text_type(student, text_type)
         resolved_year_level = str(student.year_level)
+
+        review = await self._execute_and_log(
+            session,
+            self.skills["spaced-review"],
+            {
+                "year_level": resolved_year_level,
+                "text_type": resolved_text_type,
+                "task_prompt": task_prompt or DEFAULT_TASK_PROMPT,
+                "context": context or "",
+                "student_text": "",
+                "review_history": build_review_history(
+                    self.db, student.id, now=self._now()
+                ),
+            },
+        )
+        self._save_tutor_turn(
+            session,
+            "spaced-review",
+            "retrieval",
+            "retrieval",
+            task_prompt or DEFAULT_TASK_PROMPT,
+            review,
+        )
 
         criteria = await self._execute_and_log(
             session,

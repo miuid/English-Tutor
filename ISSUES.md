@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-20T19:30:00+10:00`
+- Last evaluated: `2026-08-20T21:51:36+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -49,7 +49,7 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-011 | Student data export and restore | `DONE` | `P1` | `ISS-010` | `None` |
 | ISS-012 | New skill baseline-assessment | `DONE` | `P1` | `ISS-011` | `None` |
 | ISS-013 | New skill fix-mechanics | `DONE` | `P1` | `ISS-012` | `None` |
-| ISS-014 | New skill spaced-review and retrieval stage | `READY` | `P1` | `ISS-013` | `None` |
+| ISS-014 | New skill spaced-review and retrieval stage | `DONE` | `P1` | `ISS-013` | `None` |
 | ISS-015 | Weekly timed mock mode | `READY` | `P1` | `ISS-014` | `None` |
 | ISS-016 | Streaks and weekly goal | `READY` | `P2` | `ISS-015` | `None` |
 | ISS-017 | Criterion level-up celebration | `READY` | `P2` | `ISS-016` | `None` |
@@ -646,7 +646,7 @@ Add the twelfth agent skill fix-mechanics for grammar, spelling, and punctuation
 - 2026-08-20T19:30:00+10:00 - DONE. Twelfth skill fix-mechanics shipped: SKILL.md + shared mechanics guide + two golden fixtures (analytical/year-8, imaginative/year-9-10); diagnose-errors routes mechanics-dominant submissions to it across all six taxonomy packs with the leverage guard intact. Verification: targeted 23 passed; full suite 182 passed/4 skipped; ruff clean; mypy unchanged vs baseline; skill eval 2/2 PASS; full no-judge eval 24 cases, 20 passed/4 failed — unchanged canned-fake baseline. Unlocks ISS-014.
 
 ## ISS-014 - New skill spaced-review and retrieval stage
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P1`
 - Type: `feature`
 - Depends on: `ISS-013`
@@ -655,32 +655,43 @@ Add the twelfth agent skill fix-mechanics for grammar, spelling, and punctuation
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: B3.2; MVP-Plan: §2 core loop; ERD: interaction_log/rubric_score`
 - Effort: `M`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
+- Attempt: `1`
+- Started: `2026-08-20T21:33:15+10:00`
+- Completed: `2026-08-20T21:51:36+10:00`
 - Commit: `None`
 
 ### Outcome and scope
 Add the thirteenth agent skill spaced-review and make retrieval the first stage of the daily loop using interaction_log and rubric_score history.
 
 ### Acceptance criteria
-- [ ] skills/spaced-review/ follows skills/README.md convention.
-- [ ] Daily loop order becomes retrieval → criteria → I do → we do → you do → feedback.
-- [ ] Tests cover the new stage order and retrieval item generation inputs.
+- [x] skills/spaced-review/ follows skills/README.md convention.
+- [x] Daily loop order becomes retrieval → criteria → I do → we do → you do → feedback.
+- [x] Tests cover the new stage order and retrieval item generation inputs.
 
 ### Implementation notes
 - Likely files or components: skills/spaced-review/, backend/app/sessions/interactive.py, backend/app/sessions/orchestrator.py, backend/tests/test_session_time.py, backend/tests/test_api_daily_loop.py.
 - Constraints: retrieval items are short warm-ups; do not turn them into a second full lesson.
 
 ### Verification
-- [ ] `cd backend && uv run pytest tests/test_session_orchestrator.py tests/test_api_daily_loop.py`
-- [ ] `cd backend && uv run pytest`
+- [x] `cd backend && uv run pytest tests/test_session_orchestrator.py tests/test_api_daily_loop.py` — 19 passed.
+- [x] `cd backend && uv run pytest` — 185 passed, 4 skipped (was 182/4; +3 new tests).
+- [x] `cd backend && uv run ruff check .` — clean; `uv run mypy app tests` — 29 errors in the same 4 unrelated test files as the ISS-013 baseline (test_config, test_delete_student, test_interaction_log, test_session_time — same error classes/count, verified line-by-line for the edited test_interaction_log.py); changed files clean.
+- [x] `cd backend && LLM_PROVIDER=fake uv run python -m app.eval --skill spaced-review --no-judge` — 2 cases, 2 passed (analytical/year-8 + imaginative/year-9-10 combo rows).
+- [x] `cd backend && LLM_PROVIDER=fake uv run python -m app.eval --no-judge` — 26 cases, 22 passed / 4 failed (the same canned-fake give-feedback + diagnose-errors baseline as ISS-004 through ISS-013, unchanged); spaced-review 2/2 PASS.
+- [x] `cd frontend && npm run build` — tsc + vite build clean (372.04 kB bundle); `npm run lint` (oxlint) — 0 warnings, 0 errors.
 
 ### Completion evidence
-- Pending
+- `skills/spaced-review/` authored per the convention: SKILL.md with all 8 required sections (read the digest → pick 2–3 targets: weakest criterion first, then the most recently coached pattern when days have passed → one short recall/spot/apply-in-one-line item per target → self-check answers → one onward line; cold start = 2 generic items from the text-type fundamentals, honestly declared). One shared reference pack (`references/shared/retrieval-guide.md`): why retrieval first, the `review_history` digest shape, the three item types, the cold-start menu per text type, band calibration (year-8 / year-9-10 / year-11-12 with the Q-001 derived note for seniors), and the 3-minute time/tone box — traced to teacher-skills.md (HITS/VTLM "quick retrieval" lesson opening; AERO SWIF spaced repetition), Blueprint (cognitive load/GRR), MVP-Plan §2 (热身 retrieval loop step 1). Shared-only by design: retrieval practice is text-type-agnostic, so no banded packs and no degradation note.
+- Two golden fixtures: sample-01 (analytical/year-8 with a real digest — Analysis at D + elevate-vocabulary coached 3 days ago; items must trace to the digest, never invent history) and sample-02 (imaginative/year-9-10 cold start; must declare first session and use the fundamentals menu), discovered as analytical/year-8 and imaginative/year-9-10.
+- Retrieval stage wired as loop step 1 in both drivers: `InteractiveLoop.start()` and `SessionOrchestrator.run_daily_loop()` now run spaced-review before set-success-criteria and persist a `task_type="retrieval"` tutor turn; the GRR stage machine (`start → I do → we do → you do → ended`) is unchanged. New `app/sessions/review.py::build_review_history(db, student_id)` builds the compact digest from `rubric_score` (latest level per criterion, weakest first) and coaching turns (interaction history; most recent coach skills with local dates) plus days since the last ended session; a student with no finished sessions gets the cold-start line only. `LOOP_STAGES` gains `spaced-review: retrieval`; frontend `STAGE_LABELS` gains `retrieval: 'Warm-up review'`.
+- Tests: new `test_spaced_review_loads_shared_guide_and_examples` (loader: retrieval stage, shared guide, digest/cold-start/band content, 2 fixtures, bounded "2–3" criterion); new `test_retrieval_cold_start_when_no_history` and `test_retrieval_uses_rubric_and_coach_history` (HTTP: after a full loop the next session's spaced-review call carries `review_history: Days since last session: 0`, weakest-first criterion levels, and `Recently coached: check-structure`); stage order pinned as ordered task_type lists in the orchestrator test and `test_get_session_rebuilds_conversation` (retrieval → criteria → model → guided → … → feedback); `test_interaction_log` updated (start now logs both opening skills). Count updates 12→13 skills / 24→26 cases in loader/sync/fixtures/runner tests; all loop-driving canned response lists gained the retrieval response; pack-citation call indices shifted +1 (spaced-review is call 0, shared-only, no pack).
+- Live LLM judge eval was not run (no valid API credential in this environment); consistent with ISS-005/ISS-008/ISS-012/ISS-013, the no-judge harness above is this ticket's declared verification.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: B3.2; MVP-Plan: §2 core loop; ERD: interaction_log/rubric_score` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-20T21:33:15+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-20T21:51:36+10:00 - DONE. Thirteenth skill spaced-review shipped: SKILL.md + shared retrieval guide + two golden fixtures (analytical/year-8 with digest, imaginative/year-9-10 cold start); retrieval is now loop step 1 in both the interactive loop and the scripted orchestrator, fed by `build_review_history` (rubric_score weakest-first levels + recent coaching + days-since). Verification: targeted 19 passed; full suite 185 passed/4 skipped; ruff clean; mypy unchanged vs baseline; skill eval 2/2 PASS; full no-judge eval 26 cases, 22 passed/4 failed — unchanged canned-fake baseline; frontend build + lint clean. Unlocks ISS-015.
 
 ## ISS-015 - Weekly timed mock mode
 - Status: `READY`
