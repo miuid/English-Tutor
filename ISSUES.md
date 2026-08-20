@@ -706,7 +706,7 @@ Add the thirteenth agent skill spaced-review and make retrieval the first stage 
 - Attempt: `1`
 - Started: `2026-08-21T02:06:00+10:00`
 - Completed: `2026-08-21T02:35:00+10:00`
-- Commit: `None`
+- Commit: `43a8001`
 
 ### Outcome and scope
 Add a weekly-mock mode with QCAA-like conditions and summative A-E feedback, visually distinct in the progress trend.
