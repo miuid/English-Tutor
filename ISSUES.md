@@ -798,7 +798,7 @@ Add a gentle streak counter and default weekly goal of four sessions, with recov
 - Attempt: `1`
 - Started: `2026-08-21T07:10:00+10:00`
 - Completed: `2026-08-21T07:12:00+10:00`
-- Commit: `None`
+- Commit: `1722881`
 
 ### Outcome and scope
 Detect when a rubric criterion crosses a band and trigger specific praise naming the real improvement.
