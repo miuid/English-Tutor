@@ -6,6 +6,7 @@ export interface StudentOut {
   year_level: number
   curriculum: string
   focus_text_types: string[]
+  weekly_goal: number
   created_at: string
 }
 
@@ -14,6 +15,7 @@ export interface StudentCreate {
   year_level: number
   curriculum?: string
   focus_text_types?: string[]
+  weekly_goal?: number
 }
 
 export interface StudentUpdate {
@@ -21,6 +23,7 @@ export interface StudentUpdate {
   year_level?: number
   curriculum?: string
   focus_text_types?: string[]
+  weekly_goal?: number
 }
 
 export interface TurnOut {
@@ -106,4 +109,14 @@ export interface MockOut {
   session_id: string
   feedback: FeedbackOut
   report: string
+}
+
+export interface MotivationOut {
+  student_id: string
+  current_streak: number
+  streak_broken: boolean // lapsed run -> show a recovery prompt, never a penalty
+  weekly_goal: number
+  sessions_this_week: number
+  goal_met: boolean
+  last_activity_date: string | null
 }

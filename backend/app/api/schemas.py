@@ -1,9 +1,11 @@
 """Pydantic v2 request/response schemas for the daily-loop HTTP API."""
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
+
+from app.models import DEFAULT_WEEKLY_GOAL, MAX_WEEKLY_GOAL
 
 
 class StudentCreate(BaseModel):
@@ -13,6 +15,7 @@ class StudentCreate(BaseModel):
     year_level: int = Field(ge=8, le=12)
     curriculum: str = Field(default="QCAA", min_length=1)
     focus_text_types: list[str] = Field(default_factory=list)
+    weekly_goal: int = Field(default=DEFAULT_WEEKLY_GOAL, ge=1, le=MAX_WEEKLY_GOAL)
 
 
 class StudentUpdate(BaseModel):
@@ -22,6 +25,7 @@ class StudentUpdate(BaseModel):
     year_level: int | None = Field(default=None, ge=8, le=12)
     curriculum: str | None = Field(default=None, min_length=1)
     focus_text_types: list[str] | None = None
+    weekly_goal: int | None = Field(default=None, ge=1, le=MAX_WEEKLY_GOAL)
 
 
 class StudentOut(BaseModel):
@@ -30,6 +34,7 @@ class StudentOut(BaseModel):
     year_level: int
     curriculum: str
     focus_text_types: list[str]
+    weekly_goal: int
     created_at: datetime
 
 
@@ -146,3 +151,19 @@ class ProgressScoreOut(BaseModel):
 class ProgressOut(BaseModel):
     student_id: uuid.UUID
     scores: list[ProgressScoreOut]
+
+
+class MotivationOut(BaseModel):
+    """Streak + weekly-goal state for the progress view (ISS-016).
+
+    ``streak_broken`` means the student practised before but the run lapsed;
+    the UI answers with a recovery prompt, never a penalty.
+    """
+
+    student_id: uuid.UUID
+    current_streak: int
+    streak_broken: bool
+    weekly_goal: int
+    sessions_this_week: int
+    goal_met: bool
+    last_activity_date: date | None

@@ -16,6 +16,7 @@ from app.api.schemas import (
     FeedbackOut,
     MockOut,
     MockRequest,
+    MotivationOut,
     ProgressOut,
     ProgressScoreOut,
     RubricScoreOut,
@@ -29,6 +30,7 @@ from app.api.schemas import (
     TurnOut,
 )
 from app.models import Attempt, Feedback, RubricScore, Session, Student
+from app.motivation import build_motivation
 from app.sessions.interactive import InteractiveLoop, SessionNotFoundError, StageConflictError
 from app.student_transfer import ExportImportError, export_student, import_student
 
@@ -88,6 +90,7 @@ def _student_out(student: Student) -> StudentOut:
         year_level=student.year_level,
         curriculum=student.curriculum,
         focus_text_types=student.focus_text_types or [],
+        weekly_goal=student.weekly_goal,
         created_at=student.created_at,
     )
 
@@ -103,6 +106,7 @@ async def create_student(
         year_level=payload.year_level,
         curriculum=payload.curriculum,
         focus_text_types=payload.focus_text_types,
+        weekly_goal=payload.weekly_goal,
     )
     db.add(student)
     db.commit()
@@ -166,6 +170,8 @@ async def update_student(
         student.curriculum = payload.curriculum
     if payload.focus_text_types is not None:
         student.focus_text_types = payload.focus_text_types
+    if payload.weekly_goal is not None:
+        student.weekly_goal = payload.weekly_goal
     db.commit()
     db.refresh(student)
     return _student_out(student)
@@ -432,4 +438,31 @@ async def student_progress(
             )
             for score, session_id_for_score, attempt_mode in rows
         ],
+    )
+
+
+@router.get("/students/{student_id}/motivation")
+async def student_motivation(
+    student_id: uuid.UUID,
+    db: DBSession = Depends(get_db),
+) -> MotivationOut:
+    """Streak and weekly-goal state for one student.
+
+    The streak is derived from session history (a practice day is any local
+    date with at least one session — daily loop, baseline, or weekly mock).
+    A lapsed streak is reported as ``streak_broken`` so the UI can answer
+    with a recovery prompt, never a penalty.
+    """
+    student = db.get(Student, student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    summary = build_motivation(db, student.id, student.weekly_goal)
+    return MotivationOut(
+        student_id=student_id,
+        current_streak=summary.current_streak,
+        streak_broken=summary.streak_broken,
+        weekly_goal=summary.weekly_goal,
+        sessions_this_week=summary.sessions_this_week,
+        goal_met=summary.goal_met,
+        last_activity_date=summary.last_activity_date,
     )

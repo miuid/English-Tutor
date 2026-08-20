@@ -41,6 +41,13 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
+# Default weekly practice goal (sessions per week, Monday-Sunday local). The
+# streak itself is derived from session history (see app/motivation.py) so it
+# can never disagree with the persisted record.
+DEFAULT_WEEKLY_GOAL = 4
+MAX_WEEKLY_GOAL = 14
+
+
 class Student(Base):
     __tablename__ = "student"
 
@@ -59,6 +66,9 @@ class Student(Base):
         default=list,
         nullable=True,
     )
+    # Weekly practice goal in sessions (ISS-016). Gentle motivation only —
+    # no points, shops, leaderboards, or punitive mechanics.
+    weekly_goal: Mapped[int] = mapped_column(sa.Integer, default=DEFAULT_WEEKLY_GOAL)
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         default=_now,

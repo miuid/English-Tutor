@@ -23,6 +23,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session as DBSession
 
 from app.models import (
+    DEFAULT_WEEKLY_GOAL,
+    MAX_WEEKLY_GOAL,
     Attempt,
     CurriculumOutcome,
     Feedback,
@@ -172,6 +174,7 @@ def export_student(db: DBSession, student: Student) -> dict[str, Any]:
             "year_level": student.year_level,
             "curriculum": student.curriculum,
             "focus_text_types": list(student.focus_text_types or []),
+            "weekly_goal": student.weekly_goal,
             "created_at": _iso(student.created_at),
         },
         "sessions": session_docs,
@@ -221,6 +224,14 @@ def import_student(db: DBSession, payload: Any) -> Student:
     focus = student_doc.get("focus_text_types") or []
     if not isinstance(focus, list) or not all(isinstance(t, str) for t in focus):
         raise ExportImportError("Student focus_text_types must be a list of strings.")
+    # Older exports predate the weekly goal; fall back to the default.
+    weekly_goal = student_doc.get("weekly_goal", DEFAULT_WEEKLY_GOAL)
+    if (
+        not isinstance(weekly_goal, int)
+        or isinstance(weekly_goal, bool)
+        or not 1 <= weekly_goal <= MAX_WEEKLY_GOAL
+    ):
+        raise ExportImportError("Student profile has an invalid weekly goal.")
     sessions_doc = payload.get("sessions")
     if not isinstance(sessions_doc, list):
         raise ExportImportError("Export is missing the sessions list.")
@@ -230,6 +241,7 @@ def import_student(db: DBSession, payload: Any) -> Student:
         year_level=year_level,
         curriculum=curriculum,
         focus_text_types=focus,
+        weekly_goal=weekly_goal,
         created_at=_parse_dt(student_doc.get("created_at"), "student.created_at")
         or datetime.now(UTC),
     )

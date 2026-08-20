@@ -27,6 +27,7 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
   const [yearLevel, setYearLevel] = useState(8)
   const [curriculum, setCurriculum] = useState('QCAA')
   const [focusTextTypes, setFocusTextTypes] = useState<string[]>([])
+  const [weeklyGoal, setWeeklyGoal] = useState(4)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -67,6 +68,8 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
     setYearLevel(s.year_level)
     setCurriculum(s.curriculum)
     setFocusTextTypes(s.focus_text_types ?? [])
+    // Cached profiles from before the weekly goal shipped may lack the field.
+    setWeeklyGoal(s.weekly_goal ?? 4)
   }
 
   function toggleTextType(type: string) {
@@ -87,6 +90,7 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
           year_level: yearLevel,
           curriculum,
           focus_text_types: focus,
+          weekly_goal: weeklyGoal,
         })
         finishSave(updated)
       } else {
@@ -95,6 +99,7 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
           year_level: yearLevel,
           curriculum,
           focus_text_types: focus,
+          weekly_goal: weeklyGoal,
         })
         finishSave(created)
       }
@@ -136,6 +141,7 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
     setYearLevel(8)
     setCurriculum('QCAA')
     setFocusTextTypes([])
+    setWeeklyGoal(4)
     setMode('empty')
     // Return the app to the first-run wizard so another profile can be
     // selected or created (e.g. a sibling on a shared family device).
@@ -175,6 +181,10 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
                   ? student.focus_text_types.join(', ')
                   : 'All types (no focus set)'}
               </dd>
+            </div>
+            <div>
+              <dt>Weekly goal</dt>
+              <dd>{student.weekly_goal ?? 4} sessions / week</dd>
             </div>
           </dl>
           <div className="profile-actions">
@@ -272,6 +282,25 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
           </div>
           <p className="muted small">
             Leave empty to practise all text types. Picking one focuses sessions on it.
+          </p>
+
+          <label className="field-label" htmlFor="profile-weekly-goal">
+            Weekly goal
+          </label>
+          <select
+            id="profile-weekly-goal"
+            className="text-input"
+            value={weeklyGoal}
+            onChange={(e) => setWeeklyGoal(Number(e.target.value))}
+          >
+            {[2, 3, 4, 5, 6, 7].map((n) => (
+              <option key={n} value={n}>
+                {n} sessions / week{n === 4 ? ' (recommended)' : ''}
+              </option>
+            ))}
+          </select>
+          <p className="muted small">
+            A gentle target — missing a day never costs you anything.
           </p>
 
           <button type="submit" className="btn primary wide" disabled={busy || !name.trim()}>

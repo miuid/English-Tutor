@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ApiError, getProgress } from '../api'
-import type { ProgressScoreOut } from '../types'
+import { ApiError, getMotivation, getProgress } from '../api'
+import type { MotivationOut, ProgressScoreOut } from '../types'
 
 // Okabe–Ito colorblind-friendly palette.
 const SERIES_COLORS = ['#0072B2', '#E69F00', '#009E73', '#D55E00', '#CC79A7', '#56B4E9']
@@ -42,13 +42,39 @@ interface ProgressViewProps {
   studentId: string | null
 }
 
+function MotivationStrip({ motivation }: { motivation: MotivationOut }) {
+  return (
+    <div className="motivation-strip" aria-label="Your practice streak and weekly goal">
+      {motivation.current_streak > 0 ? (
+        <span className="streak-chip" title="Days in a row with at least one session">
+          🔥 {motivation.current_streak}-day streak
+        </span>
+      ) : motivation.streak_broken ? (
+        // Recovery, never punishment: a lapsed streak invites a fresh start.
+        <span className="streak-chip recovery">
+          🌱 Welcome back — no catching up needed. One session today starts a fresh streak.
+        </span>
+      ) : (
+        <span className="streak-chip">🌱 Start your streak with one session today</span>
+      )}
+      <span className={`weekly-chip${motivation.goal_met ? ' met' : ''}`}>
+        {motivation.goal_met
+          ? `⭐ Weekly goal reached — ${motivation.sessions_this_week} of ${motivation.weekly_goal} sessions`
+          : `This week: ${motivation.sessions_this_week} of ${motivation.weekly_goal} sessions`}
+      </span>
+    </div>
+  )
+}
+
 export default function ProgressView({ studentId }: ProgressViewProps) {
   const [scores, setScores] = useState<ProgressScoreOut[] | null>(null)
+  const [motivation, setMotivation] = useState<MotivationOut | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!studentId) {
       setScores([])
+      setMotivation(null)
       return
     }
     let cancelled = false
@@ -63,6 +89,14 @@ export default function ProgressView({ studentId }: ProgressViewProps) {
         } else {
           setError(err instanceof Error ? err.message : 'Could not load progress.')
         }
+      })
+    // Motivation is a gentle add-on: a failure here never blocks the chart.
+    getMotivation(studentId)
+      .then((out) => {
+        if (!cancelled) setMotivation(out)
+      })
+      .catch(() => {
+        if (!cancelled) setMotivation(null)
       })
     return () => {
       cancelled = true
@@ -117,6 +151,7 @@ export default function ProgressView({ studentId }: ProgressViewProps) {
   if (series.length === 0) {
     return (
       <div className="progress-shell">
+        {motivation ? <MotivationStrip motivation={motivation} /> : null}
         <div className="empty-state">
           <span className="empty-icon" aria-hidden="true">
             🌱
@@ -143,6 +178,8 @@ export default function ProgressView({ studentId }: ProgressViewProps) {
   return (
     <div className="progress-shell">
       <h2 className="progress-title">How you're tracking</h2>
+
+      {motivation ? <MotivationStrip motivation={motivation} /> : null}
 
       <div className="latest-chips" aria-label="Latest level for each criterion">
         {series.map((s) => (

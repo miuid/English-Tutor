@@ -1,6 +1,7 @@
 import type {
   AdvanceOut,
   MockOut,
+  MotivationOut,
   ProgressOut,
   SessionOut,
   StartSessionRequest,
@@ -115,6 +116,10 @@ export function resumeSession(sessionId: string): Promise<SessionOut> {
 
 export function getProgress(studentId: string): Promise<ProgressOut> {
   return request<ProgressOut>(`/api/students/${studentId}/progress`)
+}
+
+export function getMotivation(studentId: string): Promise<MotivationOut> {
+  return request<MotivationOut>(`/api/students/${studentId}/motivation`)
 }
 
 export function runMock(studentId: string, text: string): Promise<MockOut> {

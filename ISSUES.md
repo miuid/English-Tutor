@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-21T02:35:00+10:00`
+- Last evaluated: `2026-08-21T04:55:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -741,7 +741,7 @@ Add a weekly-mock mode with QCAA-like conditions and summative A-E feedback, vis
 - 2026-08-21T02:35:00+10:00 - DONE. Weekly timed mock mode shipped: `run_mock` (ended mock session, submission `attempt.mode='assessment'`, summative give-feedback with overall A–E, bounded 1–2 next steps), `POST /api/students/{id}/mock` (MockOut + report), progress endpoint returns per-score `mode`; frontend ProgressView ◆ diamonds vs ● circles with legend note, ChatView "Sit this week's timed mock" entry → new MockView. Verification: declared `pytest tests/test_api_daily_loop.py tests/test_session_time.py` 33 passed; full suite 188 passed/4 skipped; ruff clean; mypy unchanged vs baseline; frontend build + oxlint clean; HTTP smoke green (mock 201, ended session, assessment mode, zero practice time). Unlocks ISS-016.
 
 ## ISS-016 - Streaks and weekly goal
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P2`
 - Type: `feature`
 - Depends on: `ISS-015`
@@ -750,32 +750,40 @@ Add a weekly-mock mode with QCAA-like conditions and summative A-E feedback, vis
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: B4.1; PRD: §7 deferred motivation layer; ERD: student/session`
 - Effort: `S`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
+- Attempt: `1`
+- Started: `2026-08-21T04:35:00+10:00`
+- Completed: `2026-08-21T04:55:00+10:00`
 - Commit: `None`
 
 ### Outcome and scope
 Add a gentle streak counter and default weekly goal of four sessions, with recovery rather than punishment after a break.
 
 ### Acceptance criteria
-- [ ] Streak and weekly goal persist per student.
-- [ ] UI renders current streak and weekly progress.
-- [ ] A break produces a recovery prompt, not a penalty.
+- [x] Streak and weekly goal persist per student.
+- [x] UI renders current streak and weekly progress.
+- [x] A break produces a recovery prompt, not a penalty.
 
 ### Implementation notes
 - Likely files or components: backend/app/models.py, backend/app/api/routes.py, frontend/src/components/ProgressView.tsx or App.tsx.
 - Constraints: motivation serves practice; no points shop, leaderboard, or punitive mechanics.
 
 ### Verification
-- [ ] `cd backend && uv run pytest`
-- [ ] `cd frontend && npm run build`
+- [x] `cd backend && uv run pytest` — 200 passed, 4 skipped (was 188/4; +12 new in tests/test_motivation.py).
+- [x] `cd frontend && npm run build` — tsc + vite build clean (377.07 kB bundle); `npm run lint` (oxlint) 0 warnings, 0 errors.
 
 ### Completion evidence
-- Pending
+- `Student.weekly_goal` persisted (default 4, validated 1–14 via `DEFAULT_WEEKLY_GOAL`/`MAX_WEEKLY_GOAL` in `app/models.py`); idempotent SQLite patcher `_ensure_student_weekly_goal_column` keeps existing dev/LAN DBs. Settable on create + PATCH; surfaced in `StudentOut`; export/import round-trips it (older exports default to 4).
+- The streak is **derived** from persisted session history (`app/motivation.py::build_motivation`), never stored separately — a practice day is any local date with at least one session (daily loop, baseline, or weekly mock); the run stays alive through yesterday and counts back over consecutive local days. Week = Monday–today local; the goal counts sessions, not days.
+- New `GET /api/students/{id}/motivation` → `MotivationOut` (`current_streak`, `streak_broken`, `weekly_goal`, `sessions_this_week`, `goal_met`, `last_activity_date`). A lapsed run reports `streak_broken=True` so the UI answers with recovery copy, never a penalty; no points/shop/leaderboard anywhere.
+- Frontend: `MotivationStrip` in ProgressView (empty + populated states) — 🔥 streak chip, 🌱 recovery prompt ("Welcome back — no catching up needed. One session today starts a fresh streak."), weekly progress chip with ⭐ goal-reached state; ProfileView gains a Weekly goal row + edit select (2–7, 4 recommended) with a legacy-cache fallback (`?? 4`); `getMotivation` client + `MotivationOut` types; motivation fetch failures never block the chart.
+- Tests: `tests/test_motivation.py` — 12 tests: cold start, 3-day streak, yesterday-grace, missed-day recovery flag, Monday-week session counting (sessions not days, last week excluded), goal_met at/above goal, export/import round-trip + legacy default, HTTP cold-start/404/422, live start-session moves streak+weekly count, PATCH persists and flips goal_met.
+- Verification detail: full suite 200 passed/4 skipped; `ruff check .` clean; `mypy app tests` — 29 errors in the same 4 unrelated baseline test files (test_config, test_delete_student, test_interaction_log, test_session_time), changed files clean; frontend tsc+vite build clean, oxlint 0/0. HTTP smoke against a real backend (FakeProvider, tmp SQLite): create → cold start (0/4) → session start 201 → streak 1, 1/4 → PATCH goal=1 → goal_met true; 404 unknown student; 422 goal=0. `last_activity_date` correctly reported the Brisbane local date.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: B4.1; PRD: §7 deferred motivation layer; ERD: student/session` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-21T04:35:00+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-21T04:55:00+10:00 - DONE. Streaks + weekly goal shipped: `weekly_goal` persisted on Student (default 4, 1–14, patchable, export/import round-trip), streak derived from session history (Mon–Sun week, sessions-not-days, yesterday grace), `GET /students/{id}/motivation`, MotivationStrip with recovery-not-penalty copy in ProgressView, goal editor in ProfileView. Verification: full suite 200 passed/4 skipped (+12 new); ruff clean; mypy unchanged vs baseline; frontend build + oxlint clean; HTTP smoke green (cold start → streak 1 → goal_met on patch; 404/422). Unlocks ISS-017.
 
 ## ISS-017 - Criterion level-up celebration
 - Status: `READY`

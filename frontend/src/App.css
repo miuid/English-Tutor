@@ -375,6 +375,47 @@
   margin: 0.5rem 0 1rem;
 }
 
+/* Motivation strip (ISS-016): gentle streak + weekly goal, never punitive. */
+
+.motivation-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.2rem;
+}
+
+.streak-chip,
+.weekly-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  box-shadow: var(--shadow);
+}
+
+.streak-chip {
+  font-weight: 600;
+}
+
+.streak-chip.recovery {
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+.weekly-chip {
+  color: var(--ink-soft);
+}
+
+.weekly-chip.met {
+  color: inherit;
+  font-weight: 600;
+  border-color: var(--accent);
+}
+
 .latest-chips {
   display: flex;
   flex-wrap: wrap;
