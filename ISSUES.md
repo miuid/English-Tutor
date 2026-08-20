@@ -515,7 +515,7 @@ Polish clean-machine docker compose startup into a guided first run that creates
 - Attempt: `1`
 - Started: `2026-08-20T14:37:00+10:00`
 - Completed: `2026-08-20T15:05:00+10:00`
-- Commit: `None`
+- Commit: `c27b1ba`
 
 ### Outcome and scope
 Add one-click local JSON export of a student's full data and an import path that restores progress.
