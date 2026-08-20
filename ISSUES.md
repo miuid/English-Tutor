@@ -561,7 +561,7 @@ Add one-click local JSON export of a student's full data and an import path that
 - Attempt: `1`
 - Started: `2026-08-20T16:40:00+10:00`
 - Completed: `2026-08-20T17:10:00+10:00`
-- Commit: `<pending>`
+- Commit: `7f46f92`
 
 ### Outcome and scope
 Add the eleventh agent skill baseline-assessment: one timed write produces a rubric baseline and a recommended student focus profile.
