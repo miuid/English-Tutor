@@ -148,6 +148,12 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 11. Session log
 
+### 2026-08-21 — ISS-023 done: beta handbook (B6.3)
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-023 (P2, dep ISS-022 DONE).
+- **Shipped:** root `BETA-HANDBOOK.md` (English, friend-family tone per Q-002) — §1 parent one-pager (15-min daily loop, never ghostwrites, beta honesty), §2 non-technical install guide (Docker Desktop → unzip → `backend/.env` key → `docker compose up -d --build` → first-run wizard) + everyday-use/troubleshooting/uninstall, §3 privacy expectations (local-first; only student writing leaves the machine, to the LLM API; delete any time), §4 feedback channel (Profile → Report a problem → email the package), §5 weekly check-in template. README links to it.
+- Docs-only change. Verified: every command reviewed against DEPLOYMENT.md/README (all match); full backend suite **262 passed/4 skipped** — baseline unchanged. No physical clean-machine run in this env; the install-alone criterion rests on the doc review + ISS-010 wizard smoke evidence.
+- **Next pick-up:** ISS-024 — QCE senior instrument modelling (gated by Q-001: official QCAA syllabus PDFs must be imported and cited before it can complete).
+
 ### 2026-08-21 — ISS-021 done: per-stage model routing (B6.1)
 - Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-021 (P2, dep ISS-020 DONE).
 - **Shipped:** `Settings.llm_stage_models` (env `LLM_STAGE_MODELS`, JSON object mapping loop_stage -> model override) + new `app/llm/routing.py::StageProviderRouter` (cached `(provider, model)` per stage via the existing factory). Routing stays within the configured provider family — one API key, only the model tier changes per stage (e.g. heavy triage/coach/end on the strong model, light retrieval/start/I do/we do/you do on a cheaper tier).

@@ -2,6 +2,9 @@
 
 AI-powered after-school English tutor for Australian secondary students (Year 8–12).
 
+**Beta family?** Start with `BETA-HANDBOOK.md` — install guide, privacy
+expectations, feedback channel, and the weekly check-in template.
+
 ## Quick start
 
 ### Option A: Docker Compose (recommended)

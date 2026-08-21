@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-21T19:05:00+10:00`
+- Last evaluated: `2026-08-21T21:08:48+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -58,7 +58,7 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-020 | Shared parent-student goal setting | `DONE` | `P2` | `ISS-019` | `None` |
 | ISS-021 | Per-stage model routing | `DONE` | `P2` | `ISS-020` | `None` |
 | ISS-022 | Privacy-safe telemetry and feedback package | `DONE` | `P2` | `ISS-021` | `None` |
-| ISS-023 | Beta handbook | `READY` | `P2` | `ISS-022` | `None` |
+| ISS-023 | Beta handbook | `DONE` | `P2` | `ISS-022` | `None` |
 | ISS-024 | QCE senior instrument modelling | `READY` | `P2` | `ISS-023` | `None` |
 | ISS-025 | Senior IA1 analytical pack | `READY` | `P2` | `ISS-024` | `None` |
 
@@ -1063,7 +1063,7 @@ Add local aggregated usage metrics with no student content and a one-click feedb
 - 2026-08-21T19:05:00+10:00 - DONE. Privacy-safe telemetry + feedback package shipped: `app/telemetry.py` aggregation module, `/telemetry` + `/feedback-package` endpoints, ProfileView "Report a problem" download, README 10-minute diagnosis checklist. Privacy boundary (no writing, no LLM content, no name, no credentials) enforced by marker-string regression tests. Verification: full suite 262 passed/4 skipped; ruff clean; mypy unchanged vs baseline; frontend build + oxlint clean. Unlocks ISS-023.
 
 ## ISS-023 - Beta handbook
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P2`
 - Type: `chore`
 - Depends on: `ISS-022`
@@ -1072,18 +1072,18 @@ Add local aggregated usage metrics with no student content and a one-click feedb
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: B6.3; PRD: §9 GA direction; ERD: Deployment/migration`
 - Effort: `S`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
-- Commit: `None`
+- Attempt: `1`
+- Started: `2026-08-21T21:04:51+10:00`
+- Completed: `2026-08-21T21:08:48+10:00`
+- Commit: `pending`
 
 ### Outcome and scope
 Write the beta handbook: install guide, parent one-pager, feedback channel, and weekly check-in template.
 
 ### Acceptance criteria
-- [ ] A non-technical parent can install from the guide alone.
-- [ ] Handbook includes privacy expectations and feedback channel.
-- [ ] Weekly check-in template exists for beta families.
+- [x] A non-technical parent can install from the guide alone.
+- [x] Handbook includes privacy expectations and feedback channel.
+- [x] Weekly check-in template exists for beta families.
 
 ### Implementation notes
 - Likely files or components: docs or root markdown files, README.md, DEPLOYMENT.md.
@@ -1091,15 +1091,20 @@ Write the beta handbook: install guide, parent one-pager, feedback channel, and 
 - Decision (Q-002, answered 2026-08-21): beta recruitment channel is friend families first; tone the handbook for known families with fast feedback; school parent group expansion waits until B1-B3 are stable.
 
 ### Verification
-- [ ] Manual check: follow the guide on a clean machine profile or review against DEPLOYMENT.md
-- [ ] `cd backend && uv run pytest`
+- [x] Manual check: follow the guide on a clean machine profile or review against DEPLOYMENT.md — every command/path reviewed against `DEPLOYMENT.md` + `README.md`: `cp backend/.env.example backend/.env`, `docker compose up -d --build`, 3–8 min first build, `<15 min` to first session, `WEB_PORT=8080` fallback, `http://localhost/health`, `docker compose down -v` data wipe, no-auth LAN boundary. All match.
+- [x] `cd backend && uv run pytest` — 262 passed, 4 skipped (docs-only change; matches the ISS-022 baseline exactly).
 
 ### Completion evidence
-- Pending
+- New root doc `BETA-HANDBOOK.md` (English, friend-family tone per Q-002): §1 parent one-pager (what the tutor does, the 15-minute daily loop, what it never does — no ghostwriting, beta honesty, Year 8–10 QCAA coverage in this beta); §2 install guide written for a non-technical parent (Docker Desktop install, unzip project, copy/rename `backend/.env`, paste `LLM_API_KEY`, one `docker compose up -d --build`, browser + first-run wizard) with an everyday-use table, a troubleshooting table mirroring DEPLOYMENT.md symptoms, and full uninstall steps; §3 privacy expectations (all data stays on the family machine, the only outbound traffic is student writing to the LLM API per PRD §6, no login = family device only, delete any time, feedback package contains no writing — boundary enforced by tests); §4 feedback channel (Profile → Report a problem → email the JSON to Cheng, plus direct messages for small stuff, and what feedback is most valuable); §5 weekly check-in template (7 short questions, copy-paste block); closing scope note that hosted accounts/billing are future plans, not this build.
+- `README.md` gains a pointer to the handbook for beta families.
+- No code changed. No physical clean-machine run was performed in this environment; the install-alone criterion is supported by the command-by-command review against DEPLOYMENT.md/README plus the ISS-010 wizard smoke evidence.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: B6.3; PRD: §9 GA direction; ERD: Deployment/migration` during `/plan`; completed milestones were kept as context, not tickets.
 - 2026-08-21T14:55:02+10:00 - Q-002 answered by Cheng: friend families first; handbook tone constraint recorded.
+- 2026-08-21T21:04:51+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-21T21:08:48+10:00 - DONE. `BETA-HANDBOOK.md` shipped: parent one-pager, non-technical install guide, privacy expectations, feedback channel, weekly check-in template; README links to it. Verification: manual command-by-command review against DEPLOYMENT.md/README (all match); full backend suite 262 passed/4 skipped — docs-only change, baseline unchanged. Unlocks ISS-024.
 
 ## ISS-024 - QCE senior instrument modelling
 - Status: `READY`
