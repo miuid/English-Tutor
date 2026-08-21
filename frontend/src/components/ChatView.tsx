@@ -319,6 +319,11 @@ export default function ChatView({ student }: ChatViewProps) {
               Tip: set up your profile in the Profile tab so sessions match your year level.
             </p>
           )}
+          {student?.shared_goal ? (
+            <p className="profile-hint">
+              This week's shared goal: <strong>{student.shared_goal}</strong>
+            </p>
+          ) : null}
           {error ? (
             <p className="error-banner" role="alert">
               {error}

@@ -301,6 +301,33 @@ def test_parent_report_json_enforces_privacy_boundary(api_client: TestClient) ->
         assert secret not in response.text
 
 
+def test_parent_report_carries_shared_goal(api_client: TestClient) -> None:
+    """ISS-020: the shared goal is visible to parents (it is a goal, not content)."""
+    student = _seed_graded_week(api_client)
+    patched = api_client.patch(
+        f"/api/students/{student['id']}",
+        json={"shared_goal": "Write clearer paragraphs"},
+    )
+    assert patched.status_code == 200
+
+    report = api_client.get(f"/api/students/{student['id']}/parent-report")
+    assert report.status_code == 200
+    assert report.json()["shared_goal"] == "Write clearer paragraphs"
+
+    printed = api_client.get(f"/api/students/{student['id']}/parent-report/print")
+    assert printed.status_code == 200
+    assert "Shared goal: Write clearer paragraphs" in printed.text
+
+    # No goal set: the field is null and the print page renders no chip.
+    other = api_client.post(
+        "/api/students", json={"name": "Goal-less", "year_level": 8}
+    ).json()
+    plain_report = api_client.get(f"/api/students/{other['id']}/parent-report")
+    assert plain_report.json()["shared_goal"] is None
+    plain_print = api_client.get(f"/api/students/{other['id']}/parent-report/print")
+    assert "Shared goal:" not in plain_print.text
+
+
 def test_parent_report_print_generates_from_same_data(api_client: TestClient) -> None:
     """The printable page carries the same trends — and the same boundary."""
     student = _seed_graded_week(api_client)

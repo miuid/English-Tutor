@@ -171,6 +171,13 @@ class InteractiveLoop:
         resolved_year_level = str(student.year_level)
         coach_tone = student.coach_tone or DEFAULT_COACH_TONE
 
+        # Shared parent-student goal (ISS-020): the session opening references
+        # it so the week's first coach turns start from what the family agreed
+        # to work on. Prompt-level only — no goal, no change to the inputs.
+        opening_inputs: dict[str, str] = {}
+        if student.shared_goal:
+            opening_inputs["shared_goal"] = student.shared_goal
+
         review = await self._execute_and_log(
             session,
             self.skills["spaced-review"],
@@ -181,6 +188,7 @@ class InteractiveLoop:
                 "task_prompt": task_prompt or DEFAULT_TASK_PROMPT,
                 "context": context or "",
                 "student_text": "",
+                **opening_inputs,
                 "review_history": build_review_history(
                     self.db, student.id, now=self._now()
                 ),
@@ -205,6 +213,7 @@ class InteractiveLoop:
                 "task_prompt": task_prompt or DEFAULT_TASK_PROMPT,
                 "context": context or "",
                 "student_text": "",
+                **opening_inputs,
             },
         )
         self._save_tutor_turn(

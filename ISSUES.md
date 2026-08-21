@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-21T12:15:00+10:00`
+- Last evaluated: `2026-08-21T14:30:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -55,7 +55,7 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-017 | Criterion level-up celebration | `DONE` | `P2` | `ISS-016` | `None` |
 | ISS-018 | Coach persona tone setting | `DONE` | `P2` | `ISS-017` | `None` |
 | ISS-019 | Weekly parent report with privacy boundary | `DONE` | `P2` | `ISS-018` | `None` |
-| ISS-020 | Shared parent-student goal setting | `READY` | `P2` | `ISS-019` | `None` |
+| ISS-020 | Shared parent-student goal setting | `DONE` | `P2` | `ISS-019` | `None` |
 | ISS-021 | Per-stage model routing | `READY` | `P2` | `ISS-020` | `None` |
 | ISS-022 | Privacy-safe telemetry and feedback package | `READY` | `P2` | `ISS-021` | `None` |
 | ISS-023 | Beta handbook | `READY` | `P2` | `ISS-022` | `None` |
@@ -928,7 +928,7 @@ Add an in-app weekly parent report and printable PDF showing sessions, time, cri
 - 2026-08-21T12:15:00+10:00 - DONE. Weekly parent report shipped: `build_parent_report` (derived weekly window, sessions/time, criterion trends, highlight, next-week suggestion) + JSON and printable-HTML endpoints with the D3 privacy boundary enforced in one module + Parent tab UI with print-to-PDF. Verification: targeted 12 passed; full suite 237 passed/4 skipped; ruff clean; mypy unchanged vs baseline; frontend build + oxlint clean; HTTP smoke of both endpoints green. Unlocks ISS-020.
 
 ## ISS-020 - Shared parent-student goal setting
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P2`
 - Type: `feature`
 - Depends on: `ISS-019`
@@ -937,32 +937,39 @@ Add an in-app weekly parent report and printable PDF showing sessions, time, cri
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: B5.2; PRD: §7 deferred parent layer; ERD: student/session`
 - Effort: `S`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
+- Attempt: `1`
+- Started: `2026-08-21T14:14:19+10:00`
+- Completed: `2026-08-21T14:30:00+10:00`
 - Commit: `None`
 
 ### Outcome and scope
 Let parent and student set a weekly goal together and surface it at the start of the session loop.
 
 ### Acceptance criteria
-- [ ] Weekly goal is stored on the student profile or related goal record.
-- [ ] Session opening references the shared goal.
-- [ ] Goal edits are visible in the parent/student views according to the privacy boundary.
+- [x] Weekly goal is stored on the student profile or related goal record.
+- [x] Session opening references the shared goal.
+- [x] Goal edits are visible in the parent/student views according to the privacy boundary.
 
 ### Implementation notes
 - Likely files or components: backend/app/models.py, backend/app/api/routes.py, backend/app/sessions/interactive.py, frontend/src/components/ProfileView.tsx.
 - Constraints: keep goal supportive and lightweight; do not add surveillance-style controls.
 
 ### Verification
-- [ ] `cd backend && uv run pytest`
-- [ ] `cd frontend && npm run build`
+- [x] `cd backend && uv run pytest` — 242 passed, 4 skipped (was 237/4; +5 new tests); `uv run ruff check .` clean; `uv run mypy app tests` 29 errors in the same 4 unrelated test files as the ISS-019 baseline (test_config, test_delete_student, test_interaction_log, test_session_time); changed files clean.
+- [x] `cd frontend && npm run build` — tsc + vite build clean (383.31 kB bundle); `npm run lint` (oxlint) — 0 warnings, 0 errors.
 
 ### Completion evidence
-- Pending
+- `student.shared_goal` (nullable VARCHAR(280)) stores the family's shared weekly goal; idempotent SQLite column patch `_ensure_student_shared_goal_column` keeps existing dev/LAN databases. API: `shared_goal` on StudentCreate/StudentUpdate/StudentOut — create strips blank to None; PATCH `""` clears, an omitted field leaves the goal unchanged.
+- Session opening: `InteractiveLoop.start()` injects `shared_goal` into both opening skill inputs (spaced-review + set-success-criteria) only when set, so goal-less openings stay byte-identical; the ChatView start card also shows "This week's shared goal" before the session begins.
+- Privacy boundary: the goal is visible in the parent report (JSON `shared_goal` field, printable chip, Parent tab UI chip) because it is a goal, not student content — the D3 marker tests are unchanged and green. Student view: Profile tab saved row + edit field.
+- Export/restore: `shared_goal` round-trips through student export/import; older exports without the key import as None (format version unchanged).
+- Tests: new `test_shared_goal_defaults_to_none_and_round_trips`, `test_session_opening_references_shared_goal` (both opening prompts carry the goal; goal-less prompts omit the key), `test_parent_report_carries_shared_goal` (JSON + print + no-goal cases), `test_export_import_round_trip_preserves_shared_goal`, `test_import_older_export_without_shared_goal_defaults_none`.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: B5.2; PRD: §7 deferred parent layer; ERD: student/session` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-21T14:14:19+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-21T14:30:00+10:00 - DONE. Shared parent-student weekly goal shipped: `student.shared_goal` + profile API (set/edit/clear), session-opening prompts reference it (spaced-review + set-success-criteria inputs, byte-identical when unset), ChatView start card shows it, parent report (JSON/print/UI) carries it inside the D3 boundary, and it survives export/import. Verification: full suite 242 passed/4 skipped (+5 new tests); ruff clean; mypy unchanged vs baseline; frontend build + oxlint clean. Unlocks ISS-021.
 
 ## ISS-021 - Per-stage model routing
 - Status: `READY`

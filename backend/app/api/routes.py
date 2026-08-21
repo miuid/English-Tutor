@@ -99,6 +99,7 @@ def _student_out(student: Student) -> StudentOut:
         focus_text_types=student.focus_text_types or [],
         weekly_goal=student.weekly_goal,
         coach_tone=student.coach_tone,
+        shared_goal=student.shared_goal,
         created_at=student.created_at,
     )
 
@@ -116,6 +117,7 @@ async def create_student(
         focus_text_types=payload.focus_text_types,
         weekly_goal=payload.weekly_goal,
         coach_tone=payload.coach_tone,
+        shared_goal=(payload.shared_goal or "").strip() or None,
     )
     db.add(student)
     db.commit()
@@ -183,6 +185,8 @@ async def update_student(
         student.weekly_goal = payload.weekly_goal
     if payload.coach_tone is not None:
         student.coach_tone = payload.coach_tone
+    if payload.shared_goal is not None:
+        student.shared_goal = payload.shared_goal.strip() or None
     db.commit()
     db.refresh(student)
     return _student_out(student)
@@ -523,6 +527,7 @@ def _parent_report_out(report: ParentReport) -> ParentReportOut:
         practice_seconds_this_week=report.practice_seconds_this_week,
         weekly_goal=report.weekly_goal,
         goal_met=report.goal_met,
+        shared_goal=report.shared_goal,
         trends=[
             CriterionTrendOut(
                 criterion_name=trend.criterion_name,

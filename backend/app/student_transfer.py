@@ -178,6 +178,7 @@ def export_student(db: DBSession, student: Student) -> dict[str, Any]:
             "focus_text_types": list(student.focus_text_types or []),
             "weekly_goal": student.weekly_goal,
             "coach_tone": student.coach_tone,
+            "shared_goal": student.shared_goal,
             "created_at": _iso(student.created_at),
         },
         "sessions": session_docs,
@@ -239,6 +240,10 @@ def import_student(db: DBSession, payload: Any) -> Student:
     coach_tone = student_doc.get("coach_tone", DEFAULT_COACH_TONE)
     if coach_tone not in COACH_TONES:
         raise ExportImportError("Student profile has an invalid coach tone.")
+    # Older exports predate the shared goal (ISS-020); default to None.
+    shared_goal = student_doc.get("shared_goal")
+    if shared_goal is not None and not isinstance(shared_goal, str):
+        raise ExportImportError("Student profile has an invalid shared goal.")
     sessions_doc = payload.get("sessions")
     if not isinstance(sessions_doc, list):
         raise ExportImportError("Export is missing the sessions list.")
@@ -250,6 +255,7 @@ def import_student(db: DBSession, payload: Any) -> Student:
         focus_text_types=focus,
         weekly_goal=weekly_goal,
         coach_tone=coach_tone,
+        shared_goal=shared_goal,
         created_at=_parse_dt(student_doc.get("created_at"), "student.created_at")
         or datetime.now(UTC),
     )

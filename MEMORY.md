@@ -147,6 +147,14 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 11. Session log
 
+### 2026-08-21 — ISS-020 done: shared parent-student goal setting (B5.2)
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-020 (P2, dep ISS-019 DONE).
+- **Shipped:** `student.shared_goal` (nullable VARCHAR(280)) — the family's agreed qualitative weekly focus, distinct from the numeric `weekly_goal` (ISS-016). Set/edit/clear via the profile API (PATCH `""` clears; omitted field untouched); idempotent SQLite column patch follows the established `_ensure_student_*` pattern.
+- **Session opening:** `InteractiveLoop.start()` injects `shared_goal` into both opening skill inputs (spaced-review + set-success-criteria) only when set — goal-less openings stay byte-identical. The ChatView start card surfaces it before the session begins.
+- **Privacy (D3):** the goal crosses into the parent report deliberately (JSON field, printable chip, Parent tab chip) because it is a goal, not student content; D3 marker tests unchanged and green. Export/import round-trips it; pre-ISS-020 exports default to None (format version unchanged).
+- Verified: full suite **242 passed/4 skipped** (+5 new tests); ruff clean; mypy 29 errors in the same 4 unrelated baseline files, changed files clean; frontend tsc+vite+oxlint clean.
+- **Next pick-up:** ISS-021 — per-stage model routing.
+
 ### 2026-08-21 — ISS-019 done: weekly parent report with privacy boundary (B5.1)
 - Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-019 (P2, dep ISS-018 DONE).
 - **Shipped:** `backend/app/parent_report.py::build_parent_report` — **derived, never stored** (mirrors streak/level-up decisions): Monday–today local week window, sessions + practice-time counts, weekly-goal state, per-criterion trends (latest/previous level, up/down/steady/new direction, dated points), one honest highlight (this week's level-up, else goal-met), one supportive next-week suggestion (goal nudge → dip revisit → weakest growth area → keep going). Endpoints: `GET /api/students/{id}/parent-report` (JSON) + `GET /api/students/{id}/parent-report/print` (server-rendered printable HTML from the **same** `ParentReport` value; browser prints to PDF — no new dependency, PDFs can never disagree with the app).

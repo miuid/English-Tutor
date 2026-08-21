@@ -305,6 +305,79 @@ def test_baseline_unknown_student_returns_404(baseline_client: ApiClient) -> Non
     assert response.status_code == 404
 
 
+def test_shared_goal_defaults_to_none_and_round_trips(api_client: ApiClient) -> None:
+    """ISS-020: the shared goal is optional, settable, editable, and clearable."""
+    client, _ = api_client
+    created = client.post("/api/students", json={"name": "Kai", "year_level": 8})
+    assert created.status_code == 201
+    assert created.json()["shared_goal"] is None
+
+    with_goal = client.post(
+        "/api/students",
+        json={
+            "name": "Rae",
+            "year_level": 8,
+            "shared_goal": "Write clearer paragraphs",
+        },
+    )
+    assert with_goal.status_code == 201
+    assert with_goal.json()["shared_goal"] == "Write clearer paragraphs"
+
+    updated = client.patch(
+        f"/api/students/{with_goal.json()['id']}",
+        json={"shared_goal": "Use one strong quote per paragraph"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["shared_goal"] == "Use one strong quote per paragraph"
+
+    # An empty string clears the goal; omitting the field leaves it unchanged.
+    cleared = client.patch(
+        f"/api/students/{with_goal.json()['id']}",
+        json={"shared_goal": ""},
+    )
+    assert cleared.status_code == 200
+    assert cleared.json()["shared_goal"] is None
+    assert cleared.json()["name"] == "Rae"
+
+    untouched = client.patch(
+        f"/api/students/{with_goal.json()['id']}",
+        json={"name": "Rae M."},
+    )
+    assert untouched.status_code == 200
+    assert untouched.json()["shared_goal"] is None
+    assert untouched.json()["name"] == "Rae M."
+
+
+def test_session_opening_references_shared_goal(api_client: ApiClient) -> None:
+    """ISS-020: both opening turns see the shared goal; no goal, no input."""
+    client, fake = api_client
+    student = client.post(
+        "/api/students",
+        json={
+            "name": "Kai",
+            "year_level": 8,
+            "shared_goal": "Write clearer paragraphs",
+        },
+    ).json()
+
+    response = client.post("/api/sessions", json={"student_id": student["id"]})
+    assert response.status_code == 201
+    # Calls 0 and 1 are the opening turns: spaced-review + set-success-criteria.
+    opening = [fake.calls[0][1][0]["content"], fake.calls[1][1][0]["content"]]
+    for user_message in opening:
+        assert "shared_goal: Write clearer paragraphs" in user_message
+
+    # Without a shared goal the input never appears (byte-stable opening).
+    plain = client.post(
+        "/api/students", json={"name": "No goal", "year_level": 8}
+    ).json()
+    response = client.post("/api/sessions", json={"student_id": plain["id"]})
+    assert response.status_code == 201
+    later_opening = [fake.calls[-2][1][0]["content"], fake.calls[-1][1][0]["content"]]
+    for user_message in later_opening:
+        assert "shared_goal" not in user_message
+
+
 def test_create_student_defaults_coach_tone_to_warm(api_client: ApiClient) -> None:
     client, _ = api_client
     response = client.post("/api/students", json={"name": "Kai", "year_level": 8})

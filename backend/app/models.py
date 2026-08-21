@@ -81,6 +81,12 @@ class Student(Base):
     coach_tone: Mapped[str] = mapped_column(
         sa.String(20), default=DEFAULT_COACH_TONE
     )
+    # Shared parent-student weekly goal (ISS-020): a short qualitative focus
+    # set together (e.g. "write clearer paragraphs"). Surfaced at the session
+    # opening and in the parent report — supportive only, never a control.
+    shared_goal: Mapped[str | None] = mapped_column(
+        sa.String(280), nullable=True, default=None
+    )
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         default=_now,

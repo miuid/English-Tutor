@@ -60,6 +60,7 @@ class ParentReport:
     practice_seconds_this_week: int
     weekly_goal: int
     goal_met: bool
+    shared_goal: str | None  # the family's agreed weekly focus (ISS-020) — a goal, not content
     trends: list[CriterionTrend]
     highlight: str | None  # the week's single most encouraging moment
     next_week_suggestion: str
@@ -139,6 +140,7 @@ def build_parent_report(
         practice_seconds_this_week=practice_seconds,
         weekly_goal=student.weekly_goal,
         goal_met=goal_met,
+        shared_goal=student.shared_goal,
         trends=trends,
         highlight=highlight,
         next_week_suggestion=suggestion,
@@ -297,6 +299,11 @@ def render_parent_report_html(report: ParentReport) -> str:
         f"{report.sessions_this_week} of {report.weekly_goal} sessions this week"
         + (" — goal reached ⭐" if report.goal_met else "")
     )
+    shared_goal_chip = (
+        f'<span class="chip">Shared goal: {escape(report.shared_goal)}</span>'
+        if report.shared_goal
+        else ""
+    )
     trend_rows = "".join(
         "<tr>"
         f"<td>{escape(trend.criterion_name)}</td>"
@@ -361,6 +368,7 @@ def render_parent_report_html(report: ParentReport) -> str:
 <div class="chips">
   <span class="chip">{escape(goal_chip)}</span>
   <span class="chip">{minutes} min practice this week</span>
+  {shared_goal_chip}
 </div>
 
 {highlight_block}

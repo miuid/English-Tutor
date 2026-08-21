@@ -302,3 +302,47 @@ def test_import_rejects_invalid_coach_tone(client: TestClient) -> None:
         },
     )
     assert res.status_code == 400
+
+
+def test_export_import_round_trip_preserves_shared_goal(client: TestClient) -> None:
+    """ISS-020: the shared goal survives export -> import."""
+    created = client.post(
+        "/api/students",
+        json={
+            "name": "Rae",
+            "year_level": 8,
+            "shared_goal": "Write clearer paragraphs",
+        },
+    )
+    assert created.status_code == 201
+    student_id = created.json()["id"]
+
+    doc = client.get(f"/api/students/{student_id}/export").json()
+    assert doc["student"]["shared_goal"] == "Write clearer paragraphs"
+
+    imported = client.post("/api/students/import", json=doc)
+    assert imported.status_code == 201
+    assert imported.json()["shared_goal"] == "Write clearer paragraphs"
+
+
+def test_import_older_export_without_shared_goal_defaults_none(
+    client: TestClient,
+) -> None:
+    """Exports from before ISS-020 carry no shared_goal; import must default."""
+    res = client.post(
+        "/api/students/import",
+        json={
+            "format": "english-tutor-student-export",
+            "version": 1,
+            "student": {
+                "name": "Sam",
+                "year_level": 9,
+                "curriculum": "QCAA",
+                "focus_text_types": [],
+                "created_at": None,
+            },
+            "sessions": [],
+        },
+    )
+    assert res.status_code == 201
+    assert res.json()["shared_goal"] is None

@@ -35,6 +35,7 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
   const [focusTextTypes, setFocusTextTypes] = useState<string[]>([])
   const [weeklyGoal, setWeeklyGoal] = useState(4)
   const [coachTone, setCoachTone] = useState('warm')
+  const [sharedGoal, setSharedGoal] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -78,6 +79,7 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
     // Cached profiles from before the weekly goal shipped may lack the field.
     setWeeklyGoal(s.weekly_goal ?? 4)
     setCoachTone(s.coach_tone ?? 'warm')
+    setSharedGoal(s.shared_goal ?? '')
   }
 
   function toggleTextType(type: string) {
@@ -100,6 +102,7 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
           focus_text_types: focus,
           weekly_goal: weeklyGoal,
           coach_tone: coachTone,
+          shared_goal: sharedGoal.trim(),
         })
         finishSave(updated)
       } else {
@@ -110,6 +113,7 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
           focus_text_types: focus,
           weekly_goal: weeklyGoal,
           coach_tone: coachTone,
+          shared_goal: sharedGoal.trim(),
         })
         finishSave(created)
       }
@@ -153,6 +157,7 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
     setFocusTextTypes([])
     setWeeklyGoal(4)
     setCoachTone('warm')
+    setSharedGoal('')
     setMode('empty')
     // Return the app to the first-run wizard so another profile can be
     // selected or created (e.g. a sibling on a shared family device).
@@ -203,6 +208,10 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
                 {COACH_TONES.find((t) => t.value === (student.coach_tone ?? 'warm'))?.label ??
                   'Warm'}
               </dd>
+            </div>
+            <div>
+              <dt>Shared weekly goal</dt>
+              <dd>{student.shared_goal ?? 'Not set yet'}</dd>
             </div>
           </dl>
           <div className="profile-actions">
@@ -319,6 +328,23 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
           </select>
           <p className="muted small">
             A gentle target — missing a day never costs you anything.
+          </p>
+
+          <label className="field-label" htmlFor="profile-shared-goal">
+            Shared weekly goal <span className="optional">(optional)</span>
+          </label>
+          <input
+            id="profile-shared-goal"
+            className="text-input"
+            type="text"
+            value={sharedGoal}
+            onChange={(e) => setSharedGoal(e.target.value)}
+            placeholder="e.g. Write clearer paragraphs"
+            maxLength={280}
+          />
+          <p className="muted small">
+            Set it together — parent and student — at the start of the week. Your tutor opens
+            each session with it, and it shows on the weekly parent report.
           </p>
 
           <span className="field-label">Coach tone</span>

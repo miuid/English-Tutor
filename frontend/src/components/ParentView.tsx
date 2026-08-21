@@ -99,6 +99,9 @@ export default function ParentView({ studentId }: ParentViewProps) {
             : `This week: ${report.sessions_this_week} of ${report.weekly_goal} sessions`}
         </span>
         <span className="weekly-chip">{minutes} min practice</span>
+        {report.shared_goal ? (
+          <span className="weekly-chip">Shared goal: {report.shared_goal}</span>
+        ) : null}
       </div>
 
       {report.highlight ? (

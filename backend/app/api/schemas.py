@@ -22,6 +22,7 @@ class StudentCreate(BaseModel):
     focus_text_types: list[str] = Field(default_factory=list)
     weekly_goal: int = Field(default=DEFAULT_WEEKLY_GOAL, ge=1, le=MAX_WEEKLY_GOAL)
     coach_tone: CoachTone = DEFAULT_COACH_TONE
+    shared_goal: str | None = Field(default=None, max_length=280)
 
 
 class StudentUpdate(BaseModel):
@@ -33,6 +34,8 @@ class StudentUpdate(BaseModel):
     focus_text_types: list[str] | None = None
     weekly_goal: int | None = Field(default=None, ge=1, le=MAX_WEEKLY_GOAL)
     coach_tone: CoachTone | None = None
+    # Send "" to clear the shared goal (None means "leave unchanged").
+    shared_goal: str | None = Field(default=None, max_length=280)
 
 
 class StudentOut(BaseModel):
@@ -43,6 +46,7 @@ class StudentOut(BaseModel):
     focus_text_types: list[str]
     weekly_goal: int
     coach_tone: str
+    shared_goal: str | None
     created_at: datetime
 
 
@@ -233,6 +237,9 @@ class ParentReportOut(BaseModel):
     practice_seconds_this_week: int
     weekly_goal: int
     goal_met: bool
+    # The family's shared weekly goal (ISS-020) — a goal is not student
+    # content, so it crosses the D3 boundary deliberately.
+    shared_goal: str | None
     trends: list[CriterionTrendOut]
     highlight: str | None
     next_week_suggestion: str

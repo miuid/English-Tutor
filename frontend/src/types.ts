@@ -8,6 +8,7 @@ export interface StudentOut {
   focus_text_types: string[]
   weekly_goal: number
   coach_tone: string
+  shared_goal: string | null
   created_at: string
 }
 
@@ -18,6 +19,7 @@ export interface StudentCreate {
   focus_text_types?: string[]
   weekly_goal?: number
   coach_tone?: string
+  shared_goal?: string | null
 }
 
 export interface StudentUpdate {
@@ -27,6 +29,7 @@ export interface StudentUpdate {
   focus_text_types?: string[]
   weekly_goal?: number
   coach_tone?: string
+  shared_goal?: string | null // send "" to clear
 }
 
 export interface TurnOut {
@@ -165,6 +168,7 @@ export interface ParentReportOut {
   practice_seconds_this_week: number
   weekly_goal: number
   goal_met: boolean
+  shared_goal: string | null // the family's shared weekly goal (ISS-020) — a goal, not content
   trends: CriterionTrendOut[]
   highlight: string | null
   next_week_suggestion: string
