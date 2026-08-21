@@ -1119,7 +1119,7 @@ Write the beta handbook: install guide, parent one-pager, feedback channel, and 
 - Attempt: `1`
 - Started: `2026-08-21T21:40:00+10:00`
 - Completed: `2026-08-21T22:05:00+10:00`
-- Commit: `<pending>`
+- Commit: `1d6b2a4`
 
 ### Outcome and scope
 Model QCE Units 1-4, IA1, IA2, IA3, and EA into curriculum_outcome and write the ISMG to A-E mapping research note.
