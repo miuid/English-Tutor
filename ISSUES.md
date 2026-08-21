@@ -984,7 +984,7 @@ Let parent and student set a weekly goal together and surface it at the start of
 - Attempt: `1`
 - Started: `2026-08-21T16:31:48+10:00`
 - Completed: `2026-08-21T16:44:07+10:00`
-- Commit: `None`
+- Commit: `2d8892c`
 
 ### Outcome and scope
 Add config-driven per-stage model routing so heavy judgement stages can use stronger models and light stages can use cheaper tiers.
