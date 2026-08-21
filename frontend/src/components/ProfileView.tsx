@@ -147,6 +147,18 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
     a.remove()
   }
 
+  function handleFeedbackPackage() {
+    if (!student) return
+    // Beta issue report: counts, settings, and environment only — never the
+    // student's writing or tutor responses. Safe to email to the developer.
+    const a = document.createElement('a')
+    a.href = `/api/students/${student.id}/feedback-package`
+    a.rel = 'noopener'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  }
+
   function handleClear() {
     clearStudentProfile()
     clearStudentId()
@@ -221,6 +233,9 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
             <button type="button" className="btn ghost" onClick={handleExport}>
               Export my data
             </button>
+            <button type="button" className="btn ghost" onClick={handleFeedbackPackage}>
+              Report a problem
+            </button>
             <button type="button" className="btn ghost" onClick={handleClear}>
               Clear
             </button>
@@ -228,6 +243,12 @@ export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
           <p className="muted small">
             Export downloads one JSON file with your profile, sessions, writing,
             and progress. Keep it somewhere safe — it's private.
+          </p>
+          <p className="muted small">
+            Report a problem downloads a feedback package you can email when
+            something goes wrong. It contains only usage counts, settings, and
+            device info — never your writing or the tutor's responses, and not
+            even your name.
           </p>
         </section>
       </div>

@@ -34,12 +34,14 @@ from app.api.schemas import (
     TrendPointOut,
     TurnOut,
 )
+from app.config import get_settings
 from app.level_ups import build_level_ups
 from app.models import Attempt, Feedback, RubricScore, Session, Student
 from app.motivation import build_motivation
 from app.parent_report import ParentReport, build_parent_report, render_parent_report_html
 from app.sessions.interactive import InteractiveLoop, SessionNotFoundError, StageConflictError
 from app.student_transfer import ExportImportError, export_student, import_student
+from app.telemetry import build_feedback_package, build_telemetry
 
 router = APIRouter(prefix="/api")
 
@@ -415,6 +417,53 @@ async def export_student_data(
         headers={
             "Content-Disposition": (
                 f'attachment; filename="english-tutor-export-{safe_name}.json"'
+            )
+        },
+    )
+
+
+@router.get("/students/{student_id}/telemetry")
+async def student_telemetry(
+    student_id: uuid.UUID,
+    db: DBSession = Depends(get_db),
+) -> JSONResponse:
+    """Aggregated usage metrics for one student (ISS-022).
+
+    Counts, totals, and timestamps only — never student writing, task
+    prompts, feedback prose, rubric notes, or LLM prompt/completion text.
+    """
+    student = db.get(Student, student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return JSONResponse(
+        content={
+            "student_id": str(student_id),
+            "telemetry": build_telemetry(db, student),
+        }
+    )
+
+
+@router.get("/students/{student_id}/feedback-package")
+async def student_feedback_package(
+    student_id: uuid.UUID,
+    db: DBSession = Depends(get_db),
+) -> JSONResponse:
+    """One-click feedback package download for beta families (ISS-022).
+
+    Bundles aggregated telemetry, redacted non-secret config, environment
+    metadata, and recent session/interaction *metadata* (lengths, not text)
+    so a beta issue can be diagnosed without remote access. Safe to email:
+    no student writing, no LLM content, no student name, no credentials.
+    """
+    student = db.get(Student, student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    document = build_feedback_package(db, student, get_settings())
+    return JSONResponse(
+        content=document,
+        headers={
+            "Content-Disposition": (
+                'attachment; filename="english-tutor-feedback-package.json"'
             )
         },
     )

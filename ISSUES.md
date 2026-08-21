@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-21T16:44:07+10:00`
+- Last evaluated: `2026-08-21T19:05:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -57,7 +57,7 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-019 | Weekly parent report with privacy boundary | `DONE` | `P2` | `ISS-018` | `None` |
 | ISS-020 | Shared parent-student goal setting | `DONE` | `P2` | `ISS-019` | `None` |
 | ISS-021 | Per-stage model routing | `DONE` | `P2` | `ISS-020` | `None` |
-| ISS-022 | Privacy-safe telemetry and feedback package | `READY` | `P2` | `ISS-021` | `None` |
+| ISS-022 | Privacy-safe telemetry and feedback package | `DONE` | `P2` | `ISS-021` | `None` |
 | ISS-023 | Beta handbook | `READY` | `P2` | `ISS-022` | `None` |
 | ISS-024 | QCE senior instrument modelling | `READY` | `P2` | `ISS-023` | `None` |
 | ISS-025 | Senior IA1 analytical pack | `READY` | `P2` | `ISS-024` | `None` |
@@ -1018,7 +1018,7 @@ Add config-driven per-stage model routing so heavy judgement stages can use stro
 - 2026-08-21T16:44:07+10:00 - DONE. Per-stage model routing shipped: `LLM_STAGE_MODELS` routing table + `StageProviderRouter` + opt-in executor wiring + per-stage model recorded in interaction_log. Verification: targeted 59 passed/3 skipped (62/3 with interaction-log tests); full suite 253 passed/4 skipped; ruff clean; mypy unchanged vs baseline. Unlocks ISS-022.
 
 ## ISS-022 - Privacy-safe telemetry and feedback package
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P2`
 - Type: `feature`
 - Depends on: `ISS-021`
@@ -1027,32 +1027,40 @@ Add config-driven per-stage model routing so heavy judgement stages can use stro
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: B6.2; PRD: §6 privacy; ERD: Privacy & retention`
 - Effort: `S`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
-- Commit: `None`
+- Attempt: `1`
+- Started: `2026-08-21T18:51:32+10:00`
+- Completed: `2026-08-21T19:05:00+10:00`
+- Commit: `<to be recorded post-commit>`
 
 ### Outcome and scope
 Add local aggregated usage metrics with no student content and a one-click feedback package export for beta families.
 
 ### Acceptance criteria
-- [ ] Telemetry excludes student writing and LLM content.
-- [ ] Feedback package bundles logs/config/metadata needed to diagnose a beta issue.
-- [ ] A beta issue can be diagnosed from the package in under 10 minutes.
+- [x] Telemetry excludes student writing and LLM content.
+- [x] Feedback package bundles logs/config/metadata needed to diagnose a beta issue.
+- [x] A beta issue can be diagnosed from the package in under 10 minutes.
 
 ### Implementation notes
 - Likely files or components: backend/app/api/routes.py, backend/app/eval or backend/app/ops, frontend/src/components/ProfileView.tsx.
 - Constraints: privacy-safe by default; no third-party analytics on student content.
 
 ### Verification
-- [ ] `cd backend && uv run pytest`
-- [ ] `cd frontend && npm run build`
+- [x] `cd backend && uv run pytest` — 262 passed, 4 skipped (was 253/4 at ISS-021; +9 new tests in tests/test_telemetry.py).
+- [x] `cd frontend && npm run build` — tsc + vite build clean (383.85 kB bundle); `npm run lint` (oxlint) — 0 warnings, 0 errors.
+- [x] `cd backend && uv run ruff check .` — clean; `uv run mypy app tests` — 29 errors in the same 4 unrelated test files as the ISS-021 baseline (test_config, test_delete_student, test_interaction_log, test_session_time); changed files clean (one new no-any-return found and fixed during the run).
 
 ### Completion evidence
-- Pending
+- New `backend/app/telemetry.py`: `build_telemetry(db, student)` aggregates counts/totals/timestamps only — sessions/attempts/feedback/rubric-score totals, attempts by mode and by skill name, practice seconds, LLM calls by model and by skill, `llm_empty_output_calls` (the classic "feedback never arrived" symptom), first/last activity. `build_feedback_package(db, student, settings)` bundles the telemetry plus `environment` (app/python/fastapi/sqlalchemy versions, platform, loaded skill names), redacted non-secret `config` (provider, model, stage models, time budget, DB **dialect only** — `llm_api_key` never touched), `student_context` (year level/curriculum/focus types/tone/goal — **deliberately no name** so the package is safe to email), `recent_sessions` (last 10: stage/timing/paused, learning intention excluded) and `recent_interactions` (last 20: model/skill/timestamps + input/output **character lengths**, never text).
+- Routes: `GET /api/students/{id}/telemetry` and `GET /api/students/{id}/feedback-package` (downloadable JSON attachment, 404 on unknown student), following the ISS-011 export pattern.
+- Frontend: ProfileView gains a **Report a problem** button (same anchor-download pattern as Export) with an explainer that the package carries counts/settings/device info only — never writing, tutor responses, or even the student's name.
+- Privacy boundary enforced by tests: `test_feedback_package_never_contains_student_content` plants distinctive markers in every content-bearing field (name, essay, task prompt, feedback prose, rubric note, log input/output, learning intention) and asserts none survive `json.dumps(package)`; `test_feedback_package_has_no_student_name_in_telemetry_endpoint_shape` does the same for telemetry alone; HTTP test asserts a created student's name never appears in the endpoint response body.
+- The <10-minute diagnosis criterion is operationalised by a new README "Reporting a beta issue" section: what's inside, and a 5-step reading order (config drift → empty-output count → stalled session stage → interaction lengths → environment versions).
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: B6.2; PRD: §6 privacy; ERD: Privacy & retention` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-21T18:51:32+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-21T19:05:00+10:00 - DONE. Privacy-safe telemetry + feedback package shipped: `app/telemetry.py` aggregation module, `/telemetry` + `/feedback-package` endpoints, ProfileView "Report a problem" download, README 10-minute diagnosis checklist. Privacy boundary (no writing, no LLM content, no name, no credentials) enforced by marker-string regression tests. Verification: full suite 262 passed/4 skipped; ruff clean; mypy unchanged vs baseline; frontend build + oxlint clean. Unlocks ISS-023.
 
 ## ISS-023 - Beta handbook
 - Status: `READY`

@@ -85,6 +85,34 @@ mypy app
 - `POST /api/sessions/{id}/advance` — next tutor stage (I do → we do → you do)
 - `POST /api/sessions/{id}/submit` — submit student text
 - `GET /api/students/{id}/progress` — A–E rubric progression over time
+- `GET /api/students/{id}/telemetry` — aggregated usage metrics (counts only, no content)
+- `GET /api/students/{id}/feedback-package` — one-click beta issue report download
 - `DELETE /api/students/{id}` — delete all student data (privacy)
 
 OpenAPI docs at `/docs`.
+
+## Reporting a beta issue
+
+Something broken? Open the **Profile** tab and click **Report a problem** to
+download a feedback package (one JSON file), then email it to the developer.
+
+**What's inside** (safe to share): usage counts and totals, non-secret config
+(LLM provider/model, time budget), environment versions, the last sessions'
+stage/timing, and the last LLM calls' model/skill/**lengths**. It contains
+**no** student writing, no tutor responses, no rubric notes, no student name,
+and no API key — that boundary is enforced by automated tests.
+
+**Reading the package in under 10 minutes:**
+
+1. `config` — is the family on the expected `llm_provider` / `llm_model`?
+   A wrong provider or an overridden `llm_stage_models` explains most
+   "feedback sounds different" reports.
+2. `telemetry.llm_empty_output_calls` — above zero means the LLM returned
+   empty completions ("feedback never arrived"); `llm_calls_by_model` shows
+   which model produced them.
+3. `recent_sessions` — a session stuck on a non-`ended` `stage` with a low
+   `time_spent_seconds` points at the stage where the loop stalled.
+4. `recent_interactions` — `output_chars: 0` rows, or suddenly huge
+   `input_chars`, localise the failing skill by name and time.
+5. `environment` — version drift (old app, missing skills) explains behaviour
+   already fixed in a newer build.
