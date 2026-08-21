@@ -1030,7 +1030,7 @@ Add config-driven per-stage model routing so heavy judgement stages can use stro
 - Attempt: `1`
 - Started: `2026-08-21T18:51:32+10:00`
 - Completed: `2026-08-21T19:05:00+10:00`
-- Commit: `<to be recorded post-commit>`
+- Commit: `10c5f2e`
 
 ### Outcome and scope
 Add local aggregated usage metrics with no student content and a one-click feedback package export for beta families.
