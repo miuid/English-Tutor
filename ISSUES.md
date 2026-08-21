@@ -1075,7 +1075,7 @@ Add local aggregated usage metrics with no student content and a one-click feedb
 - Attempt: `1`
 - Started: `2026-08-21T21:04:51+10:00`
 - Completed: `2026-08-21T21:08:48+10:00`
-- Commit: `pending`
+- Commit: `c868be9`
 
 ### Outcome and scope
 Write the beta handbook: install guide, parent one-pager, feedback channel, and weekly check-in template.
