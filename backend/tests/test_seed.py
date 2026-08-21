@@ -6,6 +6,11 @@ from sqlalchemy.orm import Session as SqlSession
 from app.models import CurriculumOutcome
 from app.seed import (
     RUBRIC_CRITERIA,
+    SENIOR_EA_OUTCOMES,
+    SENIOR_IA1_OUTCOMES,
+    SENIOR_IA2_OUTCOMES,
+    SENIOR_IA3_OUTCOMES,
+    SENIOR_UNIT_OUTCOMES,
     YEAR_8_IMAGINATIVE_OUTCOMES,
     YEAR_8_OUTCOMES,
     YEAR_8_PERSUASIVE_OUTCOMES,
@@ -18,6 +23,10 @@ from app.seed import (
     seed,
 )
 
+SENIOR_INSTRUMENT_OUTCOMES = (
+    SENIOR_IA1_OUTCOMES + SENIOR_IA2_OUTCOMES + SENIOR_IA3_OUTCOMES + SENIOR_EA_OUTCOMES
+)
+
 ALL_OUTCOMES = (
     YEAR_8_OUTCOMES
     + YEAR_9_OUTCOMES
@@ -28,7 +37,11 @@ ALL_OUTCOMES = (
     + YEAR_8_IMAGINATIVE_OUTCOMES
     + YEAR_9_IMAGINATIVE_OUTCOMES
     + YEAR_10_IMAGINATIVE_OUTCOMES
+    + SENIOR_UNIT_OUTCOMES
+    + SENIOR_INSTRUMENT_OUTCOMES
 )
+
+JUNIOR_YEARS = (8, 9, 10)
 
 
 def test_seed_creates_year_8_outcomes(db_session: SqlSession) -> None:
@@ -89,7 +102,10 @@ def test_seed_creates_persuasive_outcomes(db_session: SqlSession) -> None:
     seed(db_session)
     persuasive = (
         db_session.execute(
-            select(CurriculumOutcome).where(CurriculumOutcome.text_type == "persuasive")
+            select(CurriculumOutcome).where(
+                CurriculumOutcome.text_type == "persuasive",
+                CurriculumOutcome.year_level.in_(JUNIOR_YEARS),
+            )
         )
         .scalars()
         .all()
@@ -114,7 +130,10 @@ def test_seed_creates_persuasive_outcomes(db_session: SqlSession) -> None:
     # Analytical outcomes are untouched by the persuasive seed pass.
     analytical = (
         db_session.execute(
-            select(CurriculumOutcome).where(CurriculumOutcome.text_type == "analytical")
+            select(CurriculumOutcome).where(
+                CurriculumOutcome.text_type == "analytical",
+                CurriculumOutcome.year_level.in_(JUNIOR_YEARS),
+            )
         )
         .scalars()
         .all()
@@ -128,7 +147,10 @@ def test_seed_creates_imaginative_outcomes(db_session: SqlSession) -> None:
     seed(db_session)
     imaginative = (
         db_session.execute(
-            select(CurriculumOutcome).where(CurriculumOutcome.text_type == "imaginative")
+            select(CurriculumOutcome).where(
+                CurriculumOutcome.text_type == "imaginative",
+                CurriculumOutcome.year_level.in_(JUNIOR_YEARS),
+            )
         )
         .scalars()
         .all()
@@ -156,7 +178,10 @@ def test_seed_creates_imaginative_outcomes(db_session: SqlSession) -> None:
     # Analytical and persuasive outcomes are untouched by the imaginative pass.
     other = (
         db_session.execute(
-            select(CurriculumOutcome).where(CurriculumOutcome.text_type != "imaginative")
+            select(CurriculumOutcome).where(
+                CurriculumOutcome.text_type != "imaginative",
+                CurriculumOutcome.year_level.in_(JUNIOR_YEARS),
+            )
         )
         .scalars()
         .all()
@@ -170,6 +195,58 @@ def test_seed_creates_imaginative_outcomes(db_session: SqlSession) -> None:
         + YEAR_9_PERSUASIVE_OUTCOMES
         + YEAR_10_PERSUASIVE_OUTCOMES
     }
+
+
+def test_seed_creates_senior_qce_outcomes(db_session: SqlSession) -> None:
+    seed(db_session)
+    senior = (
+        db_session.execute(
+            select(CurriculumOutcome).where(CurriculumOutcome.year_level.in_((11, 12)))
+        )
+        .scalars()
+        .all()
+    )
+    expected = SENIOR_UNIT_OUTCOMES + SENIOR_INSTRUMENT_OUTCOMES
+    assert {o.code for o in senior} == {o["code"] for o in expected}
+    for outcome in senior:
+        assert outcome.curriculum == "QCAA"
+    # Units 1-2 are Year 11 formative; Units 3-4 and every instrument are Year 12.
+    units = [o for o in senior if o.text_type == "framework"]
+    assert len(units) == len(SENIOR_UNIT_OUTCOMES)
+    assert {o.code for o in units if o.year_level == 11} == {"QCAA-Y11-U1", "QCAA-Y11-U2"}
+    assert {o.code for o in units if o.year_level == 12} == {"QCAA-Y12-U3", "QCAA-Y12-U4"}
+    instruments = [o for o in senior if o.text_type != "framework"]
+    assert len(instruments) == len(SENIOR_INSTRUMENT_OUTCOMES)
+    assert all(o.year_level == 12 for o in instruments)
+    # Instrument descriptors carry the official instrument name, 25% weight and
+    # the three ISMG criteria (English 2025 v1.3, Assessment section).
+    criteria = ("Knowledge application", "Organisation and development", "Textual features")
+    for outcome in instruments:
+        assert "25%" in outcome.descriptor
+        assert "Source: English 2025 v1.3" in outcome.descriptor
+    internal = [o for o in instruments if o.code != "QCAA-Y12-EA"]
+    for outcome in internal:
+        assert all(criterion in outcome.descriptor for criterion in criteria)
+    by_code = {o.code: o for o in instruments}
+    # IA1 is a spoken persuasive response; IA3 is the imaginative examination;
+    # IA2 and the EA are the analytical written instruments (English 2025 v1.3).
+    assert by_code["QCAA-Y12-IA1"].text_type == "persuasive"
+    assert "Spoken persuasive response" in by_code["QCAA-Y12-IA1"].descriptor
+    assert by_code["QCAA-Y12-IA2"].text_type == "analytical"
+    assert by_code["QCAA-Y12-IA3"].text_type == "imaginative"
+    assert by_code["QCAA-Y12-EA"].text_type == "analytical"
+    assert "developed and marked by the QCAA" in by_code["QCAA-Y12-EA"].descriptor
+    # Year 8-10 rows are untouched by the senior seed pass.
+    junior = (
+        db_session.execute(
+            select(CurriculumOutcome).where(
+                CurriculumOutcome.year_level.in_(JUNIOR_YEARS)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert len(junior) == len(ALL_OUTCOMES) - len(expected)
 
 
 def test_seed_is_idempotent(db_session: SqlSession) -> None:

@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-21T21:08:48+10:00`
+- Last evaluated: `2026-08-21T22:05:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -1107,7 +1107,7 @@ Write the beta handbook: install guide, parent one-pager, feedback channel, and 
 - 2026-08-21T21:08:48+10:00 - DONE. `BETA-HANDBOOK.md` shipped: parent one-pager, non-technical install guide, privacy expectations, feedback channel, weekly check-in template; README links to it. Verification: manual command-by-command review against DEPLOYMENT.md/README (all match); full backend suite 262 passed/4 skipped — docs-only change, baseline unchanged. Unlocks ISS-024.
 
 ## ISS-024 - QCE senior instrument modelling
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P2`
 - Type: `research`
 - Depends on: `ISS-023`
@@ -1116,18 +1116,18 @@ Write the beta handbook: install guide, parent one-pager, feedback channel, and 
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: 10.1; PRD: §9 FR-GA-003; ERD: curriculum_outcome`
 - Effort: `M`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
-- Commit: `None`
+- Attempt: `1`
+- Started: `2026-08-21T21:40:00+10:00`
+- Completed: `2026-08-21T22:05:00+10:00`
+- Commit: `<pending>`
 
 ### Outcome and scope
 Model QCE Units 1-4, IA1, IA2, IA3, and EA into curriculum_outcome and write the ISMG to A-E mapping research note.
 
 ### Acceptance criteria
-- [ ] Senior assessment instruments are represented in the curriculum model.
-- [ ] ISMG to A-E mapping strategy is documented with sources.
-- [ ] No senior content depth is claimed beyond the modelled framework.
+- [x] Senior assessment instruments are represented in the curriculum model.
+- [x] ISMG to A-E mapping strategy is documented with sources.
+- [x] No senior content depth is claimed beyond the modelled framework.
 
 ### Implementation notes
 - Likely files or components: backend/app/seed.py, curriculum research notes, reaserch.md, test-context.md.
@@ -1135,15 +1135,22 @@ Model QCE Units 1-4, IA1, IA2, IA3, and EA into curriculum_outcome and write the
 - Decision (Q-001, answered 2026-08-21): official QCAA syllabus/source PDFs must be imported and cited directly before this issue (and ISS-025) can be marked complete; derived descriptors from existing research files are not sufficient for senior depth claims.
 
 ### Verification
-- [ ] `cd backend && uv run pytest tests/test_seed.py`
-- [ ] Manual check: mapping note cites sources and matches curriculum_outcome seed shape
+- [x] `cd backend && uv run pytest tests/test_seed.py` — 7 passed (was 6; +1 new senior test).
+- [x] Manual check: `research/qce-senior-instrument-modelling.md` cites the official syllabus by section/page and its mapping table matches the seeded `curriculum_outcome` shape (codes, year_level, text_type, strand verified against `backend/app/seed.py`).
 
 ### Completion evidence
-- Pending
+- Official source imported per Q-001: QCAA English General Senior Syllabus 2025 v1.3 (January 2026, © State of Queensland (QCAA) 2026, CC-BY 4.0) archived as extracted text at `research/official/english-2025-v1.3-syllabus.md` with provenance header (official URL, retrieval date, licence/attribution). QCAA site is Cloudflare-gated; extraction went through a rendering proxy and was verified against the official document metadata (53 pages, v1.3, January 2026).
+- `backend/app/seed.py` seeds eight senior framework rows idempotently via the existing triples mechanism: Units 1-4 (`QCAA-Y11-U1/U2`, `QCAA-Y12-U3/U4`, text_type `framework`, strand "Course structure") and the four summative instruments (`QCAA-Y12-IA1` persuasive spoken, `QCAA-Y12-IA2` analytical written, `QCAA-Y12-IA3` imaginative exam, `QCAA-Y12-EA` analytical exam, strand "Summative assessment"). Instrument descriptors carry technique, 25% weight, response requirement, conditions, ISMG criteria with mark allocations, and a page-level citation. Year 8-10 rows byte-identical; no loop code changed.
+- `research/qce-senior-instrument-modelling.md` documents course structure, the instrument table, ISMG structure (three criteria; qualifier ladder fragmented→superficial→suitable→effective→discerning), and the ISMG→A-E mapping strategy (criterion alignment, qualifier ladder bridging ISMG and reporting standards, /25 per instrument → /100 subject result, A-E always provisional until QCAA confirmation). Boundaries section records that no senior content depth is claimed.
+- Finding recorded as Q-005 (`NON_BLOCKING`): official IA1 is a *spoken persuasive response*; ISS-025 "Senior IA1 analytical pack" needs re-scoping to IA2/EA before it starts.
+- Tests: new `test_seed_creates_senior_qce_outcomes` (8 senior rows, codes/year levels/text types, ISMG criteria in descriptors, EA marked by QCAA, Year 8-10 untouched); the three existing text-type tests now filter to years 8-10 (senior instruments share text types). Full suite 263 passed/4 skipped (was 262/4; +1); ruff clean; mypy 29 errors in the same 4 unrelated test files as the ISS-023 baseline; changed files clean.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: 10.1; PRD: §9 FR-GA-003; ERD: curriculum_outcome` during `/plan`; completed milestones were kept as context, not tickets.
 - 2026-08-21T14:55:02+10:00 - Q-001 answered by Cheng: import official QCAA syllabus PDFs first; sourcing constraint recorded.
+- 2026-08-21T21:40:00+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-21T22:05:00+10:00 - DONE. Official QCAA English 2025 v1.3 syllabus imported (CC-BY 4.0, archived with provenance); QCE Units 1-4 + IA1/IA2/IA3/EA modelled as 8 senior `curriculum_outcome` framework rows; ISMG→A-E mapping strategy documented with section/page citations. Verification: seed tests 7 passed; full suite 263 passed/4 skipped; ruff clean; mypy unchanged vs baseline. Q-005 raised (`NON_BLOCKING`): IA1 is persuasive per the official syllabus — ISS-025 needs re-scoping to IA2/EA.
 
 ## ISS-025 - Senior IA1 analytical pack
 - Status: `READY`
@@ -1171,6 +1178,7 @@ Fill analytical/year-11-12 reference depth for IA1 only and prove an IA1 task re
 ### Implementation notes
 - Likely files or components: skills/*/references/analytical/year-11-12/, skills/*/examples/, backend/app/eval.
 - Constraints: do not broaden to IA2/IA3/EA content depth in this ticket.
+- Finding (Q-005, raised 2026-08-21 by `develop`): the official English 2025 v1.3 syllabus defines IA1 as a *spoken persuasive response*; the analytical written instruments are IA2 and the EA. Re-scope this ticket (recommended: target IA2, note EA as exam-mode analytical) per Q-005 before starting — an "IA1 analytical pack" matches no official instrument.
 
 ### Verification
 - [ ] `cd backend && uv run pytest tests/test_skill_loader.py tests/test_skill_executor.py`

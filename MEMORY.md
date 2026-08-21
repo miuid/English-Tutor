@@ -87,6 +87,7 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | 2026-08-19 | **Product boundary clarified:** V1 remains local MVP; GA direction is a public paid product (Google sign-in first, AUD 9.9/month baseline) | Owner direction. Keeps current engineering on Phase 2 while making GA scope explicit in `PRD.md` and `ERD.md`. |
 | 2026-08-19 | **Autonomous delivery workflow adopted:** spike → plan → `ISSUES.md`/`QUESTIONS.md` → cron `/develop` one ticket at a time | Owner workflow. `ISSUES.md` becomes the delivery state source of truth; `QUESTIONS.md` blocks the gate when an open `BLOCKING` question exists. Completed historical checklists stay as context, not tickets. |
 | 2026-08-21 | **All four delivery questions answered (Q-001–Q-004):** Q-001 import official QCAA syllabus PDFs before senior depth claims (ISS-024/025 constraint); Q-002 beta recruitment = friend families first; Q-003 GA billing deferred, likely Stripe; Q-004 GA deployment/residency deferred | Owner decisions recorded in `QUESTIONS.md` with constraints propagated to ISS-023/ISS-024. Delivery Gate stays `OPEN`. |
+| 2026-08-21 | **Official QCAA English 2025 v1.3 syllabus imported; senior framework modelled (ISS-024).** Discovery: official IA1 = *spoken persuasive response*; analytical senior instruments are IA2 + EA → Q-005 raised to re-scope ISS-025 | Q-001 sourcing constraint satisfied for senior rows: extracted official syllabus archived at `research/official/` (CC-BY 4.0, provenance header). ISS-025 must be re-scoped before it starts (pending owner answer on Q-005). |
 
 ## 8. Milestones / roadmap
 
@@ -147,6 +148,15 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | `English Circulum.md` | Curriculum reference. |
 
 ## 11. Session log
+
+### 2026-08-21 — ISS-024 done: QCE senior instrument modelling
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-024 (P2, dep ISS-023 DONE).
+- **Official source imported (Q-001 satisfied):** QCAA English General Senior Syllabus 2025 v1.3 (January 2026, © State of Queensland (QCAA) 2026, CC-BY 4.0) archived as extracted text at `research/official/english-2025-v1.3-syllabus.md` with a provenance header. The QCAA site is Cloudflare-gated (curl + headless browser both blocked); extraction went through a rendering proxy and was verified against the official document metadata (53 pages, v1.3).
+- **Shipped:** 8 senior `curriculum_outcome` framework rows in `app/seed.py` — Units 1-4 (`QCAA-Y11-U1/U2`, `QCAA-Y12-U3/U4`, text_type `framework`) + instruments (`QCAA-Y12-IA1` persuasive spoken, `IA2` analytical written, `IA3` imaginative exam, `EA` analytical exam; each 25%, three ISMG criteria with mark allocations). Year 8-10 rows byte-identical; no loop code touched.
+- **Shipped:** `research/qce-senior-instrument-modelling.md` — course structure, instrument table, ISMG structure, and the ISMG→A-E mapping strategy (three official criterion names; shared qualifier ladder fragmented→…→discerning bridges ISMG and reporting standards; /25 per instrument → /100 subject result; A-E always provisional until QCAA confirmation).
+- **Key finding → Q-005 (`NON_BLOCKING`):** official IA1 is a *spoken persuasive response*, not analytical. ISS-025 "Senior IA1 analytical pack" matches no official instrument and needs re-scoping to IA2/EA before it starts (recommendation recorded; note added to ISS-025).
+- Verified: seed tests 7 passed; full suite **263 passed/4 skipped** (+1); ruff clean; mypy unchanged vs baseline.
+- **Next pick-up:** ISS-025 — but only after Q-005 is answered (re-scope to IA2/EA). Queue otherwise complete after ISS-025.
 
 ### 2026-08-21 — ISS-023 done: beta handbook (B6.3)
 - Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-023 (P2, dep ISS-022 DONE).

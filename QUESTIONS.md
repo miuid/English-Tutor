@@ -15,6 +15,7 @@ This document is the canonical record of unresolved and resolved delivery decisi
 | Q-002 | Beta recruitment channel | `ANSWERED` | `NON_BLOCKING` | `ISS-023` |
 | Q-003 | GA billing provider and tax posture | `ANSWERED` | `NON_BLOCKING` | `None` |
 | Q-004 | GA public deployment and data residency posture | `ANSWERED` | `NON_BLOCKING` | `None` |
+| Q-005 | Senior IA1 is persuasive, not analytical — ISS-025 scope | `OPEN` | `NON_BLOCKING` | `ISS-025` |
 
 ## Questions
 
@@ -118,6 +119,42 @@ Recommendation: Defer until GA planning; prefer Australia-region managed Postgre
 - Answer: Defer to GA planning.
 - Resolution: No action in the current backlog. Revisit at GA planning; Australia-region managed Postgres remains the preferred posture if budget allows.
 
+## Q-005 - Senior IA1 is persuasive, not analytical — ISS-025 scope
+- Status: `OPEN`
+- Severity: `NON_BLOCKING`
+- Raised by: `develop`
+- Related issue: `ISS-025`
+- Related requirements: `IMPLEMENTATION-PLAN-2: 10.2; PRD: §9 FR-GA-003`
+- Raised: `2026-08-21T21:40:00+10:00`
+- Answered: `None`
+
+### Decision needed
+Re-scope ISS-025 ("Senior IA1 analytical pack") before it starts. The official QCAA English
+General Senior Syllabus 2025 v1.3 (imported for ISS-024) defines IA1 as a *spoken persuasive
+response*; the analytical written instruments are IA2 (written response for a public audience)
+and the EA (external analytical essay). An "IA1 analytical pack" does not match any official
+instrument.
+
+### Why it matters
+ISS-025's acceptance criteria ask for "an IA1 analytical task ... senior-standard feedback" and
+`references/analytical/year-11-12/` IA1-specific content. Building that against the official
+syllabus would model a task QCAA does not define, contradicting the Q-001 sourcing constraint.
+
+### Options and recommendation
+1. Re-scope ISS-025 to "Senior analytical pack (IA2 + EA framework)" — analytical depth where the
+   official syllabus actually puts it; IA2 is the internal analytical written instrument.
+2. Keep IA1 but as a persuasive/senior pack — overlaps with existing persuasive work, less value.
+3. Leave ISS-025 as-is and treat "IA1" as a generic label — risks teaching to a non-existent
+   instrument.
+
+Recommendation: Option 1 — retitle ISS-025 to target IA2 (and note EA as exam-mode analytical),
+updating its acceptance criteria wording before the ticket becomes eligible.
+
+### Answer and resolution
+- Answer: Pending
+- Resolution: Pending
+
 ## Change Log
 - `2026-08-19T13:44:45+10:00` - Initialized by `/plan`; no `BLOCKING` questions are open, so `ISSUES.md` Delivery Gate is `OPEN`.
 - `2026-08-21T14:55:02+10:00` - All four questions answered by Cheng: Q-001 import official QCAA PDFs before senior depth claims (constraint on ISS-024/ISS-025); Q-002 friend families first (constraint on ISS-023); Q-003 defer to GA, likely Stripe; Q-004 defer to GA. No `BLOCKING` questions; Delivery Gate remains `OPEN`.
+- `2026-08-21T21:40:00+10:00` - Q-005 raised by `develop` during ISS-024 (`NON_BLOCKING`): official English 2025 v1.3 syllabus defines IA1 as a spoken persuasive response; ISS-025 needs re-scoping to IA2/EA before it starts. Gate remains `OPEN`.

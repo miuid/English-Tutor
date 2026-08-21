@@ -26,6 +26,14 @@ experimentation with structures, language features and voice; NAPLAN
 narrative criteria) and the ISS-007 imaginative packs (criteria banks +
 A-E feedback rubrics). Year 10 imaginative descriptors carry the same
 Q-001 derived-not-verbatim provenance.
+
+Senior QCE rows (Units 1-4 and the IA1/IA2/IA3/EA instruments) trace to
+the official QCAA English General Senior Syllabus 2025 v1.3 (January
+2026), © State of Queensland (QCAA) 2026, licensed CC-BY 4.0 — archived
+at research/official/english-2025-v1.3-syllabus.md and modelled per
+research/qce-senior-instrument-modelling.md (ISS-024). They are
+framework rows only: no senior content depth is claimed beyond the
+modelled units/instruments.
 """
 
 from sqlalchemy import select
@@ -387,6 +395,123 @@ YEAR_10_IMAGINATIVE_OUTCOMES = [
     },
 ]
 
+# Senior QCE framework rows. Source: QCAA English General Senior Syllabus
+# 2025 v1.3 (January 2026), © State of Queensland (QCAA) 2026, CC-BY 4.0
+# (research/official/english-2025-v1.3-syllabus.md). Framework only — no
+# senior content depth beyond the modelled units and instruments (ISS-024).
+_TEXT_TYPE_FRAMEWORK = "framework"
+
+# Units 1-4 (syllabus "Units" section, pp. 17-32). Units 1-2 are Year 11
+# formative (reported S/U); Units 3-4 are studied as a Year 12 summative pair.
+SENIOR_UNIT_OUTCOMES = [
+    {
+        "code": "QCAA-Y11-U1",
+        "strand": "Course structure",
+        "descriptor": (
+            "Unit 1: Perspectives and texts — students explore how perspectives and "
+            "representations of concepts, identities and/or groups are constructed "
+            "through textual choices. Year 11 formative unit, reported S/U. "
+            "Source: English 2025 v1.3, Unit 1 (p. 17)."
+        ),
+    },
+    {
+        "code": "QCAA-Y11-U2",
+        "strand": "Course structure",
+        "descriptor": (
+            "Unit 2: Texts and culture — students examine the relationship between "
+            "language and identity and how textual choices position audiences, "
+            "including Australian texts. Year 11 formative unit, reported S/U. "
+            "Source: English 2025 v1.3, Unit 2 (p. 21)."
+        ),
+    },
+    {
+        "code": "QCAA-Y12-U3",
+        "strand": "Course structure",
+        "descriptor": (
+            "Unit 3: Textual connections — students explore connections between "
+            "texts through representations of the same concepts and issues; must "
+            "include a study of media texts. Year 12 summative unit (studied as a "
+            "pair with Unit 4). Source: English 2025 v1.3, Unit 3 (p. 24)."
+        ),
+    },
+    {
+        "code": "QCAA-Y12-U4",
+        "strand": "Course structure",
+        "descriptor": (
+            "Unit 4: Close study of literary texts — students engage with literary "
+            "texts from diverse times and places through close study. Year 12 "
+            "summative unit (studied as a pair with Unit 3). "
+            "Source: English 2025 v1.3, Unit 4 (p. 29)."
+        ),
+    },
+]
+
+# Summative instruments implemented with Units 3 and 4 (syllabus "Assessment"
+# section, pp. 33-48). Each instrument is marked against three ISMG criteria —
+# Knowledge application, Organisation and development, Textual features — and
+# contributes 25% to the subject result out of 100.
+SENIOR_IA1_OUTCOMES = [
+    {
+        "code": "QCAA-Y12-IA1",
+        "strand": "Summative assessment",
+        "descriptor": (
+            "IA1 — Spoken persuasive response (25%, Units 3-4): create a persuasive "
+            "argument on a contemporary contentious media issue for an identified "
+            "public audience; spoken up to 8 minutes; 4 weeks notification; "
+            "individual task. ISMG criteria: Knowledge application (8 marks), "
+            "Organisation and development (8), Textual features (9). "
+            "Source: English 2025 v1.3, Internal assessment 1 (pp. 34-38)."
+        ),
+    },
+]
+
+SENIOR_IA2_OUTCOMES = [
+    {
+        "code": "QCAA-Y12-IA2",
+        "strand": "Summative assessment",
+        "descriptor": (
+            "IA2 — Written response for a public audience (25%, Units 3-4): analyse "
+            "a representation of a concept, identity, time or place across two "
+            "connected texts (at least one from the prescribed text list) in a "
+            "written text for a public audience; up to 1500 words; 5 weeks "
+            "notification; individual task. ISMG criteria: Knowledge application "
+            "(9 marks), Organisation and development (8), Textual features (8). "
+            "Source: English 2025 v1.3, Internal assessment 2 (pp. 39-42)."
+        ),
+    },
+]
+
+SENIOR_IA3_OUTCOMES = [
+    {
+        "code": "QCAA-Y12-IA3",
+        "strand": "Summative assessment",
+        "descriptor": (
+            "IA3 — Examination: extended response (25%, Units 3-4): supervised "
+            "imaginative response using a literary text from the prescribed text "
+            "list as a springboard; 15 minutes planning + 120 minutes working; "
+            "no notes or springboard text in the examination. ISMG criteria: "
+            "Knowledge application (9 marks), Organisation and development (8), "
+            "Textual features (8). "
+            "Source: English 2025 v1.3, Internal assessment 3 (pp. 43-47)."
+        ),
+    },
+]
+
+SENIOR_EA_OUTCOMES = [
+    {
+        "code": "QCAA-Y12-EA",
+        "strand": "Summative assessment",
+        "descriptor": (
+            "EA — Examination: extended response (25%, relates to Unit 4): external "
+            "analytical essay responding to an unseen question on a literary text "
+            "from the external assessment section of the prescribed text list; "
+            "15 minutes planning + 120 minutes working; developed and marked by "
+            "the QCAA, common to all schools. "
+            "Source: English 2025 v1.3, External assessment (p. 48)."
+        ),
+    },
+]
+
 # (year_level, text_type, outcomes) triples seeded in one idempotent pass.
 _OUTCOME_SETS: list[tuple[int, str, list[dict[str, str]]]] = [
     (8, TEXT_TYPE_ANALYTICAL, YEAR_8_OUTCOMES),
@@ -398,6 +523,12 @@ _OUTCOME_SETS: list[tuple[int, str, list[dict[str, str]]]] = [
     (8, TEXT_TYPE_IMAGINATIVE, YEAR_8_IMAGINATIVE_OUTCOMES),
     (9, TEXT_TYPE_IMAGINATIVE, YEAR_9_IMAGINATIVE_OUTCOMES),
     (10, TEXT_TYPE_IMAGINATIVE, YEAR_10_IMAGINATIVE_OUTCOMES),
+    (11, _TEXT_TYPE_FRAMEWORK, SENIOR_UNIT_OUTCOMES[:2]),
+    (12, _TEXT_TYPE_FRAMEWORK, SENIOR_UNIT_OUTCOMES[2:]),
+    (12, TEXT_TYPE_PERSUASIVE, SENIOR_IA1_OUTCOMES),
+    (12, TEXT_TYPE_ANALYTICAL, SENIOR_IA2_OUTCOMES),
+    (12, TEXT_TYPE_IMAGINATIVE, SENIOR_IA3_OUTCOMES),
+    (12, TEXT_TYPE_ANALYTICAL, SENIOR_EA_OUTCOMES),
 ]
 
 
