@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-21T14:30:00+10:00`
+- Last evaluated: `2026-08-21T14:55:02+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -1071,6 +1071,7 @@ Write the beta handbook: install guide, parent one-pager, feedback channel, and 
 ### Implementation notes
 - Likely files or components: docs or root markdown files, README.md, DEPLOYMENT.md.
 - Constraints: keep Beta per-family local install; do not describe unsupported hosted GA features as available.
+- Decision (Q-002, answered 2026-08-21): beta recruitment channel is friend families first; tone the handbook for known families with fast feedback; school parent group expansion waits until B1-B3 are stable.
 
 ### Verification
 - [ ] Manual check: follow the guide on a clean machine profile or review against DEPLOYMENT.md
@@ -1081,6 +1082,7 @@ Write the beta handbook: install guide, parent one-pager, feedback channel, and 
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: B6.3; PRD: §9 GA direction; ERD: Deployment/migration` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-21T14:55:02+10:00 - Q-002 answered by Cheng: friend families first; handbook tone constraint recorded.
 
 ## ISS-024 - QCE senior instrument modelling
 - Status: `READY`
@@ -1108,6 +1110,7 @@ Model QCE Units 1-4, IA1, IA2, IA3, and EA into curriculum_outcome and write the
 ### Implementation notes
 - Likely files or components: backend/app/seed.py, curriculum research notes, reaserch.md, test-context.md.
 - Constraints: senior depth waits for a real senior user except IA1 framework; avoid speculative full senior content.
+- Decision (Q-001, answered 2026-08-21): official QCAA syllabus/source PDFs must be imported and cited directly before this issue (and ISS-025) can be marked complete; derived descriptors from existing research files are not sufficient for senior depth claims.
 
 ### Verification
 - [ ] `cd backend && uv run pytest tests/test_seed.py`
@@ -1118,6 +1121,7 @@ Model QCE Units 1-4, IA1, IA2, IA3, and EA into curriculum_outcome and write the
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: 10.1; PRD: §9 FR-GA-003; ERD: curriculum_outcome` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-21T14:55:02+10:00 - Q-001 answered by Cheng: import official QCAA syllabus PDFs first; sourcing constraint recorded.
 
 ## ISS-025 - Senior IA1 analytical pack
 - Status: `READY`

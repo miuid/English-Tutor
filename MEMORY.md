@@ -86,6 +86,7 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | 2026-08-12 | **MVP default model switched to Kimi K3 (Moonshot AI) `kimi-k3`**; DeepSeek/Anthropic stay config-only swaps | Owner decision. Adapter layer paid off again: new `app/llm/kimi.py` (OpenAI-compatible, `api.moonshot.ai`), one factory branch, config defaults — zero business-logic changes. `LLM_API_KEY` in `backend/.env` is now a Moonshot key. (Live eval not rerun on Kimi yet; last live eval = DeepSeek 8/8 PASS, 2026-07-31.) |
 | 2026-08-19 | **Product boundary clarified:** V1 remains local MVP; GA direction is a public paid product (Google sign-in first, AUD 9.9/month baseline) | Owner direction. Keeps current engineering on Phase 2 while making GA scope explicit in `PRD.md` and `ERD.md`. |
 | 2026-08-19 | **Autonomous delivery workflow adopted:** spike → plan → `ISSUES.md`/`QUESTIONS.md` → cron `/develop` one ticket at a time | Owner workflow. `ISSUES.md` becomes the delivery state source of truth; `QUESTIONS.md` blocks the gate when an open `BLOCKING` question exists. Completed historical checklists stay as context, not tickets. |
+| 2026-08-21 | **All four delivery questions answered (Q-001–Q-004):** Q-001 import official QCAA syllabus PDFs before senior depth claims (ISS-024/025 constraint); Q-002 beta recruitment = friend families first; Q-003 GA billing deferred, likely Stripe; Q-004 GA deployment/residency deferred | Owner decisions recorded in `QUESTIONS.md` with constraints propagated to ISS-023/ISS-024. Delivery Gate stays `OPEN`. |
 
 ## 8. Milestones / roadmap
 
@@ -431,9 +432,9 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ### 2026-07-15 — Step 0.2–0.4: Config layer, LLM adapter, Skill loader
 - Implemented P0 foundations: config layer (.env, Pydantic Settings, startup validation), LLM adapter layer (LLMProvider Protocol, AnthropicProvider, FakeProvider, factory), and skill loader (loads all 8 skills, parses sections/references/examples, exposes loop_stage).
-- Added missing pp/__init__.py and 	ests/__init__.py to fix mypy package mapping.
-- Fixed 	est_anthropic_provider_calls_sdk to use a real nthropic.types.TextBlock instance.
-- Fixed pp/main.py lifespan return type for mypy (AsyncIterator[None]).
+- Added missing pp/__init__.py and 	ests/__init__.py to fix mypy package mapping.
+- Fixed 	est_anthropic_provider_calls_sdk to use a real nthropic.types.TextBlock instance.
+- Fixed pp/main.py lifespan return type for mypy (AsyncIterator[None]).
 - Verified: pytest 14 passed + 1 skipped; 
 uff green; mypy green.
 - **Next pick-up:** step **1.1 DB models + init** (SQLAlchemy models for 9 entities, create_all on startup, cascade tests).

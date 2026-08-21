@@ -11,21 +11,21 @@ This document is the canonical record of unresolved and resolved delivery decisi
 ## Question Index
 | ID | Decision | Status | Severity | Related issue |
 |---|---|---|---|---|
-| Q-001 | Source for Year 9-12 QCAA standard descriptors | `OPEN` | `NON_BLOCKING` | `ISS-002, ISS-024` |
-| Q-002 | Beta recruitment channel | `OPEN` | `NON_BLOCKING` | `ISS-023` |
-| Q-003 | GA billing provider and tax posture | `OPEN` | `NON_BLOCKING` | `None` |
-| Q-004 | GA public deployment and data residency posture | `OPEN` | `NON_BLOCKING` | `None` |
+| Q-001 | Source for Year 9-12 QCAA standard descriptors | `ANSWERED` | `NON_BLOCKING` | `ISS-002, ISS-024` |
+| Q-002 | Beta recruitment channel | `ANSWERED` | `NON_BLOCKING` | `ISS-023` |
+| Q-003 | GA billing provider and tax posture | `ANSWERED` | `NON_BLOCKING` | `None` |
+| Q-004 | GA public deployment and data residency posture | `ANSWERED` | `NON_BLOCKING` | `None` |
 
 ## Questions
 
 ## Q-001 - Source for Year 9-12 QCAA standard descriptors
-- Status: `OPEN`
+- Status: `ANSWERED`
 - Severity: `NON_BLOCKING`
 - Raised by: `plan`
 - Related issue: `ISS-002, ISS-024`
 - Related requirements: `PRD: §9 FR-GA-003; ERD: curriculum_outcome`
 - Raised: `2026-08-19T13:44:45+10:00`
-- Answered: `None`
+- Answered: `2026-08-21T14:55:02+10:00`
 
 ### Decision needed
 Decide whether the existing research files are sufficient for Year 9-12 QCAA standard descriptors, or whether official syllabus PDFs must be imported before content depth is claimed.
@@ -40,17 +40,17 @@ The answer affects how much evidence ISS-002 and ISS-024 must cite before markin
 Recommendation: Start with existing research files for Year 9-10; require official sources before public launch claims or senior IA1 depth.
 
 ### Answer and resolution
-- Answer: Pending
-- Resolution: Pending
+- Answer: Option 2 — import official QCAA syllabus/source PDFs first and confirm descriptors against them before claiming content depth.
+- Resolution: Official QCAA syllabus PDFs must be imported and cited before ISS-024 (QCE senior instrument modelling) and ISS-025 (Senior IA1 analytical pack) can be marked complete. Year 9-10 packs already shipped under ISS-002/ISS-004/ISS-007 remain valid as derived content; senior-year depth claims require official sources. Constraint recorded on ISS-024.
 
 ## Q-002 - Beta recruitment channel
-- Status: `OPEN`
+- Status: `ANSWERED`
 - Severity: `NON_BLOCKING`
 - Raised by: `plan`
 - Related issue: `ISS-023`
 - Related requirements: `PRD: §7 deferred Beta scope; ERD: Deployment/migration`
 - Raised: `2026-08-19T13:44:45+10:00`
-- Answered: `None`
+- Answered: `2026-08-21T14:55:02+10:00`
 
 ### Decision needed
 Choose the first beta recruitment channel: friend families, school parent group, or another local Queensland network.
@@ -65,17 +65,17 @@ The channel changes the tone and onboarding detail required in the beta handbook
 Recommendation: Friend families first, then school parent group after B1-B3 are stable.
 
 ### Answer and resolution
-- Answer: Pending
-- Resolution: Pending
+- Answer: Friend families first.
+- Resolution: ISS-023 (Beta handbook) should target friend families: fast feedback loop, lower onboarding polish required. School parent group expansion is deferred until B1-B3 are stable. Constraint recorded on ISS-023.
 
 ## Q-003 - GA billing provider and tax posture
-- Status: `OPEN`
+- Status: `ANSWERED`
 - Severity: `NON_BLOCKING`
 - Raised by: `plan`
 - Related issue: `None`
 - Related requirements: `PRD: §9 FR-GA-005; ERD: GA planned entities/TD-GA-001`
 - Raised: `2026-08-19T13:44:45+10:00`
-- Answered: `None`
+- Answered: `2026-08-21T14:55:02+10:00`
 
 ### Decision needed
 Choose the GA billing provider for AUD subscriptions and confirm tax/invoicing obligations.
@@ -90,17 +90,17 @@ This matters before any public paid launch, but it does not change the current l
 Recommendation: Defer until GA planning; spike Stripe first unless tax obligations force a merchant-of-record decision.
 
 ### Answer and resolution
-- Answer: Pending
-- Resolution: Pending
+- Answer: Defer to GA planning; most likely Stripe.
+- Resolution: No action in the current backlog. When GA planning starts, spike Stripe first; revisit merchant-of-record only if tax/invoicing obligations demand it.
 
 ## Q-004 - GA public deployment and data residency posture
-- Status: `OPEN`
+- Status: `ANSWERED`
 - Severity: `NON_BLOCKING`
 - Raised by: `plan`
 - Related issue: `None`
 - Related requirements: `PRD: §9 NFR-GA-001/NFR-GA-002; ERD: TD-GA-003`
 - Raised: `2026-08-19T13:44:45+10:00`
-- Answered: `None`
+- Answered: `2026-08-21T14:55:02+10:00`
 
 ### Decision needed
 Choose the public deployment target and data-residency posture for Australian families.
@@ -115,8 +115,9 @@ This affects hosted privacy, latency, backups, and operational cost before GA, b
 Recommendation: Defer until GA planning; prefer Australia-region managed Postgres for public launch if budget allows.
 
 ### Answer and resolution
-- Answer: Pending
-- Resolution: Pending
+- Answer: Defer to GA planning.
+- Resolution: No action in the current backlog. Revisit at GA planning; Australia-region managed Postgres remains the preferred posture if budget allows.
 
 ## Change Log
 - `2026-08-19T13:44:45+10:00` - Initialized by `/plan`; no `BLOCKING` questions are open, so `ISSUES.md` Delivery Gate is `OPEN`.
+- `2026-08-21T14:55:02+10:00` - All four questions answered by Cheng: Q-001 import official QCAA PDFs before senior depth claims (constraint on ISS-024/ISS-025); Q-002 friend families first (constraint on ISS-023); Q-003 defer to GA, likely Stripe; Q-004 defer to GA. No `BLOCKING` questions; Delivery Gate remains `OPEN`.
