@@ -940,7 +940,7 @@ Add an in-app weekly parent report and printable PDF showing sessions, time, cri
 - Attempt: `1`
 - Started: `2026-08-21T14:14:19+10:00`
 - Completed: `2026-08-21T14:30:00+10:00`
-- Commit: `None`
+- Commit: `2ea3f64`
 
 ### Outcome and scope
 Let parent and student set a weekly goal together and surface it at the start of the session loop.
