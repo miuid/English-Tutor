@@ -892,7 +892,7 @@ Add a per-profile coach tone setting that changes system-prompt tone without cha
 - Attempt: `1`
 - Started: `2026-08-21T11:50:00+10:00`
 - Completed: `2026-08-21T12:15:00+10:00`
-- Commit: `None`
+- Commit: `ad34aef`
 
 ### Outcome and scope
 Add an in-app weekly parent report and printable PDF showing sessions, time, criterion trends, highlight, and next-week suggestion without exposing full essay text by default.
