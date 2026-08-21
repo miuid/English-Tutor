@@ -2,7 +2,7 @@
 
 > Long-term memory for this project. It records the vision, every meaningful decision (with dates and rationale), what's been built, the roadmap, and open questions. **Update this file whenever a decision is made, a milestone is hit, or something important is discovered — and append a dated entry to the Session log (§11) at the end of each working session.** New sessions should read this first.
 
-Last updated: 2026-08-21
+Last updated: 2026-08-22
 
 ---
 
@@ -148,6 +148,12 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | `English Circulum.md` | Curriculum reference. |
 
 ## 11. Session log
+
+### 2026-08-22 — `/develop` BLOCKED: ISS-025 awaits Q-005 re-scope decision
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN, Active issue None. Found ISS-024 index row stale (`READY` vs authoritative `DONE` block) — synced. Only remaining ticket: ISS-025.
+- **No implementation.** ISS-025's acceptance criteria require an "IA1 analytical pack", but the official QCAA English 2025 v1.3 syllabus (imported in ISS-024) defines IA1 as a *spoken persuasive response*; the analytical instruments are IA2 + EA. Building as written would model a non-existent instrument and violate the Q-001 sourcing constraint. Q-005 (the re-scope decision) is OPEN and is an owner decision — not self-answered.
+- **Tracker updates only:** Q-005 severity escalated `NON_BLOCKING` → `BLOCKING` (it now blocks the only remaining ticket); ISS-025 set `BLOCKED` (`Blocked by: Q-005`); Delivery Gate set `BLOCKED` (Blocking questions: `Q-005`). No code touched; no tests run (nothing to verify).
+- **Needs Cheng:** answer Q-005. Recommendation stands at Option 1 — retitle ISS-025 to "Senior analytical pack (IA2 + EA framework)": IA2 is the internal analytical written instrument, EA the exam-mode analytical one. Once answered, re-scope the ticket's title/acceptance criteria and reopen the gate (or run `/plan`). After ISS-025 the backlog is complete.
 
 ### 2026-08-21 — ISS-024 done: QCE senior instrument modelling
 - Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-024 (P2, dep ISS-023 DONE).

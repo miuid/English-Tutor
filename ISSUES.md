@@ -3,13 +3,13 @@
 This document is the canonical delivery state for autonomous development. Detailed issue blocks are authoritative; the index is a convenience summary.
 
 ## Delivery Gate
-- State: `OPEN`
-- Blocking questions: `None`
-- Reason: No `BLOCKING` questions are open; completed P0-P5/P6.1/P6.2 work is recorded as context only, not as tickets.
+- State: `BLOCKED`
+- Blocking questions: `Q-005`
+- Reason: ISS-025 is the only remaining ticket and its acceptance criteria target an instrument the official QCAA English 2025 v1.3 syllabus does not define (IA1 is a spoken persuasive response; analytical instruments are IA2 + EA). Re-scope decision is pending owner answer on Q-005.
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-21T22:05:00+10:00`
+- Last evaluated: `2026-08-22T03:45:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -59,8 +59,8 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-021 | Per-stage model routing | `DONE` | `P2` | `ISS-020` | `None` |
 | ISS-022 | Privacy-safe telemetry and feedback package | `DONE` | `P2` | `ISS-021` | `None` |
 | ISS-023 | Beta handbook | `DONE` | `P2` | `ISS-022` | `None` |
-| ISS-024 | QCE senior instrument modelling | `READY` | `P2` | `ISS-023` | `None` |
-| ISS-025 | Senior IA1 analytical pack | `READY` | `P2` | `ISS-024` | `None` |
+| ISS-024 | QCE senior instrument modelling | `DONE` | `P2` | `ISS-023` | `None` |
+| ISS-025 | Senior IA1 analytical pack | `BLOCKED` | `P2` | `ISS-024` | `Q-005` |
 
 ## Issues
 
@@ -1153,12 +1153,12 @@ Model QCE Units 1-4, IA1, IA2, IA3, and EA into curriculum_outcome and write the
 - 2026-08-21T22:05:00+10:00 - DONE. Official QCAA English 2025 v1.3 syllabus imported (CC-BY 4.0, archived with provenance); QCE Units 1-4 + IA1/IA2/IA3/EA modelled as 8 senior `curriculum_outcome` framework rows; ISMG→A-E mapping strategy documented with section/page citations. Verification: seed tests 7 passed; full suite 263 passed/4 skipped; ruff clean; mypy unchanged vs baseline. Q-005 raised (`NON_BLOCKING`): IA1 is persuasive per the official syllabus — ISS-025 needs re-scoping to IA2/EA.
 
 ## ISS-025 - Senior IA1 analytical pack
-- Status: `READY`
+- Status: `BLOCKED`
 - Priority: `P2`
 - Type: `feature`
 - Depends on: `ISS-024`
 - Blocks: `None`
-- Blocked by: `None`
+- Blocked by: `Q-005`
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: 10.2; PRD: §9 FR-GA-003; ERD: curriculum_outcome/skill`
 - Effort: `M`
@@ -1189,6 +1189,8 @@ Fill analytical/year-11-12 reference depth for IA1 only and prove an IA1 task re
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: 10.2; PRD: §9 FR-GA-003; ERD: curriculum_outcome/skill` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-22T03:45:00+10:00 - `develop` run: issue set `BLOCKED` on Q-005 (severity raised to `BLOCKING`). Acceptance criteria require an "IA1 analytical pack", but the official QCAA English 2025 v1.3 syllabus defines IA1 as a spoken persuasive response; analytical instruments are IA2 + EA. Implementing as written would model a non-existent instrument and violate the Q-001 sourcing constraint; re-scoping is a pending owner decision (Q-005 recommends Option 1: retarget IA2, note EA as exam-mode analytical). Delivery gate set to `BLOCKED`. No code touched.
 
 ## Change Log
 - `2026-08-19T13:44:45+10:00` - Initialized by `/plan` from `PRD.md`, `ERD.md`, and `IMPLEMENTATION-PLAN-2.md`; completed P0-P5/P6.1/P6.2 work recorded as context only.
+- `2026-08-22T03:45:00+10:00` - `develop` run: ISS-024 index row synced to `DONE` (detailed block was already authoritative). ISS-025 set `BLOCKED` on Q-005; Q-005 severity raised to `BLOCKING`; Delivery Gate set to `BLOCKED` (Blocking questions: `Q-005`). No implementation work performed.
