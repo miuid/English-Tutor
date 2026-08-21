@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     llm_provider: str = "kimi"
     llm_model: str = "kimi-k3"
     llm_api_key: str | None = None
+    # Per-stage model routing (ISS-021): loop_stage -> model name override.
+    # Stages not listed use llm_model. Env value is a JSON object, e.g.
+    # LLM_STAGE_MODELS={"end": "kimi-k3", "retrieval": "kimi-k3-mini"}
+    llm_stage_models: dict[str, str] = {}
     skills_dir: str = str(Path(__file__).resolve().parent.parent.parent / "skills")
     # Soft per-day session time budget. Not a hard cutoff: the current unit of
     # work always finishes, then the session wraps up and pauses until the

@@ -59,3 +59,23 @@ def test_fake_provider_does_not_require_api_key(monkeypatch: pytest.MonkeyPatch)
     settings = Settings(_env_file=None)
     assert settings.llm_provider == "fake"
     assert settings.llm_api_key is None
+
+
+def test_stage_models_default_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "fake")
+    monkeypatch.delenv("LLM_STAGE_MODELS", raising=False)
+    settings = Settings()
+    assert settings.llm_stage_models == {}
+
+
+def test_stage_models_load_from_env_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "fake")
+    monkeypatch.setenv(
+        "LLM_STAGE_MODELS",
+        '{"end": "strong-model", "retrieval": "cheap-model"}',
+    )
+    settings = Settings()
+    assert settings.llm_stage_models == {
+        "end": "strong-model",
+        "retrieval": "cheap-model",
+    }

@@ -3,11 +3,12 @@
 import os
 from dataclasses import replace
 from pathlib import Path
+from typing import cast
 
 import pytest
 
 from app.config import Settings
-from app.llm import FakeProvider, create_llm_provider
+from app.llm import FakeProvider, StageProviderRouter, create_llm_provider
 from app.skills import load_skill
 from app.skills.executor import (
     COACH_TONE_DIRECTIVES,
@@ -407,3 +408,37 @@ async def test_execute_check_structure_real_sample() -> None:
     assert "Structure snapshot:" in response
     assert "Your next move:" in response
     assert "Try this:" in response
+
+
+@pytest.mark.asyncio
+async def test_execute_routes_to_the_skills_stage_provider() -> None:
+    """With a stage router, the executor picks the provider for the skill's
+    loop stage and reports the stage-routed model name (ISS-021)."""
+    skill = load_skill(SKILLS_DIR / "check-structure")  # loop_stage "coach"
+    settings = Settings(
+        llm_provider="fake",
+        llm_model="fake-base",
+        llm_api_key="",
+        llm_stage_models={"coach": "fake-strong"},
+    )
+    router = StageProviderRouter(settings)
+    default_provider = FakeProvider(canned_responses=["default output"])
+    service = SkillExecutionService(
+        provider=default_provider, model_name="fake-base", stage_router=router
+    )
+
+    response = await service.execute(
+        skill, {"year_level": "8", "text_type": "analytical", "student_text": "Text."}
+    )
+
+    stage_provider = cast("FakeProvider", router.for_stage("coach")[0])
+    assert len(stage_provider.calls) == 1
+    assert default_provider.calls == []
+    assert response == "fake response"
+    assert service.model_used_for(skill) == "fake-strong"
+
+
+def test_model_used_for_falls_back_to_model_name_without_router() -> None:
+    skill = load_skill(SKILLS_DIR / "check-structure")
+    service = SkillExecutionService(provider=FakeProvider(), model_name="fake-base")
+    assert service.model_used_for(skill) == "fake-base"

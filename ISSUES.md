@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-21T14:55:02+10:00`
+- Last evaluated: `2026-08-21T16:44:07+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -56,7 +56,7 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-018 | Coach persona tone setting | `DONE` | `P2` | `ISS-017` | `None` |
 | ISS-019 | Weekly parent report with privacy boundary | `DONE` | `P2` | `ISS-018` | `None` |
 | ISS-020 | Shared parent-student goal setting | `DONE` | `P2` | `ISS-019` | `None` |
-| ISS-021 | Per-stage model routing | `READY` | `P2` | `ISS-020` | `None` |
+| ISS-021 | Per-stage model routing | `DONE` | `P2` | `ISS-020` | `None` |
 | ISS-022 | Privacy-safe telemetry and feedback package | `READY` | `P2` | `ISS-021` | `None` |
 | ISS-023 | Beta handbook | `READY` | `P2` | `ISS-022` | `None` |
 | ISS-024 | QCE senior instrument modelling | `READY` | `P2` | `ISS-023` | `None` |
@@ -972,7 +972,7 @@ Let parent and student set a weekly goal together and surface it at the start of
 - 2026-08-21T14:30:00+10:00 - DONE. Shared parent-student weekly goal shipped: `student.shared_goal` + profile API (set/edit/clear), session-opening prompts reference it (spaced-review + set-success-criteria inputs, byte-identical when unset), ChatView start card shows it, parent report (JSON/print/UI) carries it inside the D3 boundary, and it survives export/import. Verification: full suite 242 passed/4 skipped (+5 new tests); ruff clean; mypy unchanged vs baseline; frontend build + oxlint clean. Unlocks ISS-021.
 
 ## ISS-021 - Per-stage model routing
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P2`
 - Type: `feature`
 - Depends on: `ISS-020`
@@ -981,32 +981,41 @@ Let parent and student set a weekly goal together and surface it at the start of
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: B6.1; PRD: §6 model-swappable; ERD: interaction_log`
 - Effort: `M`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
+- Attempt: `1`
+- Started: `2026-08-21T16:31:48+10:00`
+- Completed: `2026-08-21T16:44:07+10:00`
 - Commit: `None`
 
 ### Outcome and scope
 Add config-driven per-stage model routing so heavy judgement stages can use stronger models and light stages can use cheaper tiers.
 
 ### Acceptance criteria
-- [ ] Routing table is configurable by loop_stage.
-- [ ] Tests assert the factory/executor picks the expected provider per stage.
-- [ ] Interaction logs record the actual model used.
+- [x] Routing table is configurable by loop_stage.
+- [x] Tests assert the factory/executor picks the expected provider per stage.
+- [x] Interaction logs record the actual model used.
 
 ### Implementation notes
 - Likely files or components: backend/app/config.py, backend/app/llm/factory.py, backend/app/skills/executor.py, backend/app/sessions/interactive.py.
 - Constraints: business logic remains provider-agnostic; routing must not change skill contracts.
 
 ### Verification
-- [ ] `cd backend && uv run pytest tests/test_llm.py tests/test_config.py tests/test_skill_executor.py`
-- [ ] `cd backend && uv run pytest`
+- [x] `cd backend && uv run pytest tests/test_llm.py tests/test_config.py tests/test_skill_executor.py` — 59 passed, 3 skipped (62 passed/3 skipped including tests/test_interaction_log.py).
+- [x] `cd backend && uv run pytest` — 253 passed, 4 skipped (was 242/4; +11 new tests).
 
 ### Completion evidence
-- Pending
+- `Settings.llm_stage_models: dict[str, str]` (env `LLM_STAGE_MODELS` as a JSON object) is the routing table: loop_stage -> model name override, default empty; documented in `backend/.env.example`.
+- New `app/llm/routing.py::StageProviderRouter` resolves and caches a `(provider, model_name)` pair per loop stage through the existing `create_llm_provider` factory (`settings.model_copy(update={"llm_model": ...})`); unmapped stages fall back to the default model. Routing stays within the configured provider family (one API key) — only the model tier changes per stage.
+- `SkillExecutionService` gains optional `stage_router`: `execute()` picks the stage provider via `_provider_for(skill)`; `model_used_for(skill)` reports the actual model for logging. No router -> legacy single-provider behaviour, byte-identical prompts; skill contracts untouched.
+- `app/api/deps.py::get_executor` attaches a router only when the routing table is non-empty (opt-in), so tests overriding `get_provider` and the eval harness (`app/eval/__main__.py`, router-free) behave exactly as before.
+- `InteractiveLoop._log_interaction` now records `executor.model_used_for(skill)` — the per-stage model actually used.
+- Tests (+11): config default-empty + env-JSON parsing (2); router default/override/caching/real-provider model override (4); `get_executor` opt-in behaviour (2); executor routes to the stage provider and reports the stage model (2); InteractionLog rows record per-stage models (`fake-light` retrieval override vs `fake-base` default) (1). One mid-run defect found and fixed: unconditional router wiring bypassed provider dependency overrides (22 API-test failures) — routing made opt-in, suite back to green.
+- Full suite 253 passed/4 skipped; ruff clean; mypy `app` clean; mypy on the four touched test files = 12 errors, byte-identical to the pre-change baseline (stash-verified). Frontend untouched (no build needed).
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: B6.1; PRD: §6 model-swappable; ERD: interaction_log` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-21T16:31:48+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-21T16:44:07+10:00 - DONE. Per-stage model routing shipped: `LLM_STAGE_MODELS` routing table + `StageProviderRouter` + opt-in executor wiring + per-stage model recorded in interaction_log. Verification: targeted 59 passed/3 skipped (62/3 with interaction-log tests); full suite 253 passed/4 skipped; ruff clean; mypy unchanged vs baseline. Unlocks ISS-022.
 
 ## ISS-022 - Privacy-safe telemetry and feedback package
 - Status: `READY`

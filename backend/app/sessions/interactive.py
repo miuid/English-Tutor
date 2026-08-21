@@ -690,7 +690,7 @@ class InteractiveLoop:
                 InteractionLog(
                     session_id=session.id,
                     skill_id=skill_row.id if skill_row is not None else None,
-                    model=self.executor.model_name,
+                    model=self.executor.model_used_for(skill),
                     input=inputs.get("student_text", ""),
                     output=output,
                 )

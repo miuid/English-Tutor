@@ -148,6 +148,15 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 11. Session log
 
+### 2026-08-21 — ISS-021 done: per-stage model routing (B6.1)
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-021 (P2, dep ISS-020 DONE).
+- **Shipped:** `Settings.llm_stage_models` (env `LLM_STAGE_MODELS`, JSON object mapping loop_stage -> model override) + new `app/llm/routing.py::StageProviderRouter` (cached `(provider, model)` per stage via the existing factory). Routing stays within the configured provider family — one API key, only the model tier changes per stage (e.g. heavy triage/coach/end on the strong model, light retrieval/start/I do/we do/you do on a cheaper tier).
+- **Opt-in wiring:** `SkillExecutionService` gains an optional `stage_router`; `get_executor` attaches one only when the table is non-empty. Empty table -> byte-identical legacy behaviour, and `get_provider` dependency overrides in tests plus the router-free eval harness are untouched. Skill contracts unchanged.
+- **Honest logging:** `interaction_log.model` now records the actual per-stage model (`executor.model_used_for(skill)`).
+- Mid-run defect caught by the suite: unconditional router wiring bypassed provider overrides (22 API-test failures) — fixed by making routing opt-in; documented in ISSUES.md evidence.
+- Verified: targeted 59 passed/3 skipped (62/3 with interaction-log tests); full suite **253 passed/4 skipped** (+11 new tests); ruff clean; mypy `app` clean, touched test files byte-identical to baseline (stash-verified). Frontend untouched.
+- **Next pick-up:** ISS-022 — privacy-safe telemetry + feedback package.
+
 ### 2026-08-21 — ISS-020 done: shared parent-student goal setting (B5.2)
 - Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-020 (P2, dep ISS-019 DONE).
 - **Shipped:** `student.shared_goal` (nullable VARCHAR(280)) — the family's agreed qualitative weekly focus, distinct from the numeric `weekly_goal` (ISS-016). Set/edit/clear via the profile API (PATCH `""` clears; omitted field untouched); idempotent SQLite column patch follows the established `_ensure_student_*` pattern.

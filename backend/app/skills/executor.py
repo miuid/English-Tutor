@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 from app.llm.provider import LLMProvider
+from app.llm.routing import StageProviderRouter
 from app.models import DEFAULT_COACH_TONE
 from app.skills.loader import Skill
 
@@ -80,10 +81,27 @@ def select_packs(
 
 @dataclass
 class SkillExecutionService:
-    """Run a skill's instructions against the configured LLM provider."""
+    """Run a skill's instructions against the configured LLM provider.
+
+    When ``stage_router`` is set, the provider is chosen per skill loop stage
+    from the config routing table (ISS-021); otherwise the single ``provider``
+    is used for every stage (legacy/eval behaviour, unchanged).
+    """
 
     provider: LLMProvider
     model_name: str = "unknown"
+    stage_router: StageProviderRouter | None = None
+
+    def model_used_for(self, skill: Skill) -> str:
+        """The model name ``execute`` uses for this skill's loop stage."""
+        if self.stage_router is not None:
+            return self.stage_router.for_stage(skill.loop_stage)[1]
+        return self.model_name
+
+    def _provider_for(self, skill: Skill) -> LLMProvider:
+        if self.stage_router is not None:
+            return self.stage_router.for_stage(skill.loop_stage)[0]
+        return self.provider
 
     async def execute(self, skill: Skill, inputs: dict[str, str]) -> str:
         """Compose and send the skill prompt, returning the LLM response."""
@@ -99,7 +117,7 @@ class SkillExecutionService:
         system_prompt = self._build_system_prompt(skill, packs, coach_tone)
         user_message = self._build_user_message(user_inputs)
         messages = [{"role": "user", "content": user_message}]
-        response = await self.provider.generate(system_prompt, messages)
+        response = await self._provider_for(skill).generate(system_prompt, messages)
 
         note = self._degradation_note(skill, text_type, year_band, used_key)
         if note is not None:
