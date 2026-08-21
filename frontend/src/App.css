@@ -870,3 +870,34 @@
   text-align: center;
 }
 
+
+/* Weekly parent report (ISS-019) --------------------------------------------- */
+
+.parent-section-title {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+}
+
+.parent-trends {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.parent-trends th,
+.parent-trends td {
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--line, #e4e4ee);
+}
+
+.parent-level {
+  font-weight: 700;
+}
+
+.parent-privacy {
+  max-width: 60ch;
+  margin: 0.4rem auto 1rem;
+  font-size: 0.85rem;
+  text-align: center;
+}

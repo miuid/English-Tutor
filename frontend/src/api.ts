@@ -3,6 +3,7 @@ import type {
   LevelUpsOut,
   MockOut,
   MotivationOut,
+  ParentReportOut,
   ProgressOut,
   SessionOut,
   StartSessionRequest,
@@ -125,6 +126,16 @@ export function getMotivation(studentId: string): Promise<MotivationOut> {
 
 export function getLevelUps(studentId: string): Promise<LevelUpsOut> {
   return request<LevelUpsOut>(`/api/students/${studentId}/level-ups`)
+}
+
+export function getParentReport(studentId: string): Promise<ParentReportOut> {
+  return request<ParentReportOut>(`/api/students/${studentId}/parent-report`)
+}
+
+// Server-rendered printable page (same derived data as getParentReport);
+// the browser prints/saves it to PDF.
+export function parentReportPrintUrl(studentId: string): string {
+  return `/api/students/${studentId}/parent-report/print`
 }
 
 export function runMock(studentId: string, text: string): Promise<MockOut> {

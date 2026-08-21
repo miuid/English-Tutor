@@ -197,3 +197,42 @@ class LevelUpOut(BaseModel):
 class LevelUpsOut(BaseModel):
     student_id: uuid.UUID
     level_ups: list[LevelUpOut]
+
+
+class TrendPointOut(BaseModel):
+    """One scored data point for a criterion (parent report, ISS-019)."""
+
+    scored_on: date
+    level: str
+
+
+class CriterionTrendOut(BaseModel):
+    """The A–E story for one criterion: latest level, direction, history."""
+
+    criterion_name: str
+    latest_level: str
+    previous_level: str | None
+    direction: str  # "up" | "down" | "steady" | "new"
+    points: list[TrendPointOut]
+
+
+class ParentReportOut(BaseModel):
+    """Weekly parent report (ISS-019).
+
+    D3 privacy boundary: trends, levels, time, and goals only — never the
+    student's essay text, task prompts, or tutor feedback prose.
+    """
+
+    student_id: uuid.UUID
+    student_name: str
+    year_level: int
+    curriculum: str
+    week_start: date
+    week_end: date
+    sessions_this_week: int
+    practice_seconds_this_week: int
+    weekly_goal: int
+    goal_met: bool
+    trends: list[CriterionTrendOut]
+    highlight: str | None
+    next_week_suggestion: str

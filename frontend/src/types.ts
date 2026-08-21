@@ -138,3 +138,34 @@ export interface LevelUpsOut {
   student_id: string
   level_ups: LevelUpOut[]
 }
+
+// Weekly parent report (ISS-019): trends/levels/time/goals only — the D3
+// privacy boundary means no essay text or tutor feedback prose, by design.
+export interface TrendPointOut {
+  scored_on: string
+  level: string
+}
+
+export interface CriterionTrendOut {
+  criterion_name: string
+  latest_level: string
+  previous_level: string | null
+  direction: 'up' | 'down' | 'steady' | 'new'
+  points: TrendPointOut[]
+}
+
+export interface ParentReportOut {
+  student_id: string
+  student_name: string
+  year_level: number
+  curriculum: string
+  week_start: string
+  week_end: string
+  sessions_this_week: number
+  practice_seconds_this_week: number
+  weekly_goal: number
+  goal_met: boolean
+  trends: CriterionTrendOut[]
+  highlight: string | null
+  next_week_suggestion: string
+}

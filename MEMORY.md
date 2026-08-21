@@ -147,6 +147,14 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 
 ## 11. Session log
 
+### 2026-08-21 — ISS-019 done: weekly parent report with privacy boundary (B5.1)
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-019 (P2, dep ISS-018 DONE).
+- **Shipped:** `backend/app/parent_report.py::build_parent_report` — **derived, never stored** (mirrors streak/level-up decisions): Monday–today local week window, sessions + practice-time counts, weekly-goal state, per-criterion trends (latest/previous level, up/down/steady/new direction, dated points), one honest highlight (this week's level-up, else goal-met), one supportive next-week suggestion (goal nudge → dip revisit → weakest growth area → keep going). Endpoints: `GET /api/students/{id}/parent-report` (JSON) + `GET /api/students/{id}/parent-report/print` (server-rendered printable HTML from the **same** `ParentReport` value; browser prints to PDF — no new dependency, PDFs can never disagree with the app).
+- **Privacy (D3):** boundary enforced in exactly one module — the builder reads `Attempt`/`Feedback` only to reach rubric scores; no `student_text`, `task_prompt`, feedback prose, or rubric notes ever leave it. Tests assert marker strings absent from both JSON and HTML; the print page states the boundary to parents.
+- **Frontend:** new **Parent** tab + `ParentView.tsx` (week strip, highlight card, trend table, suggestion, privacy note, Print/PDF button opening the server page); types + `getParentReport`/`parentReportPrintUrl` + CSS tokens.
+- Verified: targeted 12 passed; full suite **237 passed/4 skipped** (+12 new); ruff clean; mypy 29 errors in the same 4 unrelated baseline files, changed files clean; frontend tsc+vite+oxlint clean; HTTP smoke (FakeProvider, tmp SQLite): JSON report 200 with correct weekly counts + goal nudge, print page 200 `text/html` with same data.
+- **Next pick-up:** ISS-020 — shared parent-student goal setting.
+
 ### 2026-08-21 — ISS-018 done: coach persona tone setting (B4.3)
 - Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN; picked ISS-018 (P2, dep ISS-017 DONE).
 - **Shipped:** per-profile `coach_tone` (`warm`/`strict`/`humorous`, default `warm`; `CoachTone` Literal in `models.py` as the single source of truth) + idempotent SQLite column patcher. Executor appends a `--- Coach tone ---` section (directive + "never what you teach" contract note) to the **system prompt** only when a `coach_tone` input is present — opt-in, so eval fixtures and the year-8 byte-identical regression guard are untouched; unknown tones fall back to warm. Wired through every tutor turn in both loops (`InteractiveLoop` incl. baseline/mock, `SessionOrchestrator`). API validates (422), export/import round-trips (400 on invalid, legacy exports default warm). ProfileView tone chips; FirstRunWizard untouched (defaults warm).

@@ -9,7 +9,7 @@ This document is the canonical delivery state for autonomous development. Detail
 - Active issue: `None`
 - Integration mode: `delivery-branch`
 - Delivery branch: `feature/english-tutor-delivery`
-- Last evaluated: `2026-08-21T09:45:49+10:00`
+- Last evaluated: `2026-08-21T12:15:00+10:00`
 
 ## Automation Policy
 - `/develop` processes at most one issue per run.
@@ -54,7 +54,7 @@ This document is the canonical delivery state for autonomous development. Detail
 | ISS-016 | Streaks and weekly goal | `DONE` | `P2` | `ISS-015` | `None` |
 | ISS-017 | Criterion level-up celebration | `DONE` | `P2` | `ISS-016` | `None` |
 | ISS-018 | Coach persona tone setting | `DONE` | `P2` | `ISS-017` | `None` |
-| ISS-019 | Weekly parent report with privacy boundary | `READY` | `P2` | `ISS-018` | `None` |
+| ISS-019 | Weekly parent report with privacy boundary | `DONE` | `P2` | `ISS-018` | `None` |
 | ISS-020 | Shared parent-student goal setting | `READY` | `P2` | `ISS-019` | `None` |
 | ISS-021 | Per-stage model routing | `READY` | `P2` | `ISS-020` | `None` |
 | ISS-022 | Privacy-safe telemetry and feedback package | `READY` | `P2` | `ISS-021` | `None` |
@@ -880,7 +880,7 @@ Add a per-profile coach tone setting that changes system-prompt tone without cha
 - 2026-08-21T09:45:49+10:00 - DONE. Coach persona tone shipped: per-profile warm/strict/humorous setting injected into the system prompt only (opt-in input → byte-identical legacy/eval prompts), wired through every tutor turn in both loops, validated end-to-end (422/400 on invalid), export/import round-trip safe, ProfileView tone picker. Verification: declared tests 46 passed/1 skipped; full suite 225 passed/4 skipped (+13); ruff clean; mypy unchanged vs baseline; frontend build + oxlint clean; no-judge eval 26 cases 22/4 — unchanged canned-fake baseline. Unlocks ISS-019.
 
 ## ISS-019 - Weekly parent report with privacy boundary
-- Status: `READY`
+- Status: `DONE`
 - Priority: `P2`
 - Type: `feature`
 - Depends on: `ISS-018`
@@ -889,32 +889,43 @@ Add a per-profile coach tone setting that changes system-prompt tone without cha
 - Branch: `<inherit delivery branch>`
 - Sources: `IMPLEMENTATION-PLAN-2: B5.1; PRD: §7 deferred parent layer; ERD: Privacy & retention`
 - Effort: `M`
-- Attempt: `0`
-- Started: `None`
-- Completed: `None`
+- Attempt: `1`
+- Started: `2026-08-21T11:50:00+10:00`
+- Completed: `2026-08-21T12:15:00+10:00`
 - Commit: `None`
 
 ### Outcome and scope
 Add an in-app weekly parent report and printable PDF showing sessions, time, criterion trends, highlight, and next-week suggestion without exposing full essay text by default.
 
 ### Acceptance criteria
-- [ ] Parent endpoints return trends/levels/time/goals but no attempt full text.
-- [ ] Printable report generates from the same data.
-- [ ] Tests assert the privacy boundary.
+- [x] Parent endpoints return trends/levels/time/goals but no attempt full text.
+- [x] Printable report generates from the same data.
+- [x] Tests assert the privacy boundary.
 
 ### Implementation notes
 - Likely files or components: backend/app/api/routes.py, backend/app/api/schemas.py, frontend/src/components/ProgressView.tsx or new ParentView.
 - Constraints: D3 remains in force: parents see trends, not full essays, unless the student explicitly shares.
 
 ### Verification
-- [ ] `cd backend && uv run pytest`
-- [ ] `cd frontend && npm run build`
+- [x] `cd backend && uv run pytest tests/test_parent_report.py` — 12 passed.
+- [x] `cd backend && uv run pytest` — 237 passed, 4 skipped (was 225/4; +12 new tests).
+- [x] `cd backend && uv run ruff check .` — clean; `uv run mypy app tests` — 29 errors in the same 4 unrelated test files as the ISS-018 baseline (test_config, test_delete_student, test_interaction_log, test_session_time); changed files clean.
+- [x] `cd frontend && npm run build` — tsc + vite build clean (382.27 kB bundle); `npm run lint` (oxlint) — 0 warnings, 0 errors.
+- [x] HTTP smoke against a real backend (`LLM_PROVIDER=fake`, tmp SQLite): create student → start session → `GET /parent-report` 200 with correct weekly counts and goal nudge; `GET /parent-report/print` 200 `text/html` with the same data and the print-to-PDF button.
 
 ### Completion evidence
-- Pending
+- New `backend/app/parent_report.py`: `build_parent_report()` derives the report from persisted sessions + rubric scores (nothing extra stored, mirroring the derived-streak decision): Monday–today local week window (matching `build_motivation`), sessions/practice-time counts, weekly-goal state, per-criterion trends (latest/previous level, up/down/steady/new direction, dated points), one honest highlight (this week's level-up, else goal-met), one supportive next-week suggestion (goal nudge → dip revisit → weakest growth area → keep going). `render_parent_report_html()` renders the printable one-page report from the same `ParentReport` value with every interpolation HTML-escaped and a print-to-PDF button (`@media print` hides it).
+- D3 privacy boundary enforced in exactly one place: the builder reads `Attempt`/`Feedback` only to reach rubric scores — no `student_text`, `task_prompt`, feedback prose, or rubric notes ever leave the module; the print page states the boundary to parents.
+- Routes: `GET /api/students/{id}/parent-report` (JSON `ParentReportOut`) and `GET /api/students/{id}/parent-report/print` (HTMLResponse), both 404 on unknown student; no new persistence.
+- Frontend: new `ParentView.tsx` on a new **Parent** tab (week strip, highlight card, criterion-trend table, next-week suggestion, privacy note, Print/PDF button opening the server-rendered print page); `types.ts` + `api.ts` (`getParentReport`, `parentReportPrintUrl`) + `.parent-*` CSS tokens.
+- Tests (`backend/tests/test_parent_report.py`, 12 new): cold start, week-window session/time counts (last week excluded), trend latest/previous/direction, highlight prefers this-week level-up over goal-met fallback and ignores last-week crossings, suggestion ordering (dip after goal met, weakest criterion when no dip), builder-level no-secret-text assertion, HTTP shape, 404s, **JSON and print privacy-boundary tests asserting marker essay/feedback/note/prompt strings never appear**, print page carries the same data + print button.
+- PDF decision: no new dependency — the server-rendered printable HTML is the single source; the browser prints/saves to PDF. Report is derived, so PDFs never disagree with the app.
+- Commit: recorded in this issue's `Commit` field.
 
 ### Work log
 - 2026-08-19T13:44:45+10:00 - Planned from `IMPLEMENTATION-PLAN-2: B5.1; PRD: §7 deferred parent layer; ERD: Privacy & retention` during `/plan`; completed milestones were kept as context, not tickets.
+- 2026-08-21T11:50:00+10:00 - `develop` attempt 1 started on `feature/english-tutor-delivery`; gate `OPEN`, no blocking questions.
+- 2026-08-21T12:15:00+10:00 - DONE. Weekly parent report shipped: `build_parent_report` (derived weekly window, sessions/time, criterion trends, highlight, next-week suggestion) + JSON and printable-HTML endpoints with the D3 privacy boundary enforced in one module + Parent tab UI with print-to-PDF. Verification: targeted 12 passed; full suite 237 passed/4 skipped; ruff clean; mypy unchanged vs baseline; frontend build + oxlint clean; HTTP smoke of both endpoints green. Unlocks ISS-020.
 
 ## ISS-020 - Shared parent-student goal setting
 - Status: `READY`

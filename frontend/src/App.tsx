@@ -2,12 +2,13 @@ import { useCallback, useState } from 'react'
 import './App.css'
 import ChatView from './components/ChatView'
 import FirstRunWizard from './components/FirstRunWizard'
+import ParentView from './components/ParentView'
 import ProfileView from './components/ProfileView'
 import ProgressView from './components/ProgressView'
 import { loadStudentId, loadStudentProfile, saveStudentId } from './storage'
 import type { StudentOut } from './types'
 
-type Tab = 'session' | 'progress' | 'profile'
+type Tab = 'session' | 'progress' | 'parent' | 'profile'
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('session')
@@ -80,6 +81,15 @@ export default function App() {
           <button
             type="button"
             role="tab"
+            aria-selected={tab === 'parent'}
+            className={tab === 'parent' ? 'tab active' : 'tab'}
+            onClick={() => setTab('parent')}
+          >
+            Parent
+          </button>
+          <button
+            type="button"
+            role="tab"
             aria-selected={tab === 'profile'}
             className={tab === 'profile' ? 'tab active' : 'tab'}
             onClick={() => setTab('profile')}
@@ -93,6 +103,8 @@ export default function App() {
           <ChatView student={student} />
         ) : tab === 'progress' ? (
           <ProgressView studentId={studentId} />
+        ) : tab === 'parent' ? (
+          <ParentView studentId={studentId} />
         ) : (
           <ProfileView onStudent={handleStudent} onClear={handleClearStudent} />
         )}

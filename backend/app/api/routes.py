@@ -4,7 +4,7 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DBSession
 
@@ -13,12 +13,14 @@ from app.api.schemas import (
     AdvanceOut,
     BaselineOut,
     BaselineRequest,
+    CriterionTrendOut,
     FeedbackOut,
     LevelUpOut,
     LevelUpsOut,
     MockOut,
     MockRequest,
     MotivationOut,
+    ParentReportOut,
     ProgressOut,
     ProgressScoreOut,
     RubricScoreOut,
@@ -29,11 +31,13 @@ from app.api.schemas import (
     StudentUpdate,
     SubmitOut,
     SubmitRequest,
+    TrendPointOut,
     TurnOut,
 )
 from app.level_ups import build_level_ups
 from app.models import Attempt, Feedback, RubricScore, Session, Student
 from app.motivation import build_motivation
+from app.parent_report import ParentReport, build_parent_report, render_parent_report_html
 from app.sessions.interactive import InteractiveLoop, SessionNotFoundError, StageConflictError
 from app.student_transfer import ExportImportError, export_student, import_student
 
@@ -505,3 +509,69 @@ async def student_level_ups(
             for event in events
         ],
     )
+
+
+def _parent_report_out(report: ParentReport) -> ParentReportOut:
+    return ParentReportOut(
+        student_id=report.student_id,
+        student_name=report.student_name,
+        year_level=report.year_level,
+        curriculum=report.curriculum,
+        week_start=report.week_start,
+        week_end=report.week_end,
+        sessions_this_week=report.sessions_this_week,
+        practice_seconds_this_week=report.practice_seconds_this_week,
+        weekly_goal=report.weekly_goal,
+        goal_met=report.goal_met,
+        trends=[
+            CriterionTrendOut(
+                criterion_name=trend.criterion_name,
+                latest_level=trend.latest_level,
+                previous_level=trend.previous_level,
+                direction=trend.direction,
+                points=[
+                    TrendPointOut(scored_on=point.scored_on, level=point.level)
+                    for point in trend.points
+                ],
+            )
+            for trend in report.trends
+        ],
+        highlight=report.highlight,
+        next_week_suggestion=report.next_week_suggestion,
+    )
+
+
+@router.get("/students/{student_id}/parent-report")
+async def parent_report(
+    student_id: uuid.UUID,
+    db: DBSession = Depends(get_db),
+) -> ParentReportOut:
+    """Weekly parent report: sessions, time, criterion trends, highlight,
+    and a next-week suggestion (ISS-019).
+
+    D3 privacy boundary: the report carries trends, levels, time, and goals
+    only — never the student's essay text, task prompts, rubric notes, or
+    tutor feedback prose.
+    """
+    student = db.get(Student, student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return _parent_report_out(build_parent_report(db, student))
+
+
+@router.get("/students/{student_id}/parent-report/print")
+async def parent_report_print(
+    student_id: uuid.UUID,
+    db: DBSession = Depends(get_db),
+) -> HTMLResponse:
+    """Printable one-page version of the weekly parent report.
+
+    Rendered server-side from the same derived ``ParentReport`` value as
+    the JSON endpoint, so the D3 privacy boundary is enforced in exactly
+    one place. Parents print or save to PDF from the browser; nothing new
+    is persisted.
+    """
+    student = db.get(Student, student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return HTMLResponse(render_parent_report_html(build_parent_report(db, student)))
