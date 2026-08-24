@@ -120,13 +120,13 @@ Recommendation: Defer until GA planning; prefer Australia-region managed Postgre
 - Resolution: No action in the current backlog. Revisit at GA planning; Australia-region managed Postgres remains the preferred posture if budget allows.
 
 ## Q-005 - Senior IA1 is persuasive, not analytical — ISS-025 scope
-- Status: `OPEN`
+- Status: `ANSWERED`
 - Severity: `BLOCKING`
 - Raised by: `develop`
 - Related issue: `ISS-025`
 - Related requirements: `IMPLEMENTATION-PLAN-2: 10.2; PRD: §9 FR-GA-003`
 - Raised: `2026-08-21T21:40:00+10:00`
-- Answered: `None`
+- Answered: `2026-08-24T20:56:52+10:00`
 - Severity history: raised `NON_BLOCKING` (ISS-024 still in progress); escalated to `BLOCKING` on `2026-08-22T03:45:00+10:00` by `develop` — ISS-025 is now the only remaining ticket and cannot start until this re-scope decision is made, so the question blocks the delivery gate.
 
 ### Decision needed
@@ -152,11 +152,12 @@ Recommendation: Option 1 — retitle ISS-025 to target IA2 (and note EA as exam-
 updating its acceptance criteria wording before the ticket becomes eligible.
 
 ### Answer and resolution
-- Answer: Pending
-- Resolution: Pending
+- Answer: Option 1 — re-scope ISS-025 to "Senior analytical pack (IA2 + EA framework)".
+- Resolution: ISS-025 retitled and re-scoped to IA2 as the internal analytical written instrument, with EA noted as exam-mode analytical; acceptance criteria updated. ISS-025 unblocked (`READY`), Delivery Gate re-evaluated to `OPEN`.
 
 ## Change Log
 - `2026-08-19T13:44:45+10:00` - Initialized by `/plan`; no `BLOCKING` questions are open, so `ISSUES.md` Delivery Gate is `OPEN`.
 - `2026-08-21T14:55:02+10:00` - All four questions answered by Cheng: Q-001 import official QCAA PDFs before senior depth claims (constraint on ISS-024/ISS-025); Q-002 friend families first (constraint on ISS-023); Q-003 defer to GA, likely Stripe; Q-004 defer to GA. No `BLOCKING` questions; Delivery Gate remains `OPEN`.
 - `2026-08-21T21:40:00+10:00` - Q-005 raised by `develop` during ISS-024 (`NON_BLOCKING`): official English 2025 v1.3 syllabus defines IA1 as a spoken persuasive response; ISS-025 needs re-scoping to IA2/EA before it starts. Gate remains `OPEN`.
 - `2026-08-22T03:45:00+10:00` - Q-005 severity escalated `NON_BLOCKING` → `BLOCKING` by `develop`: ISS-024 is DONE and ISS-025 is the only remaining ticket, so the unresolved re-scope decision now blocks all delivery. ISS-025 set `BLOCKED` (`Blocked by: Q-005`); `ISSUES.md` Delivery Gate set to `BLOCKED`. Awaiting owner answer (recommendation: Option 1 — retarget ISS-025 to IA2, note EA as exam-mode analytical).
+- `2026-08-24T20:56:52+10:00` - Q-005 answered by Cheng: Option 1 — re-scope ISS-025 to "Senior analytical pack (IA2 + EA framework)". ISS-025 updated and unblocked; Delivery Gate back to `OPEN`.
