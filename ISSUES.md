@@ -1165,7 +1165,7 @@ Model QCE Units 1-4, IA1, IA2, IA3, and EA into curriculum_outcome and write the
 - Attempt: `1`
 - Started: `2026-08-24T22:30:40+10:00`
 - Completed: `2026-08-24T23:05:00+10:00`
-- Commit: `None`
+- Commit: `14e3466`
 
 ### Outcome and scope
 Fill analytical/year-11-12 reference depth for the official analytical instruments — IA2 (written response for a public audience) with EA (external analytical essay) noted as exam-mode analytical — and prove an IA2 analytical task receives senior-standard feedback end-to-end.
