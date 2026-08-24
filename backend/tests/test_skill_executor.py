@@ -123,8 +123,8 @@ def test_select_packs_prefers_exact_then_nearest_band() -> None:
     assert packs == [skill.packs["analytical/year-8"]]
 
     packs, used = select_packs(skill, "analytical", "year-11-12")
-    assert used == "analytical/year-8"  # nearest band fallback
-    assert packs == [skill.packs["analytical/year-8"]]
+    assert used == "analytical/year-11-12"  # exact pack exists (ISS-025)
+    assert packs == [skill.packs["analytical/year-11-12"]]
 
     packs, used = select_packs(skill, "persuasive", "year-8")
     assert used == "persuasive/year-8"
@@ -162,7 +162,7 @@ def test_select_packs_shared_comes_first() -> None:
 
 
 @pytest.mark.asyncio
-async def test_execute_appends_degradation_note_on_band_fallback() -> None:
+async def test_execute_year_11_12_uses_exact_pack_without_degradation_note() -> None:
     skill = load_skill(SKILLS_DIR / "check-structure")
     fake = FakeProvider(canned_responses=["feedback"])
     service = SkillExecutionService(provider=fake)
@@ -170,12 +170,9 @@ async def test_execute_appends_degradation_note_on_band_fallback() -> None:
 
     response = await service.execute(skill, inputs)
 
-    assert "rubric.md" in fake.calls[0][0]  # nearest analytical band still included
-    assert response.startswith("feedback")
-    assert response.endswith(
-        "_Note: no dedicated references for analytical/year-11-12; "
-        "coached from the analytical/year-8 pack._"
-    )
+    assert "rubric.md" in fake.calls[0][0]
+    assert "discerning" in fake.calls[0][0]  # year-11-12 pack content (IA2 ISMG qualifier)
+    assert response == "feedback"  # exact pack exists: no degradation note
 
 
 @pytest.mark.asyncio

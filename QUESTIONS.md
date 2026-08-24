@@ -15,7 +15,7 @@ This document is the canonical record of unresolved and resolved delivery decisi
 | Q-002 | Beta recruitment channel | `ANSWERED` | `NON_BLOCKING` | `ISS-023` |
 | Q-003 | GA billing provider and tax posture | `ANSWERED` | `NON_BLOCKING` | `None` |
 | Q-004 | GA public deployment and data residency posture | `ANSWERED` | `NON_BLOCKING` | `None` |
-| Q-005 | Senior IA1 is persuasive, not analytical — ISS-025 scope | `OPEN` | `BLOCKING` | `ISS-025` |
+| Q-005 | Senior IA1 is persuasive, not analytical — ISS-025 scope | `ANSWERED` | `BLOCKING` | `ISS-025` |
 
 ## Questions
 

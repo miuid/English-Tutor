@@ -85,6 +85,27 @@ def test_reference_files_load_into_analytical_year_9_10_pack() -> None:
         assert skill.packs["analytical/year-9-10"][filename].strip(), name
 
 
+def test_reference_files_load_into_analytical_year_11_12_pack() -> None:
+    # ISS-025: senior analytical packs (IA2 + EA framework), sourced from the
+    # official QCAA English 2025 v1.3 syllabus.
+    expected = {
+        "check-structure": "rubric.md",
+        "diagnose-errors": "taxonomy.md",
+        "elevate-vocabulary": "tiers.md",
+        "give-feedback": "rubric.md",
+        "independent-task": "task-specs.md",
+        "set-success-criteria": "criteria-bank.md",
+    }
+    for name, filename in expected.items():
+        skill = load_skill(SKILLS_DIR / name)
+        assert "analytical/year-11-12" in skill.packs, name
+        assert list(skill.packs["analytical/year-11-12"]) == [filename], name
+        content = skill.packs["analytical/year-11-12"][filename]
+        assert content.strip(), name
+        # Every senior pack must cite the official syllabus source (Q-001).
+        assert "English 2025 v1.3" in content, name
+
+
 def test_skills_without_references_have_empty_packs() -> None:
     for name in ("model-response", "guided-practice"):
         skill = load_skill(SKILLS_DIR / name)

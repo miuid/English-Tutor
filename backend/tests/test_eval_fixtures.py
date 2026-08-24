@@ -57,10 +57,10 @@ def test_discover_cases_finds_all_skill_examples() -> None:
     skills = load_skills(SKILLS_DIR)
     cases = discover_cases(skills)
     assert len(skills) == 13
-    assert len(cases) == 26
+    assert len(cases) == 34
     assert {case.skill.name for case in cases} == {skill.name for skill in skills}
     for case in cases:
-        assert case.example in {"sample-01", "sample-02"}
+        assert case.example in {"sample-01", "sample-02", "sample-03"}
         assert case.inputs
         assert case.expected.strip()
 
@@ -166,6 +166,29 @@ def test_each_core_skill_has_a_year_9_10_analytical_fixture() -> None:
     for case in band_cases:
         assert case.tags == {"text_type": "analytical", "year_band": "year-9-10"}
         assert case.inputs["year_level"] == "9"
+        assert "year_band" not in case.inputs
+        assert case.expected.strip()
+
+
+def test_each_core_skill_has_a_year_11_12_analytical_fixture() -> None:
+    # The 8 original v1 loop skills each carry an analytical/year-11-12 (IA2)
+    # fixture (ISS-025). Specialist skills ship no analytical fixtures.
+    core_skills = {
+        "set-success-criteria",
+        "model-response",
+        "guided-practice",
+        "independent-task",
+        "diagnose-errors",
+        "check-structure",
+        "elevate-vocabulary",
+        "give-feedback",
+    }
+    cases = discover_cases(load_skills(SKILLS_DIR))
+    band_cases = [case for case in cases if case.combo == "analytical/year-11-12"]
+    assert {case.skill.name for case in band_cases} == core_skills
+    for case in band_cases:
+        assert case.tags == {"text_type": "analytical", "year_band": "year-11-12"}
+        assert case.inputs["year_level"] == "12"
         assert "year_band" not in case.inputs
         assert case.expected.strip()
 

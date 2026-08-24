@@ -2,7 +2,7 @@
 
 > Long-term memory for this project. It records the vision, every meaningful decision (with dates and rationale), what's been built, the roadmap, and open questions. **Update this file whenever a decision is made, a milestone is hit, or something important is discovered — and append a dated entry to the Session log (§11) at the end of each working session.** New sessions should read this first.
 
-Last updated: 2026-08-22
+Last updated: 2026-08-24
 
 ---
 
@@ -110,12 +110,12 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 - ✅ P6.2 — student profile + session context (`focus_text_types`, student CRUD API, frontend ProfileView).
 - ✅ Kimi K3 (Moonshot AI) provider — default LLM switched 2026-08-12 (adapter-only change; DeepSeek/Anthropic remain config swaps).
 
-**Next (Phase 2 — planned 2026-07-31, see `PHASE-2-PLAN.md`; D1–D4 confirmed by owner 2026-07-31)**
-- ⬜ Track A — skill depth: P6 framework generalisation (reference packs) → P9 Year 9–10 analytical (hard deadline: Feb 2027 school year) → P7 persuasive → P8 imaginative → P10 senior framework (timing by beta family mix).
+**Next (Phase 2 — planned 2026-07-31, see `PHASE-2-PLAN.md`; D1–D4 confirmed 2026-07-31)**
+- ✅ Track A — skill depth **complete via ISSUES.md backlog (ISS-001–ISS-025, all DONE 2026-08-24)**: P6 framework generalisation → P9 Year 9–10 analytical → P7 persuasive → P8 imaginative → P10 senior framework (QCE instruments modelled + senior analytical IA2/EA pack; official QCAA 2025 v1.3 syllabus cited).
   - ✅ P6.1 reference-pack architecture live.
   - ✅ P6.2 student profile + session context.
-- ⬜ Track B — Beta (5–10 QLD families, per-family local install): B1 distribution + student profiles → B2 baseline assessment → B3 loop completion (`fix-mechanics`, `spaced-review`, weekly mock) → B4 motivation → B5 parent layer → B6 ops → recruit.
-- ⬜ 5 new skills planned: `strengthen-argument`, `craft-voice`, `fix-mechanics`, `spaced-review`, `baseline-assessment` (→ 13 total).
+- ⬜ Track B — Beta (5–10 QLD families, per-family local install): B1 distribution + student profiles → B2 baseline assessment → B3 loop completion (`fix-mechanics`, `spaced-review`, weekly mock) → B4 motivation → B5 parent layer → B6 ops → recruit. **B2–B6 shipped via ISS-010–ISS-023**; what remains is recruitment + live operation with real families.
+- ✅ 5 new skills shipped: `strengthen-argument`, `craft-voice`, `fix-mechanics`, `spaced-review`, `baseline-assessment` (→ 13 total).
 
 **Later (GA)**
 - ⬜ Hosted multi-tenant, real auth (Google sign-in first), paid subscriptions (AUD 9.9/month baseline), Postgres, public deployment; NESA/other states; black-swan experiments (voice, teach-the-AI, character interrogation).
@@ -149,6 +149,15 @@ Data model sketch: `curriculum_outcome`, `skill`, `student`, `session`, `attempt
 | `English Circulum.md` | Curriculum reference. |
 
 ## 11. Session log
+
+### 2026-08-24 — ISS-025 done: senior analytical pack (IA2 + EA) — backlog complete
+- Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN (Q-005 answered same day: ISS-025 re-scoped to IA2 + EA framework); picked ISS-025 (P2, dep ISS-024 DONE) — the last ticket in the backlog.
+- **Shipped:** six `references/analytical/year-11-12/` packs (check-structure, diagnose-errors, elevate-vocabulary, give-feedback, independent-task, set-success-criteria), each citing the official QCAA English 2025 v1.3 syllabus with page refs (IA2 ISMG pp. 38–42, EA p. 48, genre note p. 12) — enforced by a new loader test asserting the citation. Senior calibration: values/positioning analysis is the *floor*; "discerning" = cultural assumptions/values + audience positioning. give-feedback switches to the three official ISMG criterion names (Knowledge application /9, Organisation and development /8, Textual features /8) with the provisional-A–E boundary. EA noted as exam-mode analytical only; no IA1/IA3 depth (per Q-005).
+- **Fixtures:** 8 senior golden fixtures (sample-03, `year_level: 12`, IA2-style Macbeth + Ozymandias thread, both public domain) — eval combo `analytical/year-11-12` now covered for all 8 core skills (26 → 34 cases).
+- **Loop proof:** `test_run_daily_loop_year_12_cites_senior_ia2_descriptors` — year-12 IA2 loop end-to-end (FakeProvider), year-11-12 packs cited in every pack-bearing prompt, no degradation note, 3 rubric scores persisted against the ISMG criteria.
+- **Baseline flake fixed (test-only):** `test_parent_report.py::_seed_graded_week` used `today - 2 days`, which crosses into last week on Mondays/Tuesdays — stash-verified pre-existing failure, fixed by clamping to the week's Monday (matches the existing week-window test pattern). Verified live on a Monday.
+- Verified: declared tests 51 passed/1 skipped; full suite **266 passed/4 skipped** (+3); ruff clean; mypy unchanged vs baseline (29 errors in the same 4 unrelated test files); no-judge eval 34 cases, 28 passed/6 failed (expected canned-fake baseline). No production code changed.
+- **Delivery Gate: `COMPLETE`** — all 25 tickets DONE. Next phase (GA planning, live eval on Kimi K3, beta recruitment) awaits owner direction — likely a fresh `/plan` cycle.
 
 ### 2026-08-22 — `/develop` BLOCKED: ISS-025 awaits Q-005 re-scope decision
 - Cron `/develop` run on `feature/english-tutor-delivery`. Gate was OPEN, Active issue None. Found ISS-024 index row stale (`READY` vs authoritative `DONE` block) — synced. Only remaining ticket: ISS-025.

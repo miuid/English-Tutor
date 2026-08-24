@@ -246,6 +246,11 @@ def _seed_graded_week(api_client: TestClient) -> dict[str, object]:
 
     now = datetime.now(UTC)
     today = now.astimezone().date()
+    week_start = today - timedelta(days=today.weekday())  # Monday
+    # Keep both sessions inside the current week (Monday–today): on a Monday or
+    # Tuesday, `today - 2 days` slips into last week and the report would count
+    # one session, not two (weekday-dependent flake, found 2026-08-24).
+    earlier = max(week_start, today - timedelta(days=2))
     session_factory = sessionmaker(bind=get_engine())
     with session_factory() as db:
         student = db.get(Student, uuid.UUID(str(student_data["id"])))
@@ -255,7 +260,7 @@ def _seed_graded_week(api_client: TestClient) -> dict[str, object]:
             student,
             "Story & tension",
             "C",
-            today - timedelta(days=2),
+            earlier,
             now,
             note=SECRET_NOTE,
         )
