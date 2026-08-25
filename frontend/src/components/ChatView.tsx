@@ -19,9 +19,10 @@ import {
   saveStudentId,
 } from '../storage'
 import Markdown from './Markdown'
+import MockView from './MockView'
 import type { FeedbackOut, SessionOut, StudentOut, TurnOut } from '../types'
 
-type Phase = 'loading' | 'start' | 'active'
+type Phase = 'loading' | 'start' | 'active' | 'mock'
 
 interface ActiveSession {
   id: string
@@ -35,6 +36,7 @@ interface ActiveSession {
 
 // Student-friendly labels for the loop stages / turn modes.
 const STAGE_LABELS: Record<string, string> = {
+  retrieval: 'Warm-up review',
   start: "Today's goal",
   'I do': "Watch how it's done",
   'we do': "Let's try together",
@@ -317,6 +319,11 @@ export default function ChatView({ student }: ChatViewProps) {
               Tip: set up your profile in the Profile tab so sessions match your year level.
             </p>
           )}
+          {student?.shared_goal ? (
+            <p className="profile-hint">
+              This week's shared goal: <strong>{student.shared_goal}</strong>
+            </p>
+          ) : null}
           {error ? (
             <p className="error-banner" role="alert">
               {error}
@@ -350,9 +357,21 @@ export default function ChatView({ student }: ChatViewProps) {
               {busy ? 'Starting…' : "Start today's session"}
             </button>
           </form>
+          {student ? (
+            <p className="mock-entry">
+              Feeling exam-ready?{' '}
+              <button type="button" className="btn ghost small" onClick={() => setPhase('mock')}>
+                Sit this week's timed mock
+              </button>
+            </p>
+          ) : null}
         </section>
       </div>
     )
+  }
+
+  if (phase === 'mock') {
+    return student ? <MockView student={student} onBack={() => setPhase('start')} /> : null
   }
 
   const studentTurn =

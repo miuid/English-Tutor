@@ -3,7 +3,7 @@
 import json
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal
 
 import sqlalchemy as sa
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -41,6 +41,20 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
+# Default weekly practice goal (sessions per week, Monday-Sunday local). The
+# streak itself is derived from session history (see app/motivation.py) so it
+# can never disagree with the persisted record.
+DEFAULT_WEEKLY_GOAL = 4
+MAX_WEEKLY_GOAL = 14
+
+# Coach persona tone (ISS-018). Prompt-level only: the tone changes how the
+# coach sounds, never what it teaches — rubric levels, bounded next steps,
+# and every skill's output contract are tone-invariant.
+CoachTone = Literal["warm", "strict", "humorous"]
+COACH_TONES: tuple[CoachTone, ...] = ("warm", "strict", "humorous")
+DEFAULT_COACH_TONE: CoachTone = "warm"
+
+
 class Student(Base):
     __tablename__ = "student"
 
@@ -58,6 +72,20 @@ class Student(Base):
         StringList(),
         default=list,
         nullable=True,
+    )
+    # Weekly practice goal in sessions (ISS-016). Gentle motivation only —
+    # no points, shops, leaderboards, or punitive mechanics.
+    weekly_goal: Mapped[int] = mapped_column(sa.Integer, default=DEFAULT_WEEKLY_GOAL)
+    # Coach persona tone (ISS-018): warm / strict / humorous. Injected into
+    # the system prompt only; teaching contracts never change.
+    coach_tone: Mapped[str] = mapped_column(
+        sa.String(20), default=DEFAULT_COACH_TONE
+    )
+    # Shared parent-student weekly goal (ISS-020): a short qualitative focus
+    # set together (e.g. "write clearer paragraphs"). Surfaced at the session
+    # opening and in the parent report — supportive only, never a control.
+    shared_goal: Mapped[str | None] = mapped_column(
+        sa.String(280), nullable=True, default=None
     )
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),

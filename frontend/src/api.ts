@@ -1,5 +1,9 @@
 import type {
   AdvanceOut,
+  LevelUpsOut,
+  MockOut,
+  MotivationOut,
+  ParentReportOut,
   ProgressOut,
   SessionOut,
   StartSessionRequest,
@@ -114,4 +118,36 @@ export function resumeSession(sessionId: string): Promise<SessionOut> {
 
 export function getProgress(studentId: string): Promise<ProgressOut> {
   return request<ProgressOut>(`/api/students/${studentId}/progress`)
+}
+
+export function getMotivation(studentId: string): Promise<MotivationOut> {
+  return request<MotivationOut>(`/api/students/${studentId}/motivation`)
+}
+
+export function getLevelUps(studentId: string): Promise<LevelUpsOut> {
+  return request<LevelUpsOut>(`/api/students/${studentId}/level-ups`)
+}
+
+export function getParentReport(studentId: string): Promise<ParentReportOut> {
+  return request<ParentReportOut>(`/api/students/${studentId}/parent-report`)
+}
+
+// Server-rendered printable page (same derived data as getParentReport);
+// the browser prints/saves it to PDF.
+export function parentReportPrintUrl(studentId: string): string {
+  return `/api/students/${studentId}/parent-report/print`
+}
+
+export function runMock(studentId: string, text: string): Promise<MockOut> {
+  return request<MockOut>(`/api/students/${studentId}/mock`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+  })
+}
+
+export function importStudent(payload: unknown): Promise<StudentOut> {
+  return request<StudentOut>('/api/students/import', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
 }

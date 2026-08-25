@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ApiError, getProgress } from '../api'
-import type { ProgressScoreOut } from '../types'
+import { ApiError, getLevelUps, getMotivation, getProgress } from '../api'
+import type { LevelUpOut, MotivationOut, ProgressScoreOut } from '../types'
 
 // Okabe–Ito colorblind-friendly palette.
 const SERIES_COLORS = ['#0072B2', '#E69F00', '#009E73', '#D55E00', '#CC79A7', '#56B4E9']
@@ -28,6 +28,7 @@ interface SeriesPoint {
   value: number
   level: string
   note: string | null
+  mode: string // "assessment" marks a weekly timed mock point
 }
 
 interface Series {
@@ -41,13 +42,55 @@ interface ProgressViewProps {
   studentId: string | null
 }
 
+// The most recent level-up moment, named by the real criterion change and the
+// rubric note recorded with the new score (the improvement mechanism) —
+// specific praise, never generic praise alone (ISS-017).
+function LevelUpCard({ levelUp }: { levelUp: LevelUpOut }) {
+  return (
+    <div className="levelup-card" role="status" aria-label="Level up moment">
+      <span className="levelup-headline">
+        🎉 Level up — {levelUp.criterion_name}: {levelUp.from_level} → {levelUp.to_level}
+      </span>
+      {levelUp.note ? <span className="levelup-note">{levelUp.note}</span> : null}
+    </div>
+  )
+}
+
+function MotivationStrip({ motivation }: { motivation: MotivationOut }) {
+  return (
+    <div className="motivation-strip" aria-label="Your practice streak and weekly goal">
+      {motivation.current_streak > 0 ? (
+        <span className="streak-chip" title="Days in a row with at least one session">
+          🔥 {motivation.current_streak}-day streak
+        </span>
+      ) : motivation.streak_broken ? (
+        // Recovery, never punishment: a lapsed streak invites a fresh start.
+        <span className="streak-chip recovery">
+          🌱 Welcome back — no catching up needed. One session today starts a fresh streak.
+        </span>
+      ) : (
+        <span className="streak-chip">🌱 Start your streak with one session today</span>
+      )}
+      <span className={`weekly-chip${motivation.goal_met ? ' met' : ''}`}>
+        {motivation.goal_met
+          ? `⭐ Weekly goal reached — ${motivation.sessions_this_week} of ${motivation.weekly_goal} sessions`
+          : `This week: ${motivation.sessions_this_week} of ${motivation.weekly_goal} sessions`}
+      </span>
+    </div>
+  )
+}
+
 export default function ProgressView({ studentId }: ProgressViewProps) {
   const [scores, setScores] = useState<ProgressScoreOut[] | null>(null)
+  const [motivation, setMotivation] = useState<MotivationOut | null>(null)
+  const [levelUps, setLevelUps] = useState<LevelUpOut[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!studentId) {
       setScores([])
+      setMotivation(null)
+      setLevelUps([])
       return
     }
     let cancelled = false
@@ -62,6 +105,22 @@ export default function ProgressView({ studentId }: ProgressViewProps) {
         } else {
           setError(err instanceof Error ? err.message : 'Could not load progress.')
         }
+      })
+    // Motivation is a gentle add-on: a failure here never blocks the chart.
+    getMotivation(studentId)
+      .then((out) => {
+        if (!cancelled) setMotivation(out)
+      })
+      .catch(() => {
+        if (!cancelled) setMotivation(null)
+      })
+    // Level-up moments are also a gentle add-on.
+    getLevelUps(studentId)
+      .then((out) => {
+        if (!cancelled) setLevelUps(out.level_ups)
+      })
+      .catch(() => {
+        if (!cancelled) setLevelUps([])
       })
     return () => {
       cancelled = true
@@ -87,6 +146,7 @@ export default function ProgressView({ studentId }: ProgressViewProps) {
           value: levelValue(row.level),
           level: row.level,
           note: row.note,
+          mode: row.mode,
         })),
         latest: sorted[sorted.length - 1].level,
       }
@@ -115,6 +175,7 @@ export default function ProgressView({ studentId }: ProgressViewProps) {
   if (series.length === 0) {
     return (
       <div className="progress-shell">
+        {motivation ? <MotivationStrip motivation={motivation} /> : null}
         <div className="empty-state">
           <span className="empty-icon" aria-hidden="true">
             🌱
@@ -141,6 +202,10 @@ export default function ProgressView({ studentId }: ProgressViewProps) {
   return (
     <div className="progress-shell">
       <h2 className="progress-title">How you're tracking</h2>
+
+      {motivation ? <MotivationStrip motivation={motivation} /> : null}
+
+      {levelUps.length > 0 ? <LevelUpCard levelUp={levelUps[levelUps.length - 1]} /> : null}
 
       <div className="latest-chips" aria-label="Latest level for each criterion">
         {series.map((s) => (
@@ -198,21 +263,37 @@ export default function ProgressView({ studentId }: ProgressViewProps) {
                   points={s.points.map((p) => `${xFor(p.day)},${yFor(p.value)}`).join(' ')}
                 />
               ) : null}
-              {s.points.map((p, i) => (
-                <circle
-                  key={`${p.day}-${i}`}
-                  cx={xFor(p.day)}
-                  cy={yFor(p.value)}
-                  r={5}
-                  fill={s.color}
-                  stroke="#fff"
-                  strokeWidth={1.5}
-                >
-                  <title>
-                    {`${s.name}: ${p.level} — ${formatDate(p.day)}${p.note ? `\n${p.note}` : ''}`}
-                  </title>
-                </circle>
-              ))}
+              {s.points.map((p, i) =>
+                p.mode === 'assessment' ? (
+                  // Weekly timed mock: a diamond, visually distinct from
+                  // daily practice circles (exam-conditions checkpoint).
+                  <polygon
+                    key={`${p.day}-${i}`}
+                    points={`${xFor(p.day)},${yFor(p.value) - 7} ${xFor(p.day) + 7},${yFor(p.value)} ${xFor(p.day)},${yFor(p.value) + 7} ${xFor(p.day) - 7},${yFor(p.value)}`}
+                    fill={s.color}
+                    stroke="#fff"
+                    strokeWidth={1.5}
+                  >
+                    <title>
+                      {`Weekly mock — ${s.name}: ${p.level} — ${formatDate(p.day)}${p.note ? `\n${p.note}` : ''}`}
+                    </title>
+                  </polygon>
+                ) : (
+                  <circle
+                    key={`${p.day}-${i}`}
+                    cx={xFor(p.day)}
+                    cy={yFor(p.value)}
+                    r={5}
+                    fill={s.color}
+                    stroke="#fff"
+                    strokeWidth={1.5}
+                  >
+                    <title>
+                      {`${s.name}: ${p.level} — ${formatDate(p.day)}${p.note ? `\n${p.note}` : ''}`}
+                    </title>
+                  </circle>
+                ),
+              )}
             </g>
           ))}
         </svg>
@@ -225,6 +306,11 @@ export default function ProgressView({ studentId }: ProgressViewProps) {
             </li>
           ))}
         </ul>
+        {series.some((s) => s.points.some((p) => p.mode === 'assessment')) ? (
+          <p className="chart-note muted">
+            ◆ Weekly timed mock (exam conditions) · ● Daily practice
+          </p>
+        ) : null}
       </div>
     </div>
   )

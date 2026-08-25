@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { ApiError, createStudent, getStudent, updateStudent } from '../api'
 import type { StudentOut } from '../types'
 import {
+  clearStudentId,
   clearStudentProfile,
   loadStudentId,
   loadStudentProfile,
@@ -12,19 +13,29 @@ import {
 
 const TEXT_TYPES = ['analytical', 'persuasive', 'imaginative']
 
+const COACH_TONES = [
+  { value: 'warm', label: 'Warm', hint: 'Encouraging — effort first, gentle correction' },
+  { value: 'strict', label: 'Strict', hint: 'Direct — names the problem, holds the standard' },
+  { value: 'humorous', label: 'Humorous', hint: 'Playful — light jokes, clear teaching point' },
+] as const
+
 type Mode = 'loading' | 'empty' | 'edit' | 'saved'
 
 interface ProfileViewProps {
   onStudent: (student: StudentOut) => void
+  onClear?: () => void
 }
 
-export default function ProfileView({ onStudent }: ProfileViewProps) {
+export default function ProfileView({ onStudent, onClear }: ProfileViewProps) {
   const [mode, setMode] = useState<Mode>('loading')
   const [student, setStudent] = useState<StudentOut | null>(null)
   const [name, setName] = useState('')
   const [yearLevel, setYearLevel] = useState(8)
   const [curriculum, setCurriculum] = useState('QCAA')
   const [focusTextTypes, setFocusTextTypes] = useState<string[]>([])
+  const [weeklyGoal, setWeeklyGoal] = useState(4)
+  const [coachTone, setCoachTone] = useState('warm')
+  const [sharedGoal, setSharedGoal] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -65,6 +76,10 @@ export default function ProfileView({ onStudent }: ProfileViewProps) {
     setYearLevel(s.year_level)
     setCurriculum(s.curriculum)
     setFocusTextTypes(s.focus_text_types ?? [])
+    // Cached profiles from before the weekly goal shipped may lack the field.
+    setWeeklyGoal(s.weekly_goal ?? 4)
+    setCoachTone(s.coach_tone ?? 'warm')
+    setSharedGoal(s.shared_goal ?? '')
   }
 
   function toggleTextType(type: string) {
@@ -85,6 +100,9 @@ export default function ProfileView({ onStudent }: ProfileViewProps) {
           year_level: yearLevel,
           curriculum,
           focus_text_types: focus,
+          weekly_goal: weeklyGoal,
+          coach_tone: coachTone,
+          shared_goal: sharedGoal.trim(),
         })
         finishSave(updated)
       } else {
@@ -93,6 +111,9 @@ export default function ProfileView({ onStudent }: ProfileViewProps) {
           year_level: yearLevel,
           curriculum,
           focus_text_types: focus,
+          weekly_goal: weeklyGoal,
+          coach_tone: coachTone,
+          shared_goal: sharedGoal.trim(),
         })
         finishSave(created)
       }
@@ -115,14 +136,44 @@ export default function ProfileView({ onStudent }: ProfileViewProps) {
     setMode('edit')
   }
 
+  function handleExport() {
+    if (!student) return
+    // Local JSON download of everything the tutor holds about this student.
+    const a = document.createElement('a')
+    a.href = `/api/students/${student.id}/export`
+    a.rel = 'noopener'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  }
+
+  function handleFeedbackPackage() {
+    if (!student) return
+    // Beta issue report: counts, settings, and environment only — never the
+    // student's writing or tutor responses. Safe to email to the developer.
+    const a = document.createElement('a')
+    a.href = `/api/students/${student.id}/feedback-package`
+    a.rel = 'noopener'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  }
+
   function handleClear() {
     clearStudentProfile()
+    clearStudentId()
     setStudent(null)
     setName('')
     setYearLevel(8)
     setCurriculum('QCAA')
     setFocusTextTypes([])
+    setWeeklyGoal(4)
+    setCoachTone('warm')
+    setSharedGoal('')
     setMode('empty')
+    // Return the app to the first-run wizard so another profile can be
+    // selected or created (e.g. a sibling on a shared family device).
+    onClear?.()
   }
 
   if (mode === 'loading') {
@@ -159,15 +210,46 @@ export default function ProfileView({ onStudent }: ProfileViewProps) {
                   : 'All types (no focus set)'}
               </dd>
             </div>
+            <div>
+              <dt>Weekly goal</dt>
+              <dd>{student.weekly_goal ?? 4} sessions / week</dd>
+            </div>
+            <div>
+              <dt>Coach tone</dt>
+              <dd>
+                {COACH_TONES.find((t) => t.value === (student.coach_tone ?? 'warm'))?.label ??
+                  'Warm'}
+              </dd>
+            </div>
+            <div>
+              <dt>Shared weekly goal</dt>
+              <dd>{student.shared_goal ?? 'Not set yet'}</dd>
+            </div>
           </dl>
           <div className="profile-actions">
             <button type="button" className="btn primary" onClick={handleEdit}>
               Edit profile
             </button>
+            <button type="button" className="btn ghost" onClick={handleExport}>
+              Export my data
+            </button>
+            <button type="button" className="btn ghost" onClick={handleFeedbackPackage}>
+              Report a problem
+            </button>
             <button type="button" className="btn ghost" onClick={handleClear}>
               Clear
             </button>
           </div>
+          <p className="muted small">
+            Export downloads one JSON file with your profile, sessions, writing,
+            and progress. Keep it somewhere safe — it's private.
+          </p>
+          <p className="muted small">
+            Report a problem downloads a feedback package you can email when
+            something goes wrong. It contains only usage counts, settings, and
+            device info — never your writing or the tutor's responses, and not
+            even your name.
+          </p>
         </section>
       </div>
     )
@@ -248,6 +330,60 @@ export default function ProfileView({ onStudent }: ProfileViewProps) {
           </div>
           <p className="muted small">
             Leave empty to practise all text types. Picking one focuses sessions on it.
+          </p>
+
+          <label className="field-label" htmlFor="profile-weekly-goal">
+            Weekly goal
+          </label>
+          <select
+            id="profile-weekly-goal"
+            className="text-input"
+            value={weeklyGoal}
+            onChange={(e) => setWeeklyGoal(Number(e.target.value))}
+          >
+            {[2, 3, 4, 5, 6, 7].map((n) => (
+              <option key={n} value={n}>
+                {n} sessions / week{n === 4 ? ' (recommended)' : ''}
+              </option>
+            ))}
+          </select>
+          <p className="muted small">
+            A gentle target — missing a day never costs you anything.
+          </p>
+
+          <label className="field-label" htmlFor="profile-shared-goal">
+            Shared weekly goal <span className="optional">(optional)</span>
+          </label>
+          <input
+            id="profile-shared-goal"
+            className="text-input"
+            type="text"
+            value={sharedGoal}
+            onChange={(e) => setSharedGoal(e.target.value)}
+            placeholder="e.g. Write clearer paragraphs"
+            maxLength={280}
+          />
+          <p className="muted small">
+            Set it together — parent and student — at the start of the week. Your tutor opens
+            each session with it, and it shows on the weekly parent report.
+          </p>
+
+          <span className="field-label">Coach tone</span>
+          <div className="chip-group" role="group" aria-label="Coach tone">
+            {COACH_TONES.map((tone) => (
+              <button
+                key={tone.value}
+                type="button"
+                className={`chip${coachTone === tone.value ? ' active' : ''}`}
+                title={tone.hint}
+                onClick={() => setCoachTone(tone.value)}
+              >
+                {tone.label}
+              </button>
+            ))}
+          </div>
+          <p className="muted small">
+            How your tutor sounds — never what it teaches. Feedback stays the same either way.
           </p>
 
           <button type="submit" className="btn primary wide" disabled={busy || !name.trim()}>

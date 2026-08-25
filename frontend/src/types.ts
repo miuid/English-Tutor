@@ -6,6 +6,9 @@ export interface StudentOut {
   year_level: number
   curriculum: string
   focus_text_types: string[]
+  weekly_goal: number
+  coach_tone: string
+  shared_goal: string | null
   created_at: string
 }
 
@@ -14,6 +17,9 @@ export interface StudentCreate {
   year_level: number
   curriculum?: string
   focus_text_types?: string[]
+  weekly_goal?: number
+  coach_tone?: string
+  shared_goal?: string | null
 }
 
 export interface StudentUpdate {
@@ -21,6 +27,9 @@ export interface StudentUpdate {
   year_level?: number
   curriculum?: string
   focus_text_types?: string[]
+  weekly_goal?: number
+  coach_tone?: string
+  shared_goal?: string | null // send "" to clear
 }
 
 export interface TurnOut {
@@ -94,9 +103,73 @@ export interface ProgressScoreOut {
   scored_at: string
   session_id: string
   feedback_id: string
+  mode: string // attempt mode: daily loop stage, "baseline", or "assessment" (weekly mock)
 }
 
 export interface ProgressOut {
   student_id: string
   scores: ProgressScoreOut[]
+}
+
+export interface MockOut {
+  session_id: string
+  feedback: FeedbackOut
+  report: string
+}
+
+export interface MotivationOut {
+  student_id: string
+  current_streak: number
+  streak_broken: boolean // lapsed run -> show a recovery prompt, never a penalty
+  weekly_goal: number
+  sessions_this_week: number
+  goal_met: boolean
+  last_activity_date: string | null
+}
+
+export interface LevelUpOut {
+  criterion_name: string
+  from_level: string
+  to_level: string
+  note: string | null // rubric note recorded with the new score — the improvement mechanism
+  scored_at: string
+  session_id: string
+  feedback_id: string
+}
+
+export interface LevelUpsOut {
+  student_id: string
+  level_ups: LevelUpOut[]
+}
+
+// Weekly parent report (ISS-019): trends/levels/time/goals only — the D3
+// privacy boundary means no essay text or tutor feedback prose, by design.
+export interface TrendPointOut {
+  scored_on: string
+  level: string
+}
+
+export interface CriterionTrendOut {
+  criterion_name: string
+  latest_level: string
+  previous_level: string | null
+  direction: 'up' | 'down' | 'steady' | 'new'
+  points: TrendPointOut[]
+}
+
+export interface ParentReportOut {
+  student_id: string
+  student_name: string
+  year_level: number
+  curriculum: string
+  week_start: string
+  week_end: string
+  sessions_this_week: number
+  practice_seconds_this_week: number
+  weekly_goal: number
+  goal_met: boolean
+  shared_goal: string | null // the family's shared weekly goal (ISS-020) — a goal, not content
+  trends: CriterionTrendOut[]
+  highlight: string | null
+  next_week_suggestion: string
 }

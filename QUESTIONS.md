@@ -11,21 +11,22 @@ This document is the canonical record of unresolved and resolved delivery decisi
 ## Question Index
 | ID | Decision | Status | Severity | Related issue |
 |---|---|---|---|---|
-| Q-001 | Source for Year 9-12 QCAA standard descriptors | `OPEN` | `NON_BLOCKING` | `ISS-002, ISS-024` |
-| Q-002 | Beta recruitment channel | `OPEN` | `NON_BLOCKING` | `ISS-023` |
-| Q-003 | GA billing provider and tax posture | `OPEN` | `NON_BLOCKING` | `None` |
-| Q-004 | GA public deployment and data residency posture | `OPEN` | `NON_BLOCKING` | `None` |
+| Q-001 | Source for Year 9-12 QCAA standard descriptors | `ANSWERED` | `NON_BLOCKING` | `ISS-002, ISS-024` |
+| Q-002 | Beta recruitment channel | `ANSWERED` | `NON_BLOCKING` | `ISS-023` |
+| Q-003 | GA billing provider and tax posture | `ANSWERED` | `NON_BLOCKING` | `None` |
+| Q-004 | GA public deployment and data residency posture | `ANSWERED` | `NON_BLOCKING` | `None` |
+| Q-005 | Senior IA1 is persuasive, not analytical — ISS-025 scope | `ANSWERED` | `BLOCKING` | `ISS-025` |
 
 ## Questions
 
 ## Q-001 - Source for Year 9-12 QCAA standard descriptors
-- Status: `OPEN`
+- Status: `ANSWERED`
 - Severity: `NON_BLOCKING`
 - Raised by: `plan`
 - Related issue: `ISS-002, ISS-024`
 - Related requirements: `PRD: §9 FR-GA-003; ERD: curriculum_outcome`
 - Raised: `2026-08-19T13:44:45+10:00`
-- Answered: `None`
+- Answered: `2026-08-21T14:55:02+10:00`
 
 ### Decision needed
 Decide whether the existing research files are sufficient for Year 9-12 QCAA standard descriptors, or whether official syllabus PDFs must be imported before content depth is claimed.
@@ -40,17 +41,17 @@ The answer affects how much evidence ISS-002 and ISS-024 must cite before markin
 Recommendation: Start with existing research files for Year 9-10; require official sources before public launch claims or senior IA1 depth.
 
 ### Answer and resolution
-- Answer: Pending
-- Resolution: Pending
+- Answer: Option 2 — import official QCAA syllabus/source PDFs first and confirm descriptors against them before claiming content depth.
+- Resolution: Official QCAA syllabus PDFs must be imported and cited before ISS-024 (QCE senior instrument modelling) and ISS-025 (Senior IA1 analytical pack) can be marked complete. Year 9-10 packs already shipped under ISS-002/ISS-004/ISS-007 remain valid as derived content; senior-year depth claims require official sources. Constraint recorded on ISS-024.
 
 ## Q-002 - Beta recruitment channel
-- Status: `OPEN`
+- Status: `ANSWERED`
 - Severity: `NON_BLOCKING`
 - Raised by: `plan`
 - Related issue: `ISS-023`
 - Related requirements: `PRD: §7 deferred Beta scope; ERD: Deployment/migration`
 - Raised: `2026-08-19T13:44:45+10:00`
-- Answered: `None`
+- Answered: `2026-08-21T14:55:02+10:00`
 
 ### Decision needed
 Choose the first beta recruitment channel: friend families, school parent group, or another local Queensland network.
@@ -65,17 +66,17 @@ The channel changes the tone and onboarding detail required in the beta handbook
 Recommendation: Friend families first, then school parent group after B1-B3 are stable.
 
 ### Answer and resolution
-- Answer: Pending
-- Resolution: Pending
+- Answer: Friend families first.
+- Resolution: ISS-023 (Beta handbook) should target friend families: fast feedback loop, lower onboarding polish required. School parent group expansion is deferred until B1-B3 are stable. Constraint recorded on ISS-023.
 
 ## Q-003 - GA billing provider and tax posture
-- Status: `OPEN`
+- Status: `ANSWERED`
 - Severity: `NON_BLOCKING`
 - Raised by: `plan`
 - Related issue: `None`
 - Related requirements: `PRD: §9 FR-GA-005; ERD: GA planned entities/TD-GA-001`
 - Raised: `2026-08-19T13:44:45+10:00`
-- Answered: `None`
+- Answered: `2026-08-21T14:55:02+10:00`
 
 ### Decision needed
 Choose the GA billing provider for AUD subscriptions and confirm tax/invoicing obligations.
@@ -90,17 +91,17 @@ This matters before any public paid launch, but it does not change the current l
 Recommendation: Defer until GA planning; spike Stripe first unless tax obligations force a merchant-of-record decision.
 
 ### Answer and resolution
-- Answer: Pending
-- Resolution: Pending
+- Answer: Defer to GA planning; most likely Stripe.
+- Resolution: No action in the current backlog. When GA planning starts, spike Stripe first; revisit merchant-of-record only if tax/invoicing obligations demand it.
 
 ## Q-004 - GA public deployment and data residency posture
-- Status: `OPEN`
+- Status: `ANSWERED`
 - Severity: `NON_BLOCKING`
 - Raised by: `plan`
 - Related issue: `None`
 - Related requirements: `PRD: §9 NFR-GA-001/NFR-GA-002; ERD: TD-GA-003`
 - Raised: `2026-08-19T13:44:45+10:00`
-- Answered: `None`
+- Answered: `2026-08-21T14:55:02+10:00`
 
 ### Decision needed
 Choose the public deployment target and data-residency posture for Australian families.
@@ -115,8 +116,48 @@ This affects hosted privacy, latency, backups, and operational cost before GA, b
 Recommendation: Defer until GA planning; prefer Australia-region managed Postgres for public launch if budget allows.
 
 ### Answer and resolution
-- Answer: Pending
-- Resolution: Pending
+- Answer: Defer to GA planning.
+- Resolution: No action in the current backlog. Revisit at GA planning; Australia-region managed Postgres remains the preferred posture if budget allows.
+
+## Q-005 - Senior IA1 is persuasive, not analytical — ISS-025 scope
+- Status: `ANSWERED`
+- Severity: `BLOCKING`
+- Raised by: `develop`
+- Related issue: `ISS-025`
+- Related requirements: `IMPLEMENTATION-PLAN-2: 10.2; PRD: §9 FR-GA-003`
+- Raised: `2026-08-21T21:40:00+10:00`
+- Answered: `2026-08-24T20:56:52+10:00`
+- Severity history: raised `NON_BLOCKING` (ISS-024 still in progress); escalated to `BLOCKING` on `2026-08-22T03:45:00+10:00` by `develop` — ISS-025 is now the only remaining ticket and cannot start until this re-scope decision is made, so the question blocks the delivery gate.
+
+### Decision needed
+Re-scope ISS-025 ("Senior IA1 analytical pack") before it starts. The official QCAA English
+General Senior Syllabus 2025 v1.3 (imported for ISS-024) defines IA1 as a *spoken persuasive
+response*; the analytical written instruments are IA2 (written response for a public audience)
+and the EA (external analytical essay). An "IA1 analytical pack" does not match any official
+instrument.
+
+### Why it matters
+ISS-025's acceptance criteria ask for "an IA1 analytical task ... senior-standard feedback" and
+`references/analytical/year-11-12/` IA1-specific content. Building that against the official
+syllabus would model a task QCAA does not define, contradicting the Q-001 sourcing constraint.
+
+### Options and recommendation
+1. Re-scope ISS-025 to "Senior analytical pack (IA2 + EA framework)" — analytical depth where the
+   official syllabus actually puts it; IA2 is the internal analytical written instrument.
+2. Keep IA1 but as a persuasive/senior pack — overlaps with existing persuasive work, less value.
+3. Leave ISS-025 as-is and treat "IA1" as a generic label — risks teaching to a non-existent
+   instrument.
+
+Recommendation: Option 1 — retitle ISS-025 to target IA2 (and note EA as exam-mode analytical),
+updating its acceptance criteria wording before the ticket becomes eligible.
+
+### Answer and resolution
+- Answer: Option 1 — re-scope ISS-025 to "Senior analytical pack (IA2 + EA framework)".
+- Resolution: ISS-025 retitled and re-scoped to IA2 as the internal analytical written instrument, with EA noted as exam-mode analytical; acceptance criteria updated. ISS-025 unblocked (`READY`), Delivery Gate re-evaluated to `OPEN`.
 
 ## Change Log
 - `2026-08-19T13:44:45+10:00` - Initialized by `/plan`; no `BLOCKING` questions are open, so `ISSUES.md` Delivery Gate is `OPEN`.
+- `2026-08-21T14:55:02+10:00` - All four questions answered by Cheng: Q-001 import official QCAA PDFs before senior depth claims (constraint on ISS-024/ISS-025); Q-002 friend families first (constraint on ISS-023); Q-003 defer to GA, likely Stripe; Q-004 defer to GA. No `BLOCKING` questions; Delivery Gate remains `OPEN`.
+- `2026-08-21T21:40:00+10:00` - Q-005 raised by `develop` during ISS-024 (`NON_BLOCKING`): official English 2025 v1.3 syllabus defines IA1 as a spoken persuasive response; ISS-025 needs re-scoping to IA2/EA before it starts. Gate remains `OPEN`.
+- `2026-08-22T03:45:00+10:00` - Q-005 severity escalated `NON_BLOCKING` → `BLOCKING` by `develop`: ISS-024 is DONE and ISS-025 is the only remaining ticket, so the unresolved re-scope decision now blocks all delivery. ISS-025 set `BLOCKED` (`Blocked by: Q-005`); `ISSUES.md` Delivery Gate set to `BLOCKED`. Awaiting owner answer (recommendation: Option 1 — retarget ISS-025 to IA2, note EA as exam-mode analytical).
+- `2026-08-24T20:56:52+10:00` - Q-005 answered by Cheng: Option 1 — re-scope ISS-025 to "Senior analytical pack (IA2 + EA framework)". ISS-025 updated and unblocked; Delivery Gate back to `OPEN`.

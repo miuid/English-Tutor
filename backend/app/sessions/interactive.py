@@ -1,6 +1,7 @@
 """Interactive daily-loop service: a stage machine over the tutor stages.
 
-Stages reuse the GRR loop-stage vocabulary from ``app.skills.loader.LOOP_STAGES``:
+Retrieval (spaced-review) opens every session before the GRR stage vocabulary
+from ``app.skills.loader.LOOP_STAGES``:
 ``start`` -> ``I do`` -> ``we do`` -> ``you do`` -> ``ended``. The current stage
 is persisted on the Session row so any client can resume after a reload.
 
@@ -19,6 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session as DBSession
 
 from app.models import (
+    DEFAULT_COACH_TONE,
     Attempt,
     Feedback,
     InteractionLog,
@@ -27,6 +29,7 @@ from app.models import (
     Student,
 )
 from app.models import Skill as SkillRow
+from app.sessions.review import build_review_history
 from app.skills.executor import SkillExecutionService
 from app.skills.loader import Skill
 from app.skills.router import DiagnosisRouter
@@ -88,6 +91,26 @@ class SubmitResult:
     time_up: bool = False
 
 
+@dataclass(frozen=True)
+class BaselineResult:
+    """What a run_baseline() call persisted, in creation order."""
+
+    session: Session
+    submission: Attempt
+    report_turn: Attempt
+    feedback: Feedback
+
+
+@dataclass(frozen=True)
+class MockResult:
+    """What a run_mock() call persisted, in creation order."""
+
+    session: Session
+    submission: Attempt
+    feedback_turn: Attempt
+    feedback: Feedback
+
+
 class InteractiveLoop:
     """Drive one Session through the daily loop one interactive step at a time.
 
@@ -146,6 +169,39 @@ class InteractiveLoop:
 
         resolved_text_type = self._resolve_text_type(student, text_type)
         resolved_year_level = str(student.year_level)
+        coach_tone = student.coach_tone or DEFAULT_COACH_TONE
+
+        # Shared parent-student goal (ISS-020): the session opening references
+        # it so the week's first coach turns start from what the family agreed
+        # to work on. Prompt-level only — no goal, no change to the inputs.
+        opening_inputs: dict[str, str] = {}
+        if student.shared_goal:
+            opening_inputs["shared_goal"] = student.shared_goal
+
+        review = await self._execute_and_log(
+            session,
+            self.skills["spaced-review"],
+            {
+                "year_level": resolved_year_level,
+                "text_type": resolved_text_type,
+                "coach_tone": coach_tone,
+                "task_prompt": task_prompt or DEFAULT_TASK_PROMPT,
+                "context": context or "",
+                "student_text": "",
+                **opening_inputs,
+                "review_history": build_review_history(
+                    self.db, student.id, now=self._now()
+                ),
+            },
+        )
+        self._save_tutor_turn(
+            session,
+            "spaced-review",
+            "retrieval",
+            "retrieval",
+            task_prompt or DEFAULT_TASK_PROMPT,
+            review,
+        )
 
         criteria = await self._execute_and_log(
             session,
@@ -153,9 +209,11 @@ class InteractiveLoop:
             {
                 "year_level": resolved_year_level,
                 "text_type": resolved_text_type,
+                "coach_tone": coach_tone,
                 "task_prompt": task_prompt or DEFAULT_TASK_PROMPT,
                 "context": context or "",
                 "student_text": "",
+                **opening_inputs,
             },
         )
         self._save_tutor_turn(
@@ -319,6 +377,181 @@ class InteractiveLoop:
             time_up=self._time_up(session),
         )
 
+    async def run_baseline(
+        self,
+        *,
+        student_id: uuid.UUID,
+        text: str,
+        text_type: str | None = None,
+    ) -> BaselineResult:
+        """Run a first-use baseline: one timed write -> day-0 rubric scores.
+
+        Creates a short, already-ended baseline session holding the student's
+        submission and the baseline-assessment report, parses the report's
+        per-criterion levels into RubricScore rows (the student's day-0
+        progress points), and returns everything persisted. The student
+        profile is never mutated — the report's recommended focus loop is a
+        suggestion for the first daily loops, not an autopilot.
+        """
+        student = self._resolve_student(student_id=student_id, year_level="8")
+        resolved_text_type = self._resolve_text_type(
+            student, text_type or DEFAULT_TEXT_TYPE
+        )
+        task_prompt = (
+            f"Baseline assessment (15-minute timed write, {resolved_text_type})"
+        )
+
+        session = Session(
+            student_id=student.id,
+            learning_intention=task_prompt,
+            stage=ENDED,
+            started_at=self._now(),
+            ended_at=self._now(),
+            last_activity_at=self._now(),
+        )
+        self.db.add(session)
+        self.db.flush()
+
+        submission = Attempt(
+            session_id=session.id,
+            student_id=student.id,
+            skill_id=None,
+            task_type="submission",
+            mode="baseline",
+            task_prompt=task_prompt,
+            student_text=text,
+        )
+        self.db.add(submission)
+        self.db.flush()
+
+        report = await self._execute_and_log(
+            session,
+            self.skills["baseline-assessment"],
+            {
+                "year_level": str(student.year_level),
+                "text_type": resolved_text_type,
+                "coach_tone": student.coach_tone or DEFAULT_COACH_TONE,
+                "task_prompt": task_prompt,
+                "context": "First use — baseline timed write, no help.",
+                "student_text": text,
+            },
+        )
+        report_turn = self._save_tutor_turn(
+            session, "baseline-assessment", "baseline", "baseline", task_prompt, report
+        )
+
+        feedback = Feedback(
+            attempt_id=report_turn.id,
+            strength="see baseline report",
+            next_steps="see baseline report",
+        )
+        for parsed in parse_rubric_levels(report):
+            feedback.rubric_scores.append(
+                RubricScore(
+                    criterion_name=parsed.criterion_name,
+                    level=parsed.level,
+                    note=parsed.note,
+                )
+            )
+        self.db.add(feedback)
+        self.db.commit()
+        return BaselineResult(
+            session=session,
+            submission=submission,
+            report_turn=report_turn,
+            feedback=feedback,
+        )
+
+    async def run_mock(
+        self,
+        *,
+        student_id: uuid.UUID,
+        text: str,
+        text_type: str | None = None,
+    ) -> MockResult:
+        """Run a weekly timed mock: one exam-conditions write -> summative A-E.
+
+        Creates a short, already-ended mock session holding the student's
+        submission (``mode="assessment"``) and a summative give-feedback
+        turn (``mode: summative`` input, so the overall A-E level is
+        attached), then parses the per-criterion levels into RubricScore
+        rows. Unlike the daily loop there is no retrieval, modelling, or
+        coaching — QCAA-like conditions mean no scaffolds — but the
+        summative feedback stays bounded (one strength, 1-2 next steps).
+        """
+        student = self._resolve_student(student_id=student_id, year_level="8")
+        resolved_text_type = self._resolve_text_type(
+            student, text_type or DEFAULT_TEXT_TYPE
+        )
+        task_prompt = (
+            f"Weekly timed mock (QCAA exam conditions, {resolved_text_type})"
+        )
+
+        session = Session(
+            student_id=student.id,
+            learning_intention=task_prompt,
+            stage=ENDED,
+            started_at=self._now(),
+            ended_at=self._now(),
+            last_activity_at=self._now(),
+        )
+        self.db.add(session)
+        self.db.flush()
+
+        submission = Attempt(
+            session_id=session.id,
+            student_id=student.id,
+            skill_id=None,
+            task_type="submission",
+            mode="assessment",
+            task_prompt=task_prompt,
+            student_text=text,
+        )
+        self.db.add(submission)
+        self.db.flush()
+
+        feedback_output = await self._execute_and_log(
+            session,
+            self.skills["give-feedback"],
+            {
+                "year_level": str(student.year_level),
+                "text_type": resolved_text_type,
+                "coach_tone": student.coach_tone or DEFAULT_COACH_TONE,
+                "task_prompt": task_prompt,
+                "context": (
+                    "Weekly timed mock written under QCAA-like exam "
+                    "conditions — one timed sitting, no coaching or scaffolds."
+                ),
+                "mode": "summative",
+                "student_text": text,
+            },
+        )
+        feedback_turn = self._save_tutor_turn(
+            session, "give-feedback", "feedback", "assessment", task_prompt, feedback_output
+        )
+
+        feedback = Feedback(
+            attempt_id=feedback_turn.id,
+            strength="see feedback output",
+            next_steps="see feedback output",
+        )
+        for parsed in parse_rubric_levels(feedback_output):
+            feedback.rubric_scores.append(
+                RubricScore(
+                    criterion_name=parsed.criterion_name,
+                    level=parsed.level,
+                    note=parsed.note,
+                )
+            )
+        self.db.add(feedback)
+        self.db.commit()
+        return MockResult(
+            session=session,
+            submission=submission,
+            feedback_turn=feedback_turn,
+            feedback=feedback,
+        )
+
     def pause(self, session_id: uuid.UUID) -> Session:
         """Pause a running session; paused time is never counted."""
         session = self.get_session(session_id)
@@ -457,7 +690,7 @@ class InteractiveLoop:
                 InteractionLog(
                     session_id=session.id,
                     skill_id=skill_row.id if skill_row is not None else None,
-                    model=self.executor.model_name,
+                    model=self.executor.model_used_for(skill),
                     input=inputs.get("student_text", ""),
                     output=output,
                 )
@@ -531,12 +764,15 @@ class InteractiveLoop:
         if student is not None:
             year_level = str(student.year_level)
             text_type = self._resolve_text_type(student, DEFAULT_TEXT_TYPE)
+            coach_tone = student.coach_tone or DEFAULT_COACH_TONE
         else:
             year_level = "8"
             text_type = DEFAULT_TEXT_TYPE
+            coach_tone = DEFAULT_COACH_TONE
         return {
             "year_level": year_level,
             "text_type": text_type,
+            "coach_tone": coach_tone,
             "task_prompt": task_prompt if task_prompt is not None else self._task_prompt(session),
             "student_text": student_text,
         }

@@ -123,8 +123,9 @@ async def test_time_up_advance_wraps_up_and_pauses(loop, clock):
     assert "15 minutes" in result.turn.student_text
     assert session.paused_at is not None
     assert session.stage == "I do"  # no new stage was started
-    # Only set-success-criteria + model-response ran; wrap-up costs no LLM call.
-    assert len(session.interaction_logs) == 2
+    # Only spaced-review + set-success-criteria + model-response ran; wrap-up
+    # costs no LLM call.
+    assert len(session.interaction_logs) == 3
 
 
 @pytest.mark.asyncio

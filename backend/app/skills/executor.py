@@ -3,12 +3,41 @@
 from dataclasses import dataclass
 
 from app.llm.provider import LLMProvider
+from app.llm.routing import StageProviderRouter
+from app.models import DEFAULT_COACH_TONE
 from app.skills.loader import Skill
 
 DEFAULT_TEXT_TYPE = "analytical"
 DEFAULT_YEAR_BAND = "year-8"
 # Nearest-band fallback order when no exact pack exists for a text type.
 BAND_FALLBACK_ORDER = ("year-8", "year-9-10", "year-11-12")
+
+# Coach persona tone directives (ISS-018). Injected into the system prompt
+# only when the caller passes a ``coach_tone`` input, so eval fixtures and
+# legacy callers keep byte-identical prompts. Tone is prompt-level only: it
+# changes how the coach sounds, never what it teaches.
+COACH_TONE_DIRECTIVES = {
+    "warm": (
+        "Speak with warmth and encouragement: notice effort before errors, "
+        "use the student's wins as springboards, and keep correction gentle."
+    ),
+    "strict": (
+        "Speak with a direct, no-nonsense tone: name the problem plainly, "
+        "hold the student to the criterion, and skip softening phrases — "
+        "while staying respectful and never belittling."
+    ),
+    "humorous": (
+        "Speak with light, age-appropriate humour: a playful aside or "
+        "well-placed joke is welcome, but the teaching point always stays "
+        "clear and never becomes the punchline."
+    ),
+}
+
+_TONE_CONTRACT_NOTE = (
+    "This changes only how you sound, never what you teach: rubric levels, "
+    "the bounded next-step count, and every output-contract field the skill "
+    "defines stay exactly as specified."
+)
 
 
 def year_band_for(year_level: str | None) -> str:
@@ -52,10 +81,27 @@ def select_packs(
 
 @dataclass
 class SkillExecutionService:
-    """Run a skill's instructions against the configured LLM provider."""
+    """Run a skill's instructions against the configured LLM provider.
+
+    When ``stage_router`` is set, the provider is chosen per skill loop stage
+    from the config routing table (ISS-021); otherwise the single ``provider``
+    is used for every stage (legacy/eval behaviour, unchanged).
+    """
 
     provider: LLMProvider
     model_name: str = "unknown"
+    stage_router: StageProviderRouter | None = None
+
+    def model_used_for(self, skill: Skill) -> str:
+        """The model name ``execute`` uses for this skill's loop stage."""
+        if self.stage_router is not None:
+            return self.stage_router.for_stage(skill.loop_stage)[1]
+        return self.model_name
+
+    def _provider_for(self, skill: Skill) -> LLMProvider:
+        if self.stage_router is not None:
+            return self.stage_router.for_stage(skill.loop_stage)[0]
+        return self.provider
 
     async def execute(self, skill: Skill, inputs: dict[str, str]) -> str:
         """Compose and send the skill prompt, returning the LLM response."""
@@ -63,23 +109,40 @@ class SkillExecutionService:
         year_band = year_band_for(inputs.get("year_level"))
         packs, used_key = select_packs(skill, text_type, year_band)
 
-        system_prompt = self._build_system_prompt(skill, packs)
-        user_message = self._build_user_message(inputs)
+        # coach_tone is prompt-level only: it shapes the system prompt and
+        # never appears in the user message (ISS-018).
+        coach_tone = inputs.get("coach_tone")
+        user_inputs = {k: v for k, v in inputs.items() if k != "coach_tone"}
+
+        system_prompt = self._build_system_prompt(skill, packs, coach_tone)
+        user_message = self._build_user_message(user_inputs)
         messages = [{"role": "user", "content": user_message}]
-        response = await self.provider.generate(system_prompt, messages)
+        response = await self._provider_for(skill).generate(system_prompt, messages)
 
         note = self._degradation_note(skill, text_type, year_band, used_key)
         if note is not None:
             response = f"{response}\n\n{note}"
         return response
 
-    def _build_system_prompt(self, skill: Skill, packs: list[dict[str, str]]) -> str:
+    def _build_system_prompt(
+        self,
+        skill: Skill,
+        packs: list[dict[str, str]],
+        coach_tone: str | None = None,
+    ) -> str:
         parts = [skill.instructions]
         if packs:
             parts.append("\n\n--- Reference material ---")
             for pack in packs:
                 for name, content in pack.items():
                     parts.append(f"\n\n### {name}\n\n{content}")
+        if coach_tone is not None:
+            directive = COACH_TONE_DIRECTIVES.get(
+                coach_tone, COACH_TONE_DIRECTIVES[DEFAULT_COACH_TONE]
+            )
+            parts.append(
+                f"\n\n--- Coach tone ---\n\n{directive} {_TONE_CONTRACT_NOTE}"
+            )
         return "".join(parts)
 
     def _degradation_note(
@@ -88,6 +151,10 @@ class SkillExecutionService:
         """Note appended when no exact pack exists for the combo (None if exact/none)."""
         exact_key = f"{text_type}/{year_band}"
         if not skill.packs or exact_key in skill.packs:
+            return None
+        if set(skill.packs) == {"shared"}:
+            # Shared-only skills (e.g. baseline-assessment) are combo-agnostic
+            # by design — there is no banded pack to degrade from.
             return None
         if used_key is not None:
             if "shared" in skill.packs:

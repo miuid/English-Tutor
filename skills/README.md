@@ -18,6 +18,8 @@ skills/
       expected-NN.md    # the behaviour a good response must exhibit
 ```
 
+A skill may ship **multiple fixture pairs** (`sample-01/02/…`) as an eval matrix. Each sample's header declares its combo: `year_level` + `text_type`, plus an optional `year_band: year-8 | year-9-10 | year-11-12` tag (defaults to the band implied by `year_level`; the tag is scorecard metadata only and never reaches the prompt). The eval scorecard groups pass/fail by skill and by `text_type/year_band` combo.
+
 Reference content is organised into **packs** keyed by `(text-type, year-band)`. The backend loads `shared` plus the pack matching the session's `text_type` and `year_level` (≤8 → `year-8`, 9–10 → `year-9-10`, ≥11 → `year-11-12`; unparseable → `year-8`); if no exact pack exists it falls back to the same text type's nearest band and flags the degradation in the response. Skill instructions stay generic — depth lives in the packs.
 
 ## SKILL.md required sections
@@ -49,10 +51,12 @@ Skills are authored to generalise across Year 8–12 and all text types (imagina
 
 ## Skill index
 
-All 8 v1 skills authored. Ordered by where they sit in a session loop.
+Thirteen skills authored (8 v1 + `strengthen-argument`, `craft-voice`, `baseline-assessment`, `fix-mechanics`, `spaced-review`). Ordered by where they sit in a session loop.
 
 | Skill | Status | Loop stage | Targets |
 |---|---|---|---|
+| `baseline-assessment` | v1 | baseline | First-use timed write → day-0 A–E baseline + ranked weaknesses + starting focus |
+| `spaced-review` | v1 | retrieval | 2–3 warm-up retrieval items from rubric/coaching history — loop step 1 |
 | `set-success-criteria` | v1 | start | Learning intention + "I can…" criteria |
 | `model-response` | v1 | I do | Think-aloud worked example on a *different* text |
 | `guided-practice` | v1 | we do | Scaffolded co-writing, fading support |
@@ -60,10 +64,15 @@ All 8 v1 skills authored. Ordered by where they sit in a session loop.
 | `diagnose-errors` | v1 | triage | Classify error type + route to a specialist skill |
 | `check-structure` | v1 | coach | Paragraph/essay structure (PEEL/TEEL) — weakness #2 |
 | `elevate-vocabulary` | v1 | coach | Flat vocabulary → precise academic language — weakness #1 |
+| `strengthen-argument` | v1 | coach | Weak argument chains: asserted reasons, decorative evidence, missing rebuttal |
+| `craft-voice` | v1 | coach | Telling-vs-showing, summarised key moments, POV drift, tone control |
+| `fix-mechanics` | v1 | coach | Grammar/spelling/punctuation patterns — max 1–2 at a time; student repairs own text |
 | `give-feedback` | v1 | end | QCAA A–E scoring + ≤2 next steps + self-check |
 
 ### How they compose (typical daily loop)
 
-`set-success-criteria` → `model-response` (I do) → `guided-practice` (we do) → `independent-task` (you do) → student submits → `diagnose-errors` (triage) routes to `check-structure` / `elevate-vocabulary` for coaching → `give-feedback` closes with an A–E judgement + self-check.
+`spaced-review` (retrieval warm-up from the student's history) → `set-success-criteria` → `model-response` (I do) → `guided-practice` (we do) → `independent-task` (you do) → student submits → `diagnose-errors` (triage) routes to `check-structure` / `strengthen-argument` / `craft-voice` / `elevate-vocabulary` / `fix-mechanics` for coaching → `give-feedback` closes with an A–E judgement + self-check.
 
 `diagnose-errors` is the router: it never coaches itself, it decides which specialist skill acts.
+
+`baseline-assessment` sits outside the daily loop: it runs once on a new student's first use (or first use of a new text type) and writes the day-0 rubric scores the loop's progress view trends against.

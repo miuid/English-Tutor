@@ -4,7 +4,7 @@ from app.eval.runner import ERROR, PASS, CaseResult
 
 
 def render_scorecard(results: list[CaseResult], *, verbose: bool = False) -> str:
-    """Render a per-case table plus a summary line."""
+    """Render a per-case table, a per-combo breakdown, and a summary line."""
     rows = [_render_row(result) for result in results]
     skill_width = max([len("skill"), *(len(result.skill_name) for result in results)])
     header = (
@@ -17,8 +17,40 @@ def render_scorecard(results: list[CaseResult], *, verbose: bool = False) -> str
         if verbose:
             lines.extend(_render_verbose(result))
     lines.append("")
+    lines.extend(render_combo_breakdown(results))
+    lines.append("")
     lines.append(summarize(results))
     return "\n".join(lines)
+
+
+def render_combo_breakdown(results: list[CaseResult]) -> list[str]:
+    """Group pass/fail counts by skill, then by band/text_type combo.
+
+    Order of first appearance is preserved (skills and combos appear in
+    discovery order); within one combo the counts aggregate every fixture
+    tagged with it.
+    """
+    lines = ["By skill and band/text_type combo:"]
+    by_skill: dict[str, dict[str, list[CaseResult]]] = {}
+    for result in results:
+        by_skill.setdefault(result.skill_name, {}).setdefault(result.combo, []).append(result)
+    for skill_name, combos in by_skill.items():
+        lines.append(f"  {skill_name}")
+        combo_width = max(len(combo) for combo in combos)
+        for combo, group in combos.items():
+            passed = sum(1 for result in group if result.status == PASS)
+            errored = sum(1 for result in group if result.status == ERROR)
+            failed = len(group) - passed - errored
+            line = f"    {combo.ljust(combo_width)}  {passed}/{len(group)} passed"
+            extras: list[str] = []
+            if failed:
+                extras.append(f"{failed} failed")
+            if errored:
+                extras.append(f"{errored} errors")
+            if extras:
+                line += f" ({', '.join(extras)})"
+            lines.append(line)
+    return lines
 
 
 def summarize(results: list[CaseResult]) -> str:

@@ -11,6 +11,7 @@ from app.config import Settings, get_settings
 from app.database import get_session_maker
 from app.llm.factory import create_llm_provider
 from app.llm.provider import LLMProvider
+from app.llm.routing import StageProviderRouter
 from app.sessions.interactive import InteractiveLoop
 from app.skills.executor import SkillExecutionService
 from app.skills.loader import Skill, load_skills
@@ -34,7 +35,15 @@ def get_executor(
     provider: LLMProvider = Depends(get_provider),
     settings: Settings = Depends(get_settings),
 ) -> SkillExecutionService:
-    return SkillExecutionService(provider=provider, model_name=settings.llm_model)
+    # Routing is opt-in: with an empty routing table the executor keeps using
+    # the single injected provider (identical to pre-ISS-021 behaviour, and
+    # dependency overrides in tests keep working).
+    router = StageProviderRouter(settings) if settings.llm_stage_models else None
+    return SkillExecutionService(
+        provider=provider,
+        model_name=settings.llm_model,
+        stage_router=router,
+    )
 
 
 @lru_cache

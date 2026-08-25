@@ -25,6 +25,10 @@ export function saveStudentId(id: string): void {
   localStorage.setItem(STUDENT_KEY, id)
 }
 
+export function clearStudentId(): void {
+  localStorage.removeItem(STUDENT_KEY)
+}
+
 export function loadStudentProfile(): StudentOut | null {
   try {
     const raw = localStorage.getItem(STUDENT_PROFILE_KEY)

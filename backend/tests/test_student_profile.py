@@ -16,6 +16,7 @@ from app.llm import FakeProvider
 from app.main import app
 
 CANNED_RESPONSES = [
+    "retrieval warm-up output",
     "criteria output",
     "model output",
     "guided output",
@@ -192,3 +193,233 @@ def test_openapi_schema_includes_student_routes(api_client: ApiClient) -> None:
         "/api/students/{student_id}",
     ):
         assert expected in paths
+
+
+BASELINE_REPORT = (
+    "## Per-criterion levels\n"
+    "- Understanding of text / ideas: **C** — sound literal understanding of the character.\n"
+    "- Analysis (how techniques create meaning): **D** — asserts bravery, never explains how.\n"
+    "- Use of evidence: **D** — one vague gesture at technique, no embedded quote.\n"
+    "- Structure & cohesion: **C** — functional intro/body/conclusion.\n"
+    "- Language & vocabulary: **C-** — clear but flat and repetitive.\n\n"
+    "Starting strength: He picked one genuine reason — bravery — and stayed on it.\n\n"
+    "## Ranked weaknesses\n"
+    "1. Thin analysis — says what, never how the writing does it.\n"
+    "2. Evidence is waved at, not used.\n\n"
+    "## Recommended focus loop\n"
+    "Start with: check-structure on analytical writing — the how is the fastest lever.\n"
+    "First session: tomorrow we'll watch how a strong paragraph explains a quote.\n"
+)
+
+
+@pytest.fixture
+def baseline_client(monkeypatch: pytest.MonkeyPatch) -> Generator[ApiClient, None, None]:
+    """Boot the app with a canned baseline-assessment report."""
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{path}")
+    monkeypatch.setenv("LLM_PROVIDER", "fake")
+    monkeypatch.setenv("LLM_API_KEY", "")
+    get_settings.cache_clear()
+    get_engine.cache_clear()
+
+    fake = FakeProvider(canned_responses=[BASELINE_REPORT])
+    app.dependency_overrides[get_provider] = lambda: fake
+    try:
+        with TestClient(app) as client:
+            yield client, fake
+    finally:
+        app.dependency_overrides.clear()
+        get_engine().dispose()
+        os.unlink(path)
+
+
+def test_baseline_writes_day0_rubric_scores(baseline_client: ApiClient) -> None:
+    """POST /baseline runs the skill and persists day-0 rubric scores."""
+    client, _ = baseline_client
+    student = client.post(
+        "/api/students",
+        json={"name": "New starter", "year_level": 8},
+    ).json()
+
+    response = client.post(
+        f"/api/students/{student['id']}/baseline",
+        json={"text": "Harry Potter is memorable because he is brave..."},
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["session_id"]
+    assert "Ranked weaknesses" in data["report"]
+    assert "Recommended focus loop" in data["report"]
+    assert "check-structure" in data["report"]
+
+    scores = data["feedback"]["rubric_scores"]
+    assert len(scores) == 5
+    assert scores[0]["criterion_name"] == "Understanding of text / ideas"
+    assert scores[0]["level"] == "C"
+    assert scores[1]["criterion_name"] == "Analysis (how techniques create meaning)"
+    assert scores[1]["level"] == "D"
+
+    # Day-0 rows are visible to the progress endpoint under the new student.
+    progress = client.get(f"/api/students/{student['id']}/progress").json()
+    assert len(progress["scores"]) == 5
+    assert [s["criterion_name"] for s in progress["scores"]] == [
+        s["criterion_name"] for s in scores
+    ]
+
+
+def test_baseline_uses_profile_and_shared_pack(baseline_client: ApiClient) -> None:
+    """The baseline prompt inherits the profile and cites the shared guide."""
+    client, fake = baseline_client
+    student = client.post(
+        "/api/students",
+        json={"name": "Year 9 starter", "year_level": 9, "focus_text_types": ["persuasive"]},
+    ).json()
+
+    response = client.post(
+        f"/api/students/{student['id']}/baseline",
+        json={"text": "School should start later because..."},
+    )
+    assert response.status_code == 201
+
+    system_prompt, messages = fake.calls[0]
+    assert "baseline-guide.md" in system_prompt
+    user_message = messages[0]["content"]
+    assert "year_level: 9" in user_message
+    assert "text_type: persuasive" in user_message  # profile focus wins
+
+    # The baseline session is a short, already-ended record — not a live loop.
+    session = client.get(f"/api/sessions/{response.json()['session_id']}").json()
+    assert session["ended"] is True
+    kinds = {(turn["kind"], turn["task_type"]) for turn in session["turns"]}
+    assert ("student", "submission") in kinds
+    assert ("tutor", "baseline") in kinds
+
+
+def test_baseline_unknown_student_returns_404(baseline_client: ApiClient) -> None:
+    client, _ = baseline_client
+    response = client.post(
+        f"/api/students/{uuid.uuid4()}/baseline",
+        json={"text": "Some writing."},
+    )
+    assert response.status_code == 404
+
+
+def test_shared_goal_defaults_to_none_and_round_trips(api_client: ApiClient) -> None:
+    """ISS-020: the shared goal is optional, settable, editable, and clearable."""
+    client, _ = api_client
+    created = client.post("/api/students", json={"name": "Kai", "year_level": 8})
+    assert created.status_code == 201
+    assert created.json()["shared_goal"] is None
+
+    with_goal = client.post(
+        "/api/students",
+        json={
+            "name": "Rae",
+            "year_level": 8,
+            "shared_goal": "Write clearer paragraphs",
+        },
+    )
+    assert with_goal.status_code == 201
+    assert with_goal.json()["shared_goal"] == "Write clearer paragraphs"
+
+    updated = client.patch(
+        f"/api/students/{with_goal.json()['id']}",
+        json={"shared_goal": "Use one strong quote per paragraph"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["shared_goal"] == "Use one strong quote per paragraph"
+
+    # An empty string clears the goal; omitting the field leaves it unchanged.
+    cleared = client.patch(
+        f"/api/students/{with_goal.json()['id']}",
+        json={"shared_goal": ""},
+    )
+    assert cleared.status_code == 200
+    assert cleared.json()["shared_goal"] is None
+    assert cleared.json()["name"] == "Rae"
+
+    untouched = client.patch(
+        f"/api/students/{with_goal.json()['id']}",
+        json={"name": "Rae M."},
+    )
+    assert untouched.status_code == 200
+    assert untouched.json()["shared_goal"] is None
+    assert untouched.json()["name"] == "Rae M."
+
+
+def test_session_opening_references_shared_goal(api_client: ApiClient) -> None:
+    """ISS-020: both opening turns see the shared goal; no goal, no input."""
+    client, fake = api_client
+    student = client.post(
+        "/api/students",
+        json={
+            "name": "Kai",
+            "year_level": 8,
+            "shared_goal": "Write clearer paragraphs",
+        },
+    ).json()
+
+    response = client.post("/api/sessions", json={"student_id": student["id"]})
+    assert response.status_code == 201
+    # Calls 0 and 1 are the opening turns: spaced-review + set-success-criteria.
+    opening = [fake.calls[0][1][0]["content"], fake.calls[1][1][0]["content"]]
+    for user_message in opening:
+        assert "shared_goal: Write clearer paragraphs" in user_message
+
+    # Without a shared goal the input never appears (byte-stable opening).
+    plain = client.post(
+        "/api/students", json={"name": "No goal", "year_level": 8}
+    ).json()
+    response = client.post("/api/sessions", json={"student_id": plain["id"]})
+    assert response.status_code == 201
+    later_opening = [fake.calls[-2][1][0]["content"], fake.calls[-1][1][0]["content"]]
+    for user_message in later_opening:
+        assert "shared_goal" not in user_message
+
+
+def test_create_student_defaults_coach_tone_to_warm(api_client: ApiClient) -> None:
+    client, _ = api_client
+    response = client.post("/api/students", json={"name": "Kai", "year_level": 8})
+
+    assert response.status_code == 201
+    assert response.json()["coach_tone"] == "warm"
+
+
+def test_create_and_update_coach_tone(api_client: ApiClient) -> None:
+    client, _ = api_client
+    created = client.post(
+        "/api/students",
+        json={"name": "Kai", "year_level": 8, "coach_tone": "strict"},
+    )
+    assert created.status_code == 201
+    assert created.json()["coach_tone"] == "strict"
+
+    updated = client.patch(
+        f"/api/students/{created.json()['id']}",
+        json={"coach_tone": "humorous"},
+    )
+    assert updated.status_code == 200
+    data = updated.json()
+    assert data["coach_tone"] == "humorous"
+    assert data["name"] == "Kai"  # untouched fields preserved
+
+    fetched = client.get(f"/api/students/{data['id']}")
+    assert fetched.json()["coach_tone"] == "humorous"
+
+
+def test_coach_tone_rejects_invalid_value(api_client: ApiClient) -> None:
+    client, _ = api_client
+    created = client.post(
+        "/api/students",
+        json={"name": "Kai", "year_level": 8, "coach_tone": "sassy"},
+    )
+    assert created.status_code == 422
+
+    valid = client.post("/api/students", json={"name": "Kai", "year_level": 8})
+    assert valid.status_code == 201
+    updated = client.patch(
+        f"/api/students/{valid.json()['id']}",
+        json={"coach_tone": "sassy"},
+    )
+    assert updated.status_code == 422

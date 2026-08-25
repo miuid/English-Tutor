@@ -7,7 +7,7 @@ import httpx
 import pytest
 
 from app.config import Settings
-from app.llm import FakeProvider, create_llm_provider
+from app.llm import FakeProvider, StageProviderRouter, create_llm_provider
 from app.llm.deepseek import API_URL, DeepSeekProvider
 from app.llm.kimi import API_URL as KIMI_API_URL
 from app.llm.kimi import KimiProvider
@@ -228,3 +228,73 @@ async def test_real_deepseek_returns_completion() -> None:
     )
     assert response
     assert "hello" in response.lower()
+
+
+def _routed_settings() -> Settings:
+    return Settings(
+        llm_provider="fake",
+        llm_model="fake-base",
+        llm_api_key="",
+        llm_stage_models={"end": "fake-strong", "coach": "fake-strong"},
+    )
+
+
+def test_router_returns_default_model_for_unmapped_stage() -> None:
+    router = StageProviderRouter(_routed_settings())
+    provider, model = router.for_stage("retrieval")
+    assert isinstance(provider, FakeProvider)
+    assert model == "fake-base"
+
+
+def test_router_returns_stage_override_for_mapped_stage() -> None:
+    router = StageProviderRouter(_routed_settings())
+    provider, model = router.for_stage("end")
+    assert isinstance(provider, FakeProvider)
+    assert model == "fake-strong"
+
+
+def test_router_caches_provider_per_stage() -> None:
+    router = StageProviderRouter(_routed_settings())
+    assert router.for_stage("end")[0] is router.for_stage("end")[0]
+    assert router.for_stage("end")[0] is not router.for_stage("retrieval")[0]
+
+
+def test_router_applies_model_override_to_real_provider() -> None:
+    settings = Settings(
+        llm_provider="kimi",
+        llm_model="kimi-k3",
+        llm_api_key="test-key",
+        llm_stage_models={"retrieval": "kimi-k3-mini"},
+    )
+    router = StageProviderRouter(settings)
+    provider, model = router.for_stage("retrieval")
+    assert isinstance(provider, KimiProvider)
+    assert model == "kimi-k3-mini"
+    default_provider, default_model = router.for_stage("start")
+    assert isinstance(default_provider, KimiProvider)
+    assert default_model == "kimi-k3"
+
+
+def test_get_executor_without_routing_table_keeps_single_provider() -> None:
+    """Empty routing table -> no router; the injected provider is used as-is."""
+    from app.api.deps import get_executor
+
+    settings = Settings(llm_provider="fake", llm_model="fake-base", llm_api_key="")
+    provider = FakeProvider()
+    executor = get_executor(provider=provider, settings=settings)
+    assert executor.stage_router is None
+    assert executor.provider is provider
+
+
+def test_get_executor_with_routing_table_builds_router() -> None:
+    from app.api.deps import get_executor
+
+    settings = Settings(
+        llm_provider="fake",
+        llm_model="fake-base",
+        llm_api_key="",
+        llm_stage_models={"end": "fake-strong"},
+    )
+    executor = get_executor(provider=FakeProvider(), settings=settings)
+    assert executor.stage_router is not None
+    assert executor.stage_router.for_stage("end")[1] == "fake-strong"

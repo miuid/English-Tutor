@@ -29,8 +29,10 @@ Self-check: how would you rate yourself against these criteria?
 """
 
 # One canned response per LLM call in a full loop:
-# criteria, model, guided, guided follow-up, independent, diagnosis, coach, feedback.
+# retrieval, criteria, model, guided, guided follow-up, independent, diagnosis,
+# coach, feedback.
 FULL_LOOP_RESPONSES = [
+    "retrieval warm-up output",
     "criteria output",
     "model output",
     "guided output",
@@ -79,11 +81,17 @@ def _drive_full_loop(client: TestClient) -> dict[str, Any]:
     started = _start(client)
     assert started["stage"] == "start"
     assert started["ended"] is False
-    assert len(started["turns"]) == 1
+    # Retrieval opens the loop (step 1), then success criteria.
+    assert len(started["turns"]) == 2
     opening_turn = started["turns"][0]
     assert opening_turn["kind"] == "tutor"
-    assert opening_turn["skill"] == "set-success-criteria"
-    assert opening_turn["text"] == "criteria output"
+    assert opening_turn["skill"] == "spaced-review"
+    assert opening_turn["task_type"] == "retrieval"
+    assert opening_turn["text"] == "retrieval warm-up output"
+    criteria_turn = started["turns"][1]
+    assert criteria_turn["kind"] == "tutor"
+    assert criteria_turn["skill"] == "set-success-criteria"
+    assert criteria_turn["text"] == "criteria output"
     session_id = started["id"]
 
     advance = client.post(f"/api/sessions/{session_id}/advance")
@@ -152,11 +160,12 @@ def test_get_session_rebuilds_conversation(api_client: ApiClient) -> None:
     state = response.json()
     assert state["stage"] == "ended"
     assert state["ended"] is True
-    # criteria, model, guided, guided submission, guided follow-up,
+    # retrieval, criteria, model, guided, guided submission, guided follow-up,
     # independent, independent submission, diagnosis, coach, feedback
-    assert len(state["turns"]) == 10
+    assert len(state["turns"]) == 11
     kinds = [turn["kind"] for turn in state["turns"]]
     assert kinds == [
+        "tutor",
         "tutor",
         "tutor",
         "tutor",
@@ -170,6 +179,7 @@ def test_get_session_rebuilds_conversation(api_client: ApiClient) -> None:
     ]
     task_types = [turn["task_type"] for turn in state["turns"]]
     assert task_types == [
+        "retrieval",
         "criteria",
         "model",
         "guided",
@@ -200,6 +210,277 @@ def test_progress_endpoint_returns_rubric_rows(api_client: ApiClient) -> None:
         assert score["session_id"] == body["session_id"]
         assert score["feedback_id"] == body["feedback"]["id"]
         assert score["scored_at"]
+
+
+PERSUASIVE_FEEDBACK_WITH_LEVELS = """## Per-criterion levels
+- Position & ideas: **C** — a position with relevant reasons.
+- Argument & evidence: **D** — reasons listed, elaboration thin.
+- Audience & voice: **C** — generally suits the audience.
+- Structure & cohesion: **C** — functional intro/body/conclusion.
+- Language & vocabulary: **D+** — vague, repetitive word choices.
+
+Strength: You state a clear position early.
+Your 1–2 next steps to level up:
+  1. Develop one reason — why it holds and why your audience should care.
+Self-check: how would you rate yourself against these criteria?
+"""
+
+# Persuasive loop: same shape as the analytical loop, but the diagnosis routes
+# to the persuasive coaching skill (strengthen-argument, ISS-005).
+PERSUASIVE_LOOP_RESPONSES = [
+    "retrieval warm-up output",
+    "criteria output",
+    "model output",
+    "guided output",
+    "guided coaching output",
+    "independent task output",
+    "Route to: strengthen-argument",
+    "argument coaching output",
+    PERSUASIVE_FEEDBACK_WITH_LEVELS,
+]
+
+
+def test_year_9_session_runs_loop_and_persists_scores(api_client: ApiClient) -> None:
+    """A year_level=9 student runs the full loop over HTTP with Year 9 packs."""
+    client, fake = api_client
+
+    created = client.post(
+        "/api/students",
+        json={"name": "Year 9 Student", "year_level": 9, "curriculum": "QCAA"},
+    )
+    assert created.status_code == 201
+    student_id = created.json()["id"]
+
+    started = client.post(
+        "/api/sessions",
+        json={
+            "student_id": student_id,
+            "task_prompt": "How does Shakespeare position the reader in Macbeth?",
+        },
+    )
+    assert started.status_code == 201
+    session_id = started.json()["id"]
+
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    assert (
+        client.post(
+            f"/api/sessions/{session_id}/submit", json={"text": "My guided attempt."}
+        ).status_code
+        == 200
+    )
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    final = client.post(
+        f"/api/sessions/{session_id}/submit", json={"text": "Macbeth is ambitious."}
+    )
+    assert final.status_code == 200
+    body = final.json()
+    assert body["ended"] is True
+
+    # Rubric scores persist for the graded Year 9 attempt.
+    feedback = body["feedback"]
+    assert feedback is not None
+    levels = {score["criterion_name"]: score["level"] for score in feedback["rubric_scores"]}
+    assert len(levels) == 5
+    assert levels["Analysis (how techniques create meaning)"] == "D"
+
+    # The loop ran against the exact analytical/year-9-10 packs: Year 9
+    # descriptors are cited in the pack-bearing prompts (criteria, independent,
+    # diagnosis, coach, feedback) and the feedback prompt carries the Year 9
+    # rubric language; no degradation note was appended to any tutor turn.
+    # spaced-review (call 0) is shared-only by design, so it bears no pack.
+    assert len(fake.calls) == 9
+    for index in (1, 5, 6, 7, 8):
+        assert "Year 9" in fake.calls[index][0]
+    assert "discriminating thesis" in fake.calls[8][0]
+    state = client.get(f"/api/sessions/{session_id}").json()
+    tutor_turns = [turn for turn in state["turns"] if turn["kind"] == "tutor"]
+    for turn in tutor_turns:
+        assert "_Note: no dedicated references" not in turn["text"]
+
+
+def test_persuasive_session_runs_loop_and_persists_scores(api_client: ApiClient) -> None:
+    """A student with a persuasive focus runs the full loop over HTTP.
+
+    The profile's focus_text_types[0] resolves text_type=persuasive on every
+    stage, so every pack-bearing prompt cites the persuasive/year-8 packs; the
+    diagnosis routes to strengthen-argument; rubric scores persist for the
+    graded persuasive attempt.
+    """
+    client, fake = api_client
+    fake.canned_responses = list(PERSUASIVE_LOOP_RESPONSES)
+
+    created = client.post(
+        "/api/students",
+        json={
+            "name": "Persuasive Student",
+            "year_level": 8,
+            "curriculum": "QCAA",
+            "focus_text_types": ["persuasive"],
+        },
+    )
+    assert created.status_code == 201
+    student_id = created.json()["id"]
+
+    started = client.post(
+        "/api/sessions",
+        json={
+            "student_id": student_id,
+            "task_prompt": "Should school uniforms be compulsory?",
+        },
+    )
+    assert started.status_code == 201
+    session_id = started.json()["id"]
+
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    assert (
+        client.post(
+            f"/api/sessions/{session_id}/submit", json={"text": "My guided attempt."}
+        ).status_code
+        == 200
+    )
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    final = client.post(
+        f"/api/sessions/{session_id}/submit",
+        json={"text": "Uniforms are unfair. Everyone knows it."},
+    )
+    assert final.status_code == 200
+    body = final.json()
+    assert body["ended"] is True
+
+    # The persuasive diagnosis routed to the persuasive coaching skill.
+    skills = [turn["skill"] for turn in body["turns"]]
+    assert skills[1:] == ["diagnose-errors", "strengthen-argument", "give-feedback"]
+    assert body["turns"][2]["text"] == "argument coaching output"
+
+    # Rubric scores persist for the graded persuasive attempt.
+    feedback = body["feedback"]
+    assert feedback is not None
+    levels = {score["criterion_name"]: score["level"] for score in feedback["rubric_scores"]}
+    assert len(levels) == 5
+    assert levels["Position & ideas"] == "C"
+    assert levels["Argument & evidence"] == "D"
+
+    # The loop ran against the exact persuasive/year-8 packs: pack-bearing
+    # prompts (criteria, independent, diagnosis, coach, feedback) cite the
+    # persuasive references and the feedback prompt carries the persuasive
+    # rubric language; no degradation note was appended to any tutor turn.
+    # spaced-review (call 0) is shared-only by design, so it bears no pack.
+    assert len(fake.calls) == 9
+    for index in (1, 5, 6, 7, 8):
+        assert "persuasive" in fake.calls[index][0]
+    assert "Position & ideas" in fake.calls[8][0]
+    state = client.get(f"/api/sessions/{session_id}").json()
+    tutor_turns = [turn for turn in state["turns"] if turn["kind"] == "tutor"]
+    for turn in tutor_turns:
+        assert "_Note: no dedicated references" not in turn["text"]
+
+
+IMAGINATIVE_FEEDBACK_WITH_LEVELS = """## Per-criterion levels
+- Story & tension: **C** — a clear complication developed and resolved.
+- Character & setting: **C** — character and setting established.
+- Showing & voice: **D** — key moment told; emotions named.
+- Language & vocabulary: **C** — clear, mostly appropriate choices.
+- Structure & cohesion: **C** — functional beginning/middle/end.
+
+Strength: Your opening hooks the reader.
+Your 1–2 next steps to level up:
+  1. Slow down the key moment and show it — one scene, concrete detail.
+Self-check: how would you rate yourself against these criteria?
+"""
+
+# Imaginative loop: same shape as the persuasive loop, but the diagnosis
+# routes to the imaginative coaching skill (craft-voice, ISS-008).
+IMAGINATIVE_LOOP_RESPONSES = [
+    "retrieval warm-up output",
+    "criteria output",
+    "model output",
+    "guided output",
+    "guided coaching output",
+    "independent task output",
+    "Route to: craft-voice",
+    "voice coaching output",
+    IMAGINATIVE_FEEDBACK_WITH_LEVELS,
+]
+
+
+def test_imaginative_session_runs_loop_and_persists_scores(api_client: ApiClient) -> None:
+    """A student with an imaginative focus runs the full loop over HTTP.
+
+    The profile's focus_text_types[0] resolves text_type=imaginative on every
+    stage, so every pack-bearing prompt cites the imaginative/year-8 packs; the
+    diagnosis routes to craft-voice; rubric scores persist for the graded
+    imaginative attempt.
+    """
+    client, fake = api_client
+    fake.canned_responses = list(IMAGINATIVE_LOOP_RESPONSES)
+
+    created = client.post(
+        "/api/students",
+        json={
+            "name": "Imaginative Student",
+            "year_level": 8,
+            "curriculum": "QCAA",
+            "focus_text_types": ["imaginative"],
+        },
+    )
+    assert created.status_code == 201
+    student_id = created.json()["id"]
+
+    started = client.post(
+        "/api/sessions",
+        json={
+            "student_id": student_id,
+            "task_prompt": "Write the opening of a story about a noise in the dark.",
+        },
+    )
+    assert started.status_code == 201
+    session_id = started.json()["id"]
+
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    assert (
+        client.post(
+            f"/api/sessions/{session_id}/submit", json={"text": "My guided attempt."}
+        ).status_code
+        == 200
+    )
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    final = client.post(
+        f"/api/sessions/{session_id}/submit",
+        json={"text": "The noise was scary. I was very afraid."},
+    )
+    assert final.status_code == 200
+    body = final.json()
+    assert body["ended"] is True
+
+    # The imaginative diagnosis routed to the imaginative coaching skill.
+    skills = [turn["skill"] for turn in body["turns"]]
+    assert skills[1:] == ["diagnose-errors", "craft-voice", "give-feedback"]
+    assert body["turns"][2]["text"] == "voice coaching output"
+
+    # Rubric scores persist for the graded imaginative attempt.
+    feedback = body["feedback"]
+    assert feedback is not None
+    levels = {score["criterion_name"]: score["level"] for score in feedback["rubric_scores"]}
+    assert len(levels) == 5
+    assert levels["Story & tension"] == "C"
+    assert levels["Showing & voice"] == "D"
+
+    # The loop ran against the exact imaginative/year-8 packs: pack-bearing
+    # prompts (criteria, independent, diagnosis, coach, feedback) cite the
+    # imaginative references and the feedback prompt carries the imaginative
+    # rubric language; no degradation note was appended to any tutor turn.
+    # spaced-review (call 0) is shared-only by design, so it bears no pack.
+    assert len(fake.calls) == 9
+    for index in (1, 5, 6, 7, 8):
+        assert "imaginative" in fake.calls[index][0]
+    assert "Story & tension" in fake.calls[8][0]
+    state = client.get(f"/api/sessions/{session_id}").json()
+    tutor_turns = [turn for turn in state["turns"] if turn["kind"] == "tutor"]
+    for turn in tutor_turns:
+        assert "_Note: no dedicated references" not in turn["text"]
 
 
 def test_openapi_schema_renders(api_client: ApiClient) -> None:
@@ -293,21 +574,238 @@ def test_start_session_without_task_prompt(api_client: ApiClient) -> None:
     assert data["stage"] == "start"
     assert data["ended"] is False
     assert data["learning_intention"] is None
-    assert len(data["turns"]) == 1
-    assert data["turns"][0]["skill"] == "set-success-criteria"
-    # The skill still received a usable fallback prompt.
-    user_message = fake.calls[0][1][0]["content"]
-    assert "task_prompt: General analytical writing practice" in user_message
+    assert len(data["turns"]) == 2
+    assert data["turns"][0]["skill"] == "spaced-review"
+    assert data["turns"][1]["skill"] == "set-success-criteria"
+    # Both opening skills still received a usable fallback prompt.
+    retrieval_message = fake.calls[0][1][0]["content"]
+    assert "task_prompt: General analytical writing practice" in retrieval_message
+    criteria_message = fake.calls[1][1][0]["content"]
+    assert "task_prompt: General analytical writing practice" in criteria_message
 
 
 def test_start_session_with_context(api_client: ApiClient) -> None:
-    """Optional context is threaded into the set-success-criteria skill inputs."""
+    """Optional context is threaded into the opening skill inputs."""
     client, fake = api_client
     response = client.post(
         "/api/sessions",
         json={"task_prompt": "Analyse a poem", "context": "Due Friday, one paragraph"},
     )
     assert response.status_code == 201
-    user_message = fake.calls[0][1][0]["content"]
-    assert "task_prompt: Analyse a poem" in user_message
-    assert "context: Due Friday, one paragraph" in user_message
+    retrieval_message = fake.calls[0][1][0]["content"]
+    assert "task_prompt: Analyse a poem" in retrieval_message
+    assert "context: Due Friday, one paragraph" in retrieval_message
+    criteria_message = fake.calls[1][1][0]["content"]
+    assert "task_prompt: Analyse a poem" in criteria_message
+    assert "context: Due Friday, one paragraph" in criteria_message
+
+
+def test_retrieval_cold_start_when_no_history(api_client: ApiClient) -> None:
+    """A first-ever session's retrieval call gets the cold-start digest."""
+    client, fake = api_client
+    started = _start(client)
+    assert started["turns"][0]["skill"] == "spaced-review"
+    retrieval_message = fake.calls[0][1][0]["content"]
+    assert "review_history:" in retrieval_message
+    assert "No prior sessions" in retrieval_message
+
+
+def test_retrieval_uses_rubric_and_coach_history(api_client: ApiClient) -> None:
+    """The next session's retrieval items are generated from real history.
+
+    After one full loop, the student's rubric_score and coaching history feed
+    the spaced-review digest: the retrieval call's user message carries the
+    weakest-first criterion levels, the days-since counter, and the recently
+    coached skill.
+    """
+    client, fake = api_client
+    _drive_full_loop(client)
+    calls_after_first_loop = len(fake.calls)
+
+    started = _start(client)
+    assert started["turns"][0]["skill"] == "spaced-review"
+
+    retrieval_message = fake.calls[calls_after_first_loop][1][0]["content"]
+    assert "review_history: Days since last session: 0" in retrieval_message
+    # Latest criterion levels from the first loop's feedback, weakest first.
+    assert "- Analysis (how techniques create meaning): D" in retrieval_message
+    assert "- Structure & cohesion: D+" in retrieval_message
+    # The first loop's coach turn (check-structure) is the recent coaching.
+    assert "Recently coached: check-structure" in retrieval_message
+
+
+# ---------------------------------------------------------------------------
+# Weekly timed mock (ISS-015)
+# ---------------------------------------------------------------------------
+
+MOCK_SUMMATIVE_FEEDBACK = """## Per-criterion levels
+- Understanding of text / ideas: **B** — clear reading of the stimulus.
+- Analysis (how techniques create meaning): **C** — some effect explained, some asserted.
+- Use of evidence: **C** — relevant quotes, mostly integrated.
+- Structure & cohesion: **B-** — paragraphs link back to the thesis.
+- Language & vocabulary: **C+** — formal register held, occasional flat word.
+
+(Overall: **C+**)
+Strength: Your introduction sets up a line of argument, not just a topic.
+Your 1–2 next steps to level up:
+  1. Explain how each technique positions the reader — it lifts Analysis toward B.
+  2. Embed one shorter quote per paragraph — tighter evidence lifts Use of evidence.
+Self-check: which criterion would you give yourself, and why?
+"""
+
+# A full daily loop (9 calls) followed by one mock call (give-feedback only).
+LOOP_THEN_MOCK_RESPONSES = [*FULL_LOOP_RESPONSES, MOCK_SUMMATIVE_FEEDBACK]
+
+
+@pytest.fixture
+def mock_client(monkeypatch: pytest.MonkeyPatch) -> Generator[ApiClient, None, None]:
+    """Boot the app with a canned summative give-feedback report for the mock."""
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{path}")
+    monkeypatch.setenv("LLM_PROVIDER", "fake")
+    monkeypatch.setenv("LLM_API_KEY", "")
+    get_settings.cache_clear()
+    get_engine.cache_clear()
+
+    fake = FakeProvider(canned_responses=[MOCK_SUMMATIVE_FEEDBACK])
+    app.dependency_overrides[get_provider] = lambda: fake
+    try:
+        with TestClient(app) as client:
+            yield client, fake
+    finally:
+        app.dependency_overrides.clear()
+        get_engine().dispose()
+        os.unlink(path)
+
+
+@pytest.fixture
+def loop_then_mock_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> Generator[ApiClient, None, None]:
+    """Boot the app with canned responses for one daily loop then one mock."""
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{path}")
+    monkeypatch.setenv("LLM_PROVIDER", "fake")
+    monkeypatch.setenv("LLM_API_KEY", "")
+    get_settings.cache_clear()
+    get_engine.cache_clear()
+
+    fake = FakeProvider(canned_responses=list(LOOP_THEN_MOCK_RESPONSES))
+    app.dependency_overrides[get_provider] = lambda: fake
+    try:
+        with TestClient(app) as client:
+            yield client, fake
+    finally:
+        app.dependency_overrides.clear()
+        get_engine().dispose()
+        os.unlink(path)
+
+
+def _run_daily_loop(client: TestClient, student_id: str) -> None:
+    """Drive one full loop for the student without asserting turn contents."""
+    started = client.post(
+        "/api/sessions",
+        json={"task_prompt": "How does the poet present war?", "student_id": student_id},
+    )
+    assert started.status_code == 201
+    session_id = started.json()["id"]
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    guided = client.post(
+        f"/api/sessions/{session_id}/submit", json={"text": "My guided attempt."}
+    )
+    assert guided.status_code == 200
+    assert client.post(f"/api/sessions/{session_id}/advance").status_code == 200
+    final = client.post(
+        f"/api/sessions/{session_id}/submit", json={"text": "War is bad."}
+    )
+    assert final.status_code == 200
+    assert final.json()["ended"] is True
+
+
+def test_mock_stores_assessment_mode_and_summative_scores(
+    mock_client: ApiClient,
+) -> None:
+    """POST /mock runs exam-conditions feedback and persists assessment rows."""
+    client, fake = mock_client
+    student = client.post(
+        "/api/students",
+        json={"name": "Mock sitter", "year_level": 8},
+    ).json()
+
+    response = client.post(
+        f"/api/students/{student['id']}/mock",
+        json={"text": "The poet presents war as a waste of young lives..."},
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["session_id"]
+
+    # Bounded summative report: per-criterion levels + overall + next steps.
+    assert "## Per-criterion levels" in data["report"]
+    assert "(Overall: **C+**)" in data["report"]
+    assert "next steps" in data["report"]
+    scores = data["feedback"]["rubric_scores"]
+    assert len(scores) == 5
+    assert scores[0]["criterion_name"] == "Understanding of text / ideas"
+    assert scores[0]["level"] == "B"
+
+    # The single LLM call is give-feedback in summative mode, citing the
+    # year-8 analytical rubric pack — no coaching or scaffolding skills ran.
+    assert len(fake.calls) == 1
+    system_prompt, messages = fake.calls[0]
+    assert "rubric.md" in system_prompt
+    user_message = messages[0]["content"]
+    assert "mode: summative" in user_message
+    assert "exam conditions" in user_message
+
+    # The mock session is already ended, holds an assessment-mode submission,
+    # and consumed no daily practice time.
+    session = client.get(f"/api/sessions/{data['session_id']}").json()
+    assert session["ended"] is True
+    assert session["time_spent_seconds"] == 0
+    submission = next(t for t in session["turns"] if t["kind"] == "student")
+    assert submission["mode"] == "assessment"
+    feedback_turn = next(t for t in session["turns"] if t["skill"] == "give-feedback")
+    assert feedback_turn["mode"] == "assessment"
+
+    # Rubric scores surface in progress tagged as assessment (mock) points.
+    progress = client.get(f"/api/students/{student['id']}/progress").json()
+    assert len(progress["scores"]) == 5
+    assert {s["mode"] for s in progress["scores"]} == {"assessment"}
+
+
+def test_mock_points_distinguished_from_daily_practice(
+    loop_then_mock_client: ApiClient,
+) -> None:
+    """Progress returns daily-practice and weekly-mock points with distinct modes."""
+    client, _ = loop_then_mock_client
+    student = client.post(
+        "/api/students",
+        json={"name": "Mixed modes", "year_level": 8},
+    ).json()
+
+    _run_daily_loop(client, student["id"])
+    mock = client.post(
+        f"/api/students/{student['id']}/mock",
+        json={"text": "Exam-conditions response..."},
+    )
+    assert mock.status_code == 201
+
+    progress = client.get(f"/api/students/{student['id']}/progress").json()
+    modes = [s["mode"] for s in progress["scores"]]
+    assert modes.count("assessment") == 5  # the weekly mock
+    assert len(modes) == 10
+    assert set(modes) == {"end", "assessment"}  # daily practice vs mock
+
+
+def test_mock_unknown_student_returns_404(mock_client: ApiClient) -> None:
+    client, _ = mock_client
+    missing = uuid.uuid4()
+    response = client.post(
+        f"/api/students/{missing}/mock",
+        json={"text": "Nobody's essay."},
+    )
+    assert response.status_code == 404

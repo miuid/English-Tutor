@@ -1,23 +1,54 @@
 import { useCallback, useState } from 'react'
 import './App.css'
 import ChatView from './components/ChatView'
+import FirstRunWizard from './components/FirstRunWizard'
+import ParentView from './components/ParentView'
 import ProfileView from './components/ProfileView'
 import ProgressView from './components/ProgressView'
-import { loadStudentId, saveStudentId } from './storage'
+import { loadStudentId, loadStudentProfile, saveStudentId } from './storage'
 import type { StudentOut } from './types'
 
-type Tab = 'session' | 'progress' | 'profile'
+type Tab = 'session' | 'progress' | 'parent' | 'profile'
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('session')
   const [studentId, setStudentId] = useState<string | null>(() => loadStudentId())
-  const [student, setStudent] = useState<StudentOut | null>(null)
+  // Hydrate from the cached profile so the session start card can greet the
+  // student by name before the Profile tab is ever opened.
+  const [student, setStudent] = useState<StudentOut | null>(() => loadStudentProfile())
 
   const handleStudent = useCallback((s: StudentOut) => {
     saveStudentId(s.id)
     setStudentId(s.id)
     setStudent(s)
+    setTab('session')
   }, [])
+
+  const handleClearStudent = useCallback(() => {
+    setStudentId(null)
+    setStudent(null)
+    setTab('session')
+  }, [])
+
+  // First run: no profile linked to this browser yet. The wizard creates or
+  // selects a student profile before the tabbed app becomes available.
+  if (studentId === null) {
+    return (
+      <div className="app">
+        <header className="app-header">
+          <div className="brand">
+            <span className="brand-mark" aria-hidden="true">
+              ✳
+            </span>
+            <span className="brand-name">English Tutor</span>
+          </div>
+        </header>
+        <main className="app-main">
+          <FirstRunWizard onStudent={handleStudent} />
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="app">
@@ -50,6 +81,15 @@ export default function App() {
           <button
             type="button"
             role="tab"
+            aria-selected={tab === 'parent'}
+            className={tab === 'parent' ? 'tab active' : 'tab'}
+            onClick={() => setTab('parent')}
+          >
+            Parent
+          </button>
+          <button
+            type="button"
+            role="tab"
             aria-selected={tab === 'profile'}
             className={tab === 'profile' ? 'tab active' : 'tab'}
             onClick={() => setTab('profile')}
@@ -63,8 +103,10 @@ export default function App() {
           <ChatView student={student} />
         ) : tab === 'progress' ? (
           <ProgressView studentId={studentId} />
+        ) : tab === 'parent' ? (
+          <ParentView studentId={studentId} />
         ) : (
-          <ProfileView onStudent={handleStudent} />
+          <ProfileView onStudent={handleStudent} onClear={handleClearStudent} />
         )}
       </main>
     </div>
